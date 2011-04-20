@@ -231,16 +231,63 @@ def tif_OCR(inPath,outPath,fileTypeOpts,inputOpts=None,*extraArgs):
     return True
 
 '''
+This function will use image magick to convert tifs to jpgs
 @param: inPath: source file or dir
 @param: outPath: destination file or dir
+@param imageMagicOpts: can be 'default' 'TN' or a list of options to use
 
 @return bool: true if successful false if not
 '''
-def tif_to_jpg(inPath,outPath,*extraArgs):
-    '''
-        # would like 85x110^ instead of 85x110!, but need imagemagick upgrade first ( >= 6.3.8-2)
-    return 0 == subprocess.call(["convert", tiff_file, "-thumbnail", "85x110!", "-gravity", "center", "-extent", "85x110", "tmp.jpg"])
-    '''
+def tif_to_jpg(inPath,outPath, imageMagicOpts,*extraArgs):
+    #error checking
+    if checkStd(inPath,outPath,extraArgs,imageMagicOpts)==False:
+        return False
+    
+    #determine the output directory for the tempfile and for if there are multiple output files due to a directory batch
+    #put directory not created error handle here'''
+    if os.path.isdir(outPath)==False: #outPath is a file path
+        outDirectory,fileNameOut=os.path.split(outPath)
+        fileList=(fileNameOut)
+    else:#is a driectory
+        outDirectory=outPath
+    #create list of files to be converted
+    if os.path.isdir(inPath)==False:
+        inDirectory, fileListStr=os.path.split(inPath)
+        fileList=[fileListStr]
+    else:
+        inDirectory=inPath
+        fileList=os.listdir(inPath)#get files in the dir
+        for path in os.listdir(inPath):
+            pathLength=len(path)
+            #remove non tiff entries
+            if path[(pathLength-4):pathLength]!='.tif' and path[(pathLength-5):pathLength]!='.tiff' :
+                fileList.remove(path)
+    
+    
+    for fileName in fileList:
+        
+        #if fileNameOut was not in outPath make one up
+        if os.path.isdir(outPath)==True:
+            fileNameOut=fileName[0:fileName.rindex('.')]+'.jpg'
+        filePathIn=os.path.join(inDirectory,fileName)
+        filePathOut=os.path.join(outDirectory,fileNameOut)
+        
+        #create image magick call
+        if imageMagicOpts=='defautl':
+            imageMagicCall=["convert", filePathIn, '-compress', 'JPEG', '-quality', '50%', filePathOut]
+        elif imageMagicOpts=='TN':
+            imageMagicCall=["convert", filePathIn, "-thumbnail", "85x110!", "-gravity", "center", "-extent", "85x110", filePathOut]
+        else:
+            imageMagicCall=["convert",filePathIn]
+            imageMagicCall.extend(imageMagicOpts)
+            imageMagicCall.append(filePathOut)
+        
+        #make image magic call  
+        r = subprocess.call(imageMagicCall)
+        if r != 0:
+            logging.warning('JPG creation failed (convert return code:%d for file input %s).' % ( r, filePathIn))
+        if r == 0:
+            logging.info('File converted: %s'% (filePathOut))
     return True
 
 '''
