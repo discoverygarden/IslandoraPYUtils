@@ -237,7 +237,10 @@ def tif_OCR(inPath,outPath,fileTypeOpts,inputOpts=None,*extraArgs):
 @return bool: true if successful false if not
 '''
 def tif_to_jpg(inPath,outPath,*extraArgs):
-
+    '''
+        # would like 85x110^ instead of 85x110!, but need imagemagick upgrade first ( >= 6.3.8-2)
+    return 0 == subprocess.call(["convert", tiff_file, "-thumbnail", "85x110!", "-gravity", "center", "-extent", "85x110", "tmp.jpg"])
+    '''
     return True
 
 '''
@@ -247,7 +250,25 @@ def tif_to_jpg(inPath,outPath,*extraArgs):
 @return bool: true if successful false if not
 '''
 def pdf_to_swf(inPath,outPath,*extraArgs):
+    '''
+#recieve PDF create a SWF for use with flexpaper
+    directory, file = get_datastream_as_file(obj, dsid, "pdf")
+    
+    r = subprocess.call(['pdf2swf', directory+'/'+file, '-o', directory+'/'+swfid,\
+         '-T 9', '-f', '-t', '-s', 'storeallcharacters', '-G'])
+    if r != 0:
+        logging.warning('PID:%s DSID:%s SWF creation failed. Trying alternative.' % (obj.pid, dsid))
+        r = subprocess.call(['pdf2swf', directory+'/'+file, '-o', directory+'/'+swfid,\
+             '-T 9', '-f', '-t', '-s', 'storeallcharacters', '-G', '-s', 'poly2bitmap'])
+        if r != 0:
+            logging.warning('PID:%s DSID:%s SWF creation failed (pdf2swf return code:%d).' % (obj.pid, dsid, r))
 
+    if r == 0:
+        update_datastream(obj, swfid, directory+'/'+swfid, label='pdf to swf', mimeType='application/x-shockwave-flash')
+
+    rmtree(directory, ignore_errors=True)
+    return r
+'''
     return True
 
 '''
@@ -257,7 +278,19 @@ def pdf_to_swf(inPath,outPath,*extraArgs):
 @return bool: true if successful false if not
 '''
 def wav_to_ogg(inPath,outPath,*extraArgs):
+    '''
+        #recieve a wav file create a OGG
+    directory, file = get_datastream_as_file(obj, dsid, "wav")
     
+    # Make OGG with ffmpeg
+    r = subprocess.call(['ffmpeg', '-i', directory+'/'+file, '-acodec', 'libvorbis', '-ab', '48k', directory+'/'+oggid])
+    if r == 0:
+        update_datastream(obj, oggid, directory+'/'+oggid, label='compressed to ogg', mimeType='audio/ogg')
+    else:
+        logging.warning('PID:%s DSID:%s OGG creation failed (ffmpeg return code:%d).' % (obj.pid, dsid, r))
+    rmtree(directory, ignore_errors=True)
+    return r
+    '''
     return True
 
 '''
@@ -267,7 +300,20 @@ def wav_to_ogg(inPath,outPath,*extraArgs):
 @return bool: true if successful false if not
 '''
 def wav_to_mp3(inPath,outPath,*extraArgs):
+    '''
+    # We recieve a WAV file. Create a MP3
+    directory, file = get_datastream_as_file(obj, dsid, "wav")
+    
+    # Make MP3 with lame
+    r = subprocess.call(['lame', '-mm', '--cbr', '-b48', directory+'/'+file, directory+'/'+mp3id])
+    if r == 0:
+      update_datastream(obj, mp3id, directory+'/'+mp3id, label='compressed to mp3', mimeType='audio/mpeg')
+    else:
+      logging.warning('PID:%s DSID:%s MP3 creation failed (lame return code:%d).' % (obj.pid, dsid, r))
 
+    rmtree(directory, ignore_errors=True)
+    return r
+    '''
     return True
 
 '''
@@ -277,7 +323,35 @@ def wav_to_mp3(inPath,outPath,*extraArgs):
 @return bool: true if successful false if not
 '''
 def pdf_to_jpg(inPath,outPath,*extraArgs):
+    '''
+    os.system('sips -s format jpeg \"tmpfile.pdf\" -z 150 150 --out \"tmpfile.jpg\" >/dev/null')
     
+    
+    OR
+    
+    
+    
+    def create_thumbnail(obj, dsid, tnid):
+    # We receive a file and create a jpg thumbnail
+    directory, file = get_datastream_as_file(obj, dsid, "tmp")
+    
+    # Make a thumbnail with convert
+    r = subprocess.call(['convert', directory+'/'+file+'[0]', '-thumbnail', \
+         '%sx%s' % (tn_size[0], tn_size[1]), directory+'/'+tnid])
+   
+    if r == 0:
+        update_datastream(obj, tnid, directory+'/'+tnid, label='thumbnail', mimeType='image/jpeg')
+
+        # this is necessary because we are using curl, and the library caches 
+        try:
+            if (obj['TN'].label.split('/')[0] != 'image'): 
+                if(obj[dsid].mimeType.split('/')[0] == 'image'):
+                    update_datastream(obj, 'TN', directory+'/'+tnid, label=obj[dsid].mimeType, mimeType='image/jpeg')
+        except FedoraConnectionException:
+            update_datastream(obj, 'TN', directory+'/'+tnid, label=obj[dsid].mimeType, mimeType='image/jpeg')
+    else :
+        logging.warning('PID:%s DSID:%s Thumbnail creation failed (return code:%d).' % (obj.pid, dsid, r))
+    '''
     return True
 
 '''
@@ -299,7 +373,7 @@ def checkPaths(pathIn, pathOut):
     if os.path.isdir(pathOut):
         return True
     elif os.path.isfile(pathOut):
-        loggin.error('If the output path is a file it can not already exist: '+ pathOut)
+        logging.error('If the output path is a file it can not already exist: '+ pathOut)
         return False
     elif os.path.lexists(os.path.dirname(pathOut))!=True:
         logging.error('The output path is invalid: '+pathOut)
