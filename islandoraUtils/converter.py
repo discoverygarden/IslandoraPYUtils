@@ -28,19 +28,12 @@ We use 'convert' due to lack of Kakadu license
 @param imageMagicOpts: a list of options or a string 'default'  
 '''
 def tif_to_jp2(inPath,outPath,kakaduOpts=None,imageMagicOpts=None,*extraArgs):
-
-    #quick and dirty parameter input check
-    if (isinstance(kakaduOpts, list)!=True and kakaduOpts!='default')\
-    or (isinstance(imageMagicOpts, list)!=True and imageMagicOpts!='default')\
-    or isinstance(inPath, str)!=True \
-    or isinstance(outPath, str)!=True\
-    or len(extraArgs)!=0:        
-        logging.error('Bad function call TO TIF_TO_JP2')
-        return False
     
-    #prevents the script from attempting to write multiple output files to one output file path
-    if os.path.isdir(inPath)==True and os.path.isdir(outPath)!=True:
-        logging.error('If the input path is a directory, so must be the output path.')
+    #error checking, does not take TN
+    if checkStd(inPath,outPath,extraArgs,kakaduOpts,imageMagicOpts)==False:
+        return False
+    if kakaduOpts=='TN' or imageMagicOpts=='TN':
+        logging.error('This function tif_to_jp2 does not accept the \'TN\' keyword')
         return False
     
     #determine the output directory for the tempfile and for if there are multiple output files due to a directory batch
@@ -127,10 +120,12 @@ ABBYY OCR CLI Command Line Tool support
 @param: inputOpts: the ABBYY command line options not associated with a specific file output tyep, can be None
 @param: fileTypeOpts: 1. a dictionary where the key is a file output type and the vale is a string 'default' or list of options, or 2. a string 'default'
 
+@return bool: true if successful false if not
+
 TODO: make default output options for all output file types 
 '''
 def tif_OCR(inPath,outPath,fileTypeOpts,inputOpts=None,*extraArgs):
-
+    '''
     #quick and dirty parameter input check
     if(isinstance(fileTypeOpts, dict)!=True and fileTypeOpts!='default')\
     or(isinstance(inputOpts, list)!=True and inputOpts!='default' and inputOpts!=None)\
@@ -139,7 +134,18 @@ def tif_OCR(inPath,outPath,fileTypeOpts,inputOpts=None,*extraArgs):
     or len(extraArgs)!=0:        
         logging.error('Bad function call to tif_OCR')
         return False
-    
+  '''
+        #error checking, does not take TN
+    if checkStd(inPath,outPath,extraArgs,inputOpts)==False:
+        return False
+    if fileTypeOpts=='TN' or inputOpts=='TN':
+        logging.error('This function tif_to_jp2 does not accept the \'TN\' keyword')
+        return False
+    #special dictionary error checking
+    if isinstance(fileTypeOpts, dict)==False and fileTypeOpts!='default':
+        logging.error('The fileTypeOpts must be a dictionary or the keyword \'default\'.' )
+        return False
+      
     #prevents the script from attempting to write multiple output files to one output file path
     if os.path.isdir(inPath)==True and os.path.isdir(outPath)!=True:
         logging.error('If the input path is a directory, so must be the output path.')
@@ -224,24 +230,53 @@ def tif_OCR(inPath,outPath,fileTypeOpts,inputOpts=None,*extraArgs):
             logging.info('File OCR\'d: %s'% (absPathFileIn))
     return True
 
+'''
+@param: inPath: source file or dir
+@param: outPath: destination file or dir
 
+@return bool: true if successful false if not
+'''
 def tif_to_jpg(inPath,outPath,*extraArgs):
 
     return True
 
-def pdf_to_swf():
+'''
+@param: inPath: source file or dir
+@param: outPath: destination file or dir
+
+@return bool: true if successful false if not
+'''
+def pdf_to_swf(inPath,outPath,*extraArgs):
 
     return True
 
-def wav_to_ogg():
+'''
+@param: inPath: source file or dir
+@param: outPath: destination file or dir
+
+@return bool: true if successful false if not
+'''
+def wav_to_ogg(inPath,outPath,*extraArgs):
     
     return True
 
-def wav_to_mp3():
+'''
+@param: inPath: source file or dir
+@param: outPath: destination file or dir
+
+@return bool: true if successful false if not
+'''
+def wav_to_mp3(inPath,outPath,*extraArgs):
 
     return True
 
-def pdf_to_jpg():
+'''
+@param: inPath: source file or dir
+@param: outPath: destination file or dir
+
+@return bool: true if successful false if not
+'''
+def pdf_to_jpg(inPath,outPath,*extraArgs):
     
     return True
 
@@ -258,18 +293,19 @@ Does some standardized error checking on the input and output path arguments
 def checkPaths(pathIn, pathOut):
     #make sure that the indicated paths are valid
     if os.path.lexists(pathIn)==False:
-        logging.error('The indicated input path is not valid')
+        logging.error('The indicated input path is not valid: '+pathIn)
         return False
-    if os.path.isfile(pathOut)==True:
-        logging.error('If the output path is a file it can not already exist.')
+    
+    if os.path.isdir(pathOut):
+        return True
+    elif os.path.isfile(pathOut):
+        loggin.error('If the output path is a file it can not already exist: '+ pathOut)
         return False
-    elif os.path.isdir(pathOut[0:pathOut.rindex('/')])==False:
-        logging.error('The indicated output path is not vaild')
+    elif os.path.lexists(os.path.dirname(pathOut))!=True:
+        logging.error('The output path is invalid: '+pathOut)
         return False
-    elif os.path.isdir(pathOut)==False:
-        logging.error('If the output file is a directory it must exist.')
-        return False
-
+        
+        
     #make sure that if the input path is a directory that the output path is also a directory
     if os.path.isdir(pathIn)==True and os.path.isdir(pathOut)==False:
         logging.error('If the input path is a directory then so must be the output directory')
@@ -284,7 +320,7 @@ Does some standardized checking on command line option arguments
 '''
 def checkOpts(optsIn):
     if isinstance(optsIn, list)==False and optsIn!='default' and optsIn!='TN':
-        logging.error('CommandLine arguments must be lists or a known keyword string')
+        logging.error('CommandLine arguments must be lists or a known keyword like \'TN\' or \'default\'' )
         return False
     return True
 
@@ -295,7 +331,7 @@ Does a standard check to see if too many args was passed in
 '''
 def checkExtraArgs(args):
     if len(args)>0:
-        logging.error('Too many arguments supplied')
+        logging.error('Too many arguments supplied:'+args)
         return False
     return True
 
