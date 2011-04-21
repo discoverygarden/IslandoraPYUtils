@@ -12,10 +12,13 @@ Used scripts created by Jonathan Green as the starting piont.
 Please make sure that the output directory already exists.
 
 TODO: make recursive option
-TODO: handle output directory creation
+TODO: explore handling output directory creation
+TODO: explore input file type checking
 TODO: add more functions
 TODO: add video support
 TODO: add open office word doc conversions
+TODO: explore better conversion options
+TODO: explore more backup solutions
 '''
 import logging, subprocess, os
 '''
@@ -26,6 +29,8 @@ We use 'convert' due to lack of Kakadu license
 @param outPath: destination file or dir
 @param kakaduOpts: a list of options or a string 'default'
 @param imageMagicOpts: a list of options or a string 'default'  
+
+@return bool: true if successful [completion not conversion] false if not
 '''
 def tif_to_jp2(inPath,outPath,kakaduOpts=None,imageMagicOpts=None,*extraArgs):
     
@@ -120,7 +125,7 @@ ABBYY OCR CLI Command Line Tool support
 @param: inputOpts: the ABBYY command line options not associated with a specific file output tyep, can be None
 @param: fileTypeOpts: 1. a dictionary where the key is a file output type and the vale is a string 'default' or list of options, or 2. a string 'default'
 
-@return bool: true if successful false if not
+@return bool: true if successful [completion not conversion] false if not
 
 TODO: make default output options for all output file types 
 '''
@@ -231,7 +236,7 @@ def tif_OCR(inPath,outPath,fileTypeOpts,inputOpts=None,*extraArgs):
     return True
 
 '''
-This function will use image magick to convert tifs to jpgs
+This function will use ImageMagick to convert tifs to jpgs
 @param: inPath: source file or dir
 @param: outPath: destination file or dir
 @param imageMagicOpts: can be 'default' 'TN' or a list of options to use
@@ -276,7 +281,7 @@ def tif_to_jpg(inPath,outPath, imageMagicOpts,*extraArgs):
         if imageMagicOpts=='defautl':
             imageMagicCall=["convert", filePathIn, '-compress', 'JPEG', '-quality', '50%', filePathOut]
         elif imageMagicOpts=='TN':
-            imageMagicCall=["convert", filePathIn, "-thumbnail", "85x110!", "-gravity", "center", "-extent", "85x110", filePathOut]
+            imageMagicCall=["convert", filePathIn, '-compress', 'JPEG', "-thumbnail", "85x110!", "-gravity", "center", "-extent", "85x110", filePathOut]
         else:
             imageMagicCall=["convert",filePathIn]
             imageMagicCall.extend(imageMagicOpts)
@@ -291,114 +296,248 @@ def tif_to_jpg(inPath,outPath, imageMagicOpts,*extraArgs):
     return True
 
 '''
+This function will use swftools to convert pdf files to swfs
 @param: inPath: source file or dir
 @param: outPath: destination file or dir
+@param swfToolsOpts: options to be applied to the conversion can be 'default'
 
-@return bool: true if successful false if not
+@return bool: true if successful [completion not conversion] false if not
 '''
-def pdf_to_swf(inPath,outPath,*extraArgs):
-    '''
-#recieve PDF create a SWF for use with flexpaper
-    directory, file = get_datastream_as_file(obj, dsid, "pdf")
+def pdf_to_swf(inPath,outPath,swfToolsOpts,*extraArgs):
+#error checking
+    if checkStd(inPath,outPath,extraArgs,swfToolsOpts)==False:
+        return False
+    if swfToolsOpts=='TN':
+        logging.error('This function pdf_to_swf does not accept the \'TN\' keyword')
+        return False
     
-    r = subprocess.call(['pdf2swf', directory+'/'+file, '-o', directory+'/'+swfid,\
-         '-T 9', '-f', '-t', '-s', 'storeallcharacters', '-G'])
-    if r != 0:
-        logging.warning('PID:%s DSID:%s SWF creation failed. Trying alternative.' % (obj.pid, dsid))
-        r = subprocess.call(['pdf2swf', directory+'/'+file, '-o', directory+'/'+swfid,\
-             '-T 9', '-f', '-t', '-s', 'storeallcharacters', '-G', '-s', 'poly2bitmap'])
+    #determine the output directory for the tempfile and for if there are multiple output files due to a directory batch
+    #put directory not created error handle here'''
+    if os.path.isdir(outPath)==False: #outPath is a file path
+        outDirectory,fileNameOut=os.path.split(outPath)
+        fileList=(fileNameOut)
+    else:#is a driectory
+        outDirectory=outPath
+    #create list of files to be converted
+    if os.path.isdir(inPath)==False:
+        inDirectory, fileListStr=os.path.split(inPath)
+        fileList=[fileListStr]
+    else:
+        inDirectory=inPath
+        fileList=os.listdir(inPath)#get files in the dir
+        for path in os.listdir(inPath):
+            pathLength=len(path)
+            #remove non pdf entries
+            if path[(pathLength-4):pathLength]!='.pdf':
+                fileList.remove(path)
+    
+    
+    for fileName in fileList:
+        
+        #if fileNameOut was not in outPath make one up
+        if os.path.isdir(outPath)==True:
+            fileNameOut=fileName[0:fileName.rindex('.')]+'.pdf'
+        filePathIn=os.path.join(inDirectory,fileName)
+        filePathOut=os.path.join(outDirectory,fileNameOut)
+        
+        #create image magick call
+        if swfToolsOpts=='defautl':
+            swfToolsCall=["pdf2swf", filePathIn, '-o', filePathOut,'-T 9', '-f', '-t', '-s', 'storeallcharacters', '-G']
+        else:
+            swfToolsCall=["pdf2swf",filePathIn,'-o', filePathOut]
+            swfToolsCall.extend(swfToolsOpts)
+        #make the system call  
+        r = subprocess.call(swfToolsCall)
+        if swfToolsOpts=='default' and r!=0:
+            logging.warning('PDF creation failed (SWFTools return code:%d for file input %s: Trying alternative.).' % ( r, filePathIn))
+            swfToolsCall=["pdf2swf", filePathIn, '-o', filePathOut,'-T 9', '-f', '-t', '-s', 'storeallcharacters', '-G', '-s', 'poly2bitmap']
+            r=subprocess.call(swfToolsCall)
+        
         if r != 0:
-            logging.warning('PID:%s DSID:%s SWF creation failed (pdf2swf return code:%d).' % (obj.pid, dsid, r))
-
-    if r == 0:
-        update_datastream(obj, swfid, directory+'/'+swfid, label='pdf to swf', mimeType='application/x-shockwave-flash')
-
-    rmtree(directory, ignore_errors=True)
-    return r
-'''
+            logging.warning('PDF creation failed (SWFTools return code:%d for file input %s).' % ( r, filePathIn))
+        if r == 0:
+            logging.info('File converted: %s'% (filePathOut))
     return True
 
 '''
+This function will use FFmpeg to turn a wav file into an ogg file
 @param: inPath: source file or dir
 @param: outPath: destination file or dir
+@param FFmpegOpts: options to be applied to the conversion can be 'default'
 
-@return bool: true if successful false if not
+@return bool: true if successful [completion not conversion] false if not
 '''
-def wav_to_ogg(inPath,outPath,*extraArgs):
-    '''
-        #recieve a wav file create a OGG
-    directory, file = get_datastream_as_file(obj, dsid, "wav")
+def wav_to_ogg(inPath,outPath,FFmpegOpts,*extraArgs):
+#error checking
+    if checkStd(inPath,outPath,extraArgs,FFmpegOpts)==False:
+        return False
+    if FFmpegOpts=='TN':
+        logging.error('This function wav_to_ogg does not accept the \'TN\' keyword')
+        return False
     
-    # Make OGG with ffmpeg
-    r = subprocess.call(['ffmpeg', '-i', directory+'/'+file, '-acodec', 'libvorbis', '-ab', '48k', directory+'/'+oggid])
-    if r == 0:
-        update_datastream(obj, oggid, directory+'/'+oggid, label='compressed to ogg', mimeType='audio/ogg')
+    #determine the output directory for the tempfile and for if there are multiple output files due to a directory batch
+    #put directory not created error handle here'''
+    if os.path.isdir(outPath)==False: #outPath is a file path
+        outDirectory,fileNameOut=os.path.split(outPath)
+        fileList=(fileNameOut)
+    else:#is a driectory
+        outDirectory=outPath
+    #create list of files to be converted
+    if os.path.isdir(inPath)==False:
+        inDirectory, fileListStr=os.path.split(inPath)
+        fileList=[fileListStr]
     else:
-        logging.warning('PID:%s DSID:%s OGG creation failed (ffmpeg return code:%d).' % (obj.pid, dsid, r))
-    rmtree(directory, ignore_errors=True)
-    return r
-    '''
+        inDirectory=inPath
+        fileList=os.listdir(inPath)#get files in the dir
+        for path in os.listdir(inPath):
+            pathLength=len(path)
+            #remove non applicable file entries
+            if path[(pathLength-4):pathLength]!='.wav':
+                fileList.remove(path)
+    
+    
+    for fileName in fileList:
+        
+        #if fileNameOut was not in outPath make one up
+        if os.path.isdir(outPath)==True:
+            fileNameOut=fileName[0:fileName.rindex('.')]+'.ogg'
+        filePathIn=os.path.join(inDirectory,fileName)
+        filePathOut=os.path.join(outDirectory,fileNameOut)
+        
+        #create the system call
+        if FFmpegOpts=='defautl':
+            FFmpegCall=['ffmpeg', '-i', filePathIn, '-acodec', 'libvorbis', '-ab', '48k', filePathOut]
+        else:
+            FFmpegCall=['ffmpeg', '-i', filePathIn]
+            FFmpegCall.extend(FFmpegOpts)
+            FFmpegCall.append(filePathOut)
+        
+        #make the system call  
+        r = subprocess.call(FFmpegCall)
+        if r != 0:
+            logging.warning('ogg creation failed (FFmpeg return code:%d for file input %s).' % ( r, filePathIn))
+        if r == 0:
+            logging.info('File converted: %s'% (filePathOut))
     return True
 
 '''
+This function uses the lame tool to make wav files into mp3 files
 @param: inPath: source file or dir
 @param: outPath: destination file or dir
+@param lameOpts: options to be applied to the conversion can be 'default'
 
-@return bool: true if successful false if not
+@return bool: true if successful [completion not conversion] false if not
 '''
-def wav_to_mp3(inPath,outPath,*extraArgs):
-    '''
-    # We recieve a WAV file. Create a MP3
-    directory, file = get_datastream_as_file(obj, dsid, "wav")
+def wav_to_mp3(inPath,outPath,lameOpts,*extraArgs):
+#error checking
+    if checkStd(inPath,outPath,extraArgs,lameOpts)==False:
+        return False
+    if lameOpts=='TN':
+        logging.error('This function wav_to_mp3 does not accept the \'TN\' keyword')
+        return False
     
-    # Make MP3 with lame
-    r = subprocess.call(['lame', '-mm', '--cbr', '-b48', directory+'/'+file, directory+'/'+mp3id])
-    if r == 0:
-      update_datastream(obj, mp3id, directory+'/'+mp3id, label='compressed to mp3', mimeType='audio/mpeg')
+    #determine the output directory for the tempfile and for if there are multiple output files due to a directory batch
+    #put directory not created error handle here'''
+    if os.path.isdir(outPath)==False: #outPath is a file path
+        outDirectory,fileNameOut=os.path.split(outPath)
+        fileList=(fileNameOut)
+    else:#is a driectory
+        outDirectory=outPath
+    #create list of files to be converted
+    if os.path.isdir(inPath)==False:
+        inDirectory, fileListStr=os.path.split(inPath)
+        fileList=[fileListStr]
     else:
-      logging.warning('PID:%s DSID:%s MP3 creation failed (lame return code:%d).' % (obj.pid, dsid, r))
-
-    rmtree(directory, ignore_errors=True)
-    return r
-    '''
+        inDirectory=inPath
+        fileList=os.listdir(inPath)#get files in the dir
+        for path in os.listdir(inPath):
+            pathLength=len(path)
+            #remove non applicable file entries
+            if path[(pathLength-4):pathLength]!='.wav':
+                fileList.remove(path)
+    
+    for fileName in fileList:
+        
+        #if fileNameOut was not in outPath make one up
+        if os.path.isdir(outPath)==True:
+            fileNameOut=fileName[0:fileName.rindex('.')]+'.mp3'
+        filePathIn=os.path.join(inDirectory,fileName)
+        filePathOut=os.path.join(outDirectory,fileNameOut)
+        
+        #create the system call
+        if lameOpts=='defautl':
+            lameCall=['lame', '-mm', '--cbr', '-b48', filePathIn, filePathOut]
+        else:
+            lameCall=['lame']
+            lameCall.extend(lameOpts)
+            lameCall.extend(filePathIn, filePathOut)
+        
+        #make the system call  
+        r = subprocess.call(lameCall)
+        if r != 0:
+            logging.warning('mp3 creation failed (lame return code:%d for file input %s).' % ( r, filePathIn))
+        if r == 0:
+            logging.info('File converted: %s'% (filePathOut))
     return True
 
 '''
+This function will use ImageMagick to convert tifs to jpgs
 @param: inPath: source file or dir
 @param: outPath: destination file or dir
+@param imageMagicOpts: can be 'default' 'TN' or a list of options to use
 
-@return bool: true if successful false if not
+@return bool: true if successful [completion not conversion] false if not
 '''
-def pdf_to_jpg(inPath,outPath,*extraArgs):
-    '''
-    os.system('sips -s format jpeg \"tmpfile.pdf\" -z 150 150 --out \"tmpfile.jpg\" >/dev/null')
+def pdf_to_jpg(inPath,outPath,imageMagicOpts,*extraArgs):
+    #error checking
+    if checkStd(inPath,outPath,extraArgs,imageMagicOpts)==False:
+        return False
+    
+    #determine the output directory for the tempfile and for if there are multiple output files due to a directory batch
+    #put directory not created error handle here'''
+    if os.path.isdir(outPath)==False: #outPath is a file path
+        outDirectory,fileNameOut=os.path.split(outPath)
+        fileList=(fileNameOut)
+    else:#is a driectory
+        outDirectory=outPath
+    #create list of files to be converted
+    if os.path.isdir(inPath)==False:
+        inDirectory, fileListStr=os.path.split(inPath)
+        fileList=[fileListStr]
+    else:
+        inDirectory=inPath
+        fileList=os.listdir(inPath)#get files in the dir
+        for path in os.listdir(inPath):
+            pathLength=len(path)
+            #remove non tiff entries
+            if path[(pathLength-4):pathLength]!='.tif' and path[(pathLength-5):pathLength]!='.tiff' :
+                fileList.remove(path)
     
     
-    OR
-    
-    
-    
-    def create_thumbnail(obj, dsid, tnid):
-    # We receive a file and create a jpg thumbnail
-    directory, file = get_datastream_as_file(obj, dsid, "tmp")
-    
-    # Make a thumbnail with convert
-    r = subprocess.call(['convert', directory+'/'+file+'[0]', '-thumbnail', \
-         '%sx%s' % (tn_size[0], tn_size[1]), directory+'/'+tnid])
-   
-    if r == 0:
-        update_datastream(obj, tnid, directory+'/'+tnid, label='thumbnail', mimeType='image/jpeg')
-
-        # this is necessary because we are using curl, and the library caches 
-        try:
-            if (obj['TN'].label.split('/')[0] != 'image'): 
-                if(obj[dsid].mimeType.split('/')[0] == 'image'):
-                    update_datastream(obj, 'TN', directory+'/'+tnid, label=obj[dsid].mimeType, mimeType='image/jpeg')
-        except FedoraConnectionException:
-            update_datastream(obj, 'TN', directory+'/'+tnid, label=obj[dsid].mimeType, mimeType='image/jpeg')
-    else :
-        logging.warning('PID:%s DSID:%s Thumbnail creation failed (return code:%d).' % (obj.pid, dsid, r))
-    '''
+    for fileName in fileList:
+        
+        #if fileNameOut was not in outPath make one up
+        if os.path.isdir(outPath)==True:
+            fileNameOut=fileName[0:fileName.rindex('.')]+'.jpg'
+        filePathIn=os.path.join(inDirectory,fileName)
+        filePathOut=os.path.join(outDirectory,fileNameOut)
+        
+        #create image magick call
+        if imageMagicOpts=='defautl':
+            imageMagicCall=["convert", filePathIn, '-compress', 'JPEG', '-quality', '50%', filePathOut]
+        elif imageMagicOpts=='TN':
+            imageMagicCall=["convert", filePathIn, '-compress', 'JPEG', "-thumbnail", "85x110!", "-gravity", "center", "-extent", "85x110", filePathOut]
+        else:
+            imageMagicCall=["convert",filePathIn]
+            imageMagicCall.extend(imageMagicOpts)
+            imageMagicCall.append(filePathOut)
+        
+        #make image magic call  
+        r = subprocess.call(imageMagicCall)
+        if r != 0:
+            logging.warning('JPG creation failed (convert return code:%d for file input %s).' % ( r, filePathIn))
+        if r == 0:
+            logging.info('File converted: %s'% (filePathOut))
     return True
 
 '''
@@ -425,7 +564,6 @@ def checkPaths(pathIn, pathOut):
     elif os.path.lexists(os.path.dirname(pathOut))!=True:
         logging.error('The output path is invalid: '+pathOut)
         return False
-        
         
     #make sure that if the input path is a directory that the output path is also a directory
     if os.path.isdir(pathIn)==True and os.path.isdir(pathOut)==False:
