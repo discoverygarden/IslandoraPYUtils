@@ -2,7 +2,7 @@
 Created on Apr 5, 2011
 
 @author: William Panting
-@dependancies: Kakadu, ImageMagick, ABBYY CLI
+@dependancies: Kakadu, ImageMagick, ABBYY CLI, Lame, SWFTools, FFmpeg
 
 This is a Library that will make file conversions and manipulations like OCR using Python easier. 
 Primarily it will use Kakadu and ABBYY
@@ -13,8 +13,7 @@ Please make sure that the output directory already exists.
 
 TODO: make recursive option
 TODO: explore handling output directory creation
-TODO: explore input file type checking
-TODO: add more functions
+TODO: explore more input file type checking
 TODO: add video support
 TODO: add open office word doc conversions
 TODO: explore better conversion options
@@ -91,7 +90,7 @@ def tif_to_jp2(inPath,outPath,kakaduOpts=None,imageMagicOpts=None,*extraArgs):
         r = subprocess.call(kakaduCall)
     
        
-        #if Kakadu fails use less powerful Imagemagic on origional file
+        #if Kakadu fails [happens on certain color pellets] use less powerful ImageMagicK on original file
         if r != 0:
             logging.warning('JP2 creation failed. Trying alternative (kdu_compress return code:%d).' % (r) )
            
@@ -278,7 +277,7 @@ def tif_to_jpg(inPath,outPath, imageMagicOpts,*extraArgs):
         filePathOut=os.path.join(outDirectory,fileNameOut)
         
         #create image magick call
-        if imageMagicOpts=='defautl':
+        if imageMagicOpts=='default':
             imageMagicCall=["convert", filePathIn, '-compress', 'JPEG', '-quality', '50%', filePathOut]
         elif imageMagicOpts=='TN':
             imageMagicCall=["convert", filePathIn, '-compress', 'JPEG', "-thumbnail", "85x110!", "-gravity", "center", "-extent", "85x110", filePathOut]
@@ -341,13 +340,14 @@ def pdf_to_swf(inPath,outPath,swfToolsOpts,*extraArgs):
         filePathOut=os.path.join(outDirectory,fileNameOut)
         
         #create image magick call
-        if swfToolsOpts=='defautl':
+        if swfToolsOpts=='default':
             swfToolsCall=["pdf2swf", filePathIn, '-o', filePathOut,'-T 9', '-f', '-t', '-s', 'storeallcharacters', '-G']
         else:
             swfToolsCall=["pdf2swf",filePathIn,'-o', filePathOut]
             swfToolsCall.extend(swfToolsOpts)
         #make the system call  
         r = subprocess.call(swfToolsCall)
+        #move to bitmap because swftools fails on very large files otherwise
         if swfToolsOpts=='default' and r!=0:
             logging.warning('PDF creation failed (SWFTools return code:%d for file input %s: Trying alternative.).' % ( r, filePathIn))
             swfToolsCall=["pdf2swf", filePathIn, '-o', filePathOut,'-T 9', '-f', '-t', '-s', 'storeallcharacters', '-G', '-s', 'poly2bitmap']
@@ -405,7 +405,7 @@ def wav_to_ogg(inPath,outPath,FFmpegOpts,*extraArgs):
         filePathOut=os.path.join(outDirectory,fileNameOut)
         
         #create the system call
-        if FFmpegOpts=='defautl':
+        if FFmpegOpts=='default':
             FFmpegCall=['ffmpeg', '-i', filePathIn, '-acodec', 'libvorbis', '-ab', '48k', filePathOut]
         else:
             FFmpegCall=['ffmpeg', '-i', filePathIn]
@@ -465,12 +465,12 @@ def wav_to_mp3(inPath,outPath,lameOpts,*extraArgs):
         filePathOut=os.path.join(outDirectory,fileNameOut)
         
         #create the system call
-        if lameOpts=='defautl':
+        if lameOpts=='default':
             lameCall=['lame', '-mm', '--cbr', '-b48', filePathIn, filePathOut]
         else:
             lameCall=['lame']
             lameCall.extend(lameOpts)
-            lameCall.extend(filePathIn, filePathOut)
+            lameCall.extend([filePathIn, filePathOut])
         
         #make the system call  
         r = subprocess.call(lameCall)
@@ -523,7 +523,7 @@ def pdf_to_jpg(inPath,outPath,imageMagicOpts,*extraArgs):
         filePathOut=os.path.join(outDirectory,fileNameOut)
         
         #create image magick call
-        if imageMagicOpts=='defautl':
+        if imageMagicOpts=='default':
             imageMagicCall=["convert", filePathIn, '-compress', 'JPEG', '-quality', '50%', filePathOut]
         elif imageMagicOpts=='TN':
             imageMagicCall=["convert", filePathIn, '-compress', 'JPEG', "-thumbnail", "85x110!", "-gravity", "center", "-extent", "85x110", filePathOut]
