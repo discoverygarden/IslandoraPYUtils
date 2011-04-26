@@ -2,7 +2,7 @@
 Created on Apr 5, 2011
 
 @author: William Panting
-@dependancies: Kakadu, ImageMagick, ABBYY CLI, Lame, SWFTools, FFmpeg
+@dependencies: Kakadu, ImageMagick, ABBYY CLI, Lame, SWFTools, FFmpeg
 
 This is a Library that will make file conversions and manipulations like OCR using Python easier. 
 Primarily it will use Kakadu and ABBYY
@@ -11,11 +11,11 @@ but it will fall back on ImageMagick if Kakadu fails and for some conversions Ka
 Used scripts created by Jonathan Green as the starting piont.
 Please make sure that the output directory already exists.
 
+TODO: add video support
+TODO: add open office word doc conversions
 TODO: make recursive option
 TODO: explore handling output directory creation
 TODO: explore more input file type checking
-TODO: add video support
-TODO: add open office word doc conversions
 TODO: explore better conversion options
 TODO: explore more backup solutions
 '''
@@ -140,7 +140,7 @@ def tif_OCR(inPath,outPath,fileTypeOpts,inputOpts=None,*extraArgs):
         return False
   '''
         #error checking, does not take TN
-    if checkStd(inPath,outPath,extraArgs,inputOpts)==False:
+    if checkPaths(inPath,outPath)==False:
         return False
     if fileTypeOpts=='TN' or inputOpts=='TN':
         logging.error('This function tif_to_jp2 does not accept the \'TN\' keyword')
