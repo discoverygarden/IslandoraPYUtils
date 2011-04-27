@@ -19,22 +19,8 @@ TODO: explore more input file type checking
 TODO: explore better conversion options
 TODO: explore more backup solutions
 '''
-import logging, subprocess, os, DocumentConverter
-'''
-This function uses DocumentConverter to convert 
-x files to Y files
+import logging, subprocess, os
 
-@param inPath: source file or dir
-@param outPath: destination file or dir
-@param ooPort: the port that open office is listening on 
-
-@return bool: true if successful [completion not conversion] false if not
-'''
-def ooConverter1(inPath,outPath,ooPort,*extraArgs):
-    ooObj=DocumentConverter.DocumentConverter()
-    
-    
-    return True
 '''
 Converts tiff to jp2
 
