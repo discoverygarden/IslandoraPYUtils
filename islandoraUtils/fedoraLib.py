@@ -3,7 +3,8 @@ Created on Apr 20, 2011
 
 @author: William Panting
 '''
-import string, re, random
+import string, re, random, subprocess
+from urllib import quote
 
 '''
 A very aptly named function that will take any string and make it conform [via hack and slash]
@@ -35,3 +36,24 @@ def mangle_dsid(dsid):
             dsid += random.choice(string.letters)
 
     return dsid
+'''
+This function uses curl to add a datastream to Fedora because of a bug in the pyfcrepo library, that creates unnecessary failures with ugly closed sockets.
+The bug could be related to the use of httplib.
+
+@author Alexander Oneil
+
+@param obj:
+@param dsid:
+@param filename:
+@param label:
+@param mimeType:
+@param controlGroup:
+
+@return the status of the curl subprocess call
+'''
+def update_datastream(obj, dsid, filename, label='', mimeType='', controlGroup='M'): 
+    # Using curl due to an incompatibility with the pyfcrepo library.
+    conn = obj.client.api.connection 
+    return 0 == subprocess.call(['curl', '-i', '-H', '-XPOST', '%(url)s/objects/%(pid)s/datastreams/%(dsid)s?dsLabel=%(label)s&mimeType=%(mimetype)s&controlGroup=%(controlgroup)s'
+                           % {'url': conn.url, 'pid': obj.pid, 'dsid': dsid, 'label': quote(label), 'mimetype': mimeType, 'controlgroup': controlGroup }, 
+                           '-F', 'file=@%(filename)s' % {'filename': filename}, '-u', '%(username)s:%(password)s' % {'username': conn.username, 'password': conn.password}])
