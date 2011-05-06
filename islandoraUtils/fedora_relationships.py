@@ -329,7 +329,7 @@ class rels_int(fedora_relationship):
     
     def update(self):
         """Save the updated rels_int XML to the fedora object."""
-        return fedora_relationship.update()
+        return fedora_relationship.update(self)
 
 
 class rels_ext(fedora_relationship):
@@ -431,7 +431,7 @@ class rels_ext(fedora_relationship):
     
     def update(self):
         """Save the updated rels_ext XML to the fedora object."""
-        return fedora_relationship.update()
+        return fedora_relationship.update(self)
 
 
 # do some basic testing of the functionality
