@@ -7,7 +7,7 @@ This file is meant to help with file manipulations/alterations.
 from pyPdf import PdfFileWriter, PdfFileReader
 import logging, os
 '''
-This function is meant to combine multiple pdf files
+This function is meant to combine multiple pdf files, I'm not sure I like the pyPdf module's issues atm, hope it updates soon
 
 @author: William Panting
 
@@ -18,6 +18,7 @@ This function is meant to combine multiple pdf files
 '''
 def appendPDFwithPDF(outFile,toAppend):
     pdfWriter=PdfFileWriter()
+    
     #out file must not be a directory
     if os.path.isdir(outFile):
         logging.error('Input error: outFile cannot be a directory.')
@@ -30,13 +31,15 @@ def appendPDFwithPDF(outFile,toAppend):
         #if toAppend is a list prepend outDir to it
         elif isinstance(toAppend,list):
             toAppend.insert(0,outFile)
-        else:
-            logging.error('Error with input: '+str(toAppend)+' --The input to Append must be a file path or list of file paths.')
-            return False
+
     #if toAppend is a string
     if isPDF(toAppend):
-        toAppendReader=PdfFileReader(file(toAppend, "rb"))
-        numPages=toAppendReader.getNumPages()
+        toAppendReader=PdfFileReader(open(toAppend, "rb"))
+        try:
+            numPages=toAppendReader.getNumPages()
+        except Exception: #this try catch handles where the pyPDF lib mistakenly thinks a pdf is encrypted, will not work with encryption 3,4
+            toAppendReader.decrypt('')
+            numPages=toAppendReader.getNumPages()
         #loop over pages adding them one by one
         pageCount=0
         while pageCount<numPages:
@@ -50,16 +53,26 @@ def appendPDFwithPDF(outFile,toAppend):
                 logging.error('Error with input: '+str(path)+' --Each member of the list to append must be a valid pdf.')
                 return False
             #loop over each page appending it
-            toAppendReader=PdfFileReader(file(path, "rb"))
-            numPages=toAppendReader.getNumPages()
+            toAppendReader=PdfFileReader(open(path, "rb"))
+            try:
+                numPages=toAppendReader.getNumPages()
+            except Exception: #this try catch handles where the pyPDF lib mistakenly thinks a pdf is encrypted, will not work with encryption 3,4
+                toAppendReader.decrypt('')
+                numPages=toAppendReader.getNumPages()
             #loop over pages adding them one by one
             pageCount=0
             while pageCount<numPages:
                 pdfWriter.addPage(toAppendReader.getPage(pageCount))
                 pageCount+=1
+    else:
+        logging.error('Error with input: '+str(toAppend)+' --The input to Append must be a file path or list of file paths.')
+        return False
     
-    #write the concatenated file
-    pdfStream = file(outFile, "wb")
+    #write the concatenated file, must open for read write or if it exists or you get an exception in pyPdf
+    if(os.path.lexists(outFile)):
+        pdfStream = open(outFile, "r+b")
+    else:
+        pdfStream= open(outFile,'wb')
     pdfWriter.write(pdfStream)
     
     return True
