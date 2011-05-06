@@ -33,7 +33,7 @@ def appendPDFwithPDF(outFile,toAppend):
         for path in toAppend:
             #verify list as pdfs
             if isPDF(path)==False:
-                logging.error('Each member of the list to append must be a valid pdf.')
+                logging.error('Error with input: '+str(path)+' --Each member of the list to append must be a valid pdf.')
                 return False
             #loop over each page appending it
             toAppendReader=PdfFileReader(file(path, "rb"))
@@ -44,7 +44,7 @@ def appendPDFwithPDF(outFile,toAppend):
                 pdfWriter.addPage(toAppendReader.getPage(pageCount))
                 pageCount=+1
     else:
-        logging.error('The input to Append must be a file path or list of file paths.')
+        logging.error('Error with input: '+str(toAppend)+' --The input to Append must be a file path or list of file paths.')
         return False
     
     #write the concatenated file
