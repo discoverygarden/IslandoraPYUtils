@@ -24,10 +24,10 @@ def appendPDFwithPDF(outFile,toAppend):
         toAppendReader=PdfFileReader(file(toAppend, "rb"))
         numPages=toAppendReader.getNumPages()
         #loop over pages adding them one by one
-        pageCount=1
+        pageCount=0
         while pageCount<numPages:
             pdfWriter.addPage(toAppendReader.getPage(pageCount))
-            pageCount=+1
+            pageCount+=1
     #if toAppend is a list of paths
     elif isinstance(toAppend, list):
         for path in toAppend:
@@ -39,10 +39,10 @@ def appendPDFwithPDF(outFile,toAppend):
             toAppendReader=PdfFileReader(file(path, "rb"))
             numPages=toAppendReader.getNumPages()
             #loop over pages adding them one by one
-            pageCount=1
+            pageCount=0
             while pageCount<numPages:
                 pdfWriter.addPage(toAppendReader.getPage(pageCount))
-                pageCount=+1
+                pageCount+=1
     else:
         logging.error('Error with input: '+str(toAppend)+' --The input to Append must be a file path or list of file paths.')
         return False
