@@ -18,7 +18,21 @@ This function is meant to combine multiple pdf files
 '''
 def appendPDFwithPDF(outFile,toAppend):
     pdfWriter=PdfFileWriter()
-    
+    #out file must not be a directory
+    if os.path.isdir(outFile):
+        logging.error('Input error: outFile cannot be a directory.')
+        return False
+    #if outfile is a file then it needs to be added to the output page by page just like the other pdfs
+    elif os.path.isfile(outFile):
+        #if toAppend is a string then make it into a list [outDir,toAppend]
+        if isinstance(toAppend,str):
+            toAppend=[outFile,toAppend]
+        #if toAppend is a list prepend outDir to it
+        elif isinstance(toAppend,list):
+            toAppend.insert(0,outFile)
+        else:
+            logging.error('Error with input: '+str(toAppend)+' --The input to Append must be a file path or list of file paths.')
+            return False
     #if toAppend is a string
     if isPDF(toAppend):
         toAppendReader=PdfFileReader(file(toAppend, "rb"))
@@ -43,9 +57,6 @@ def appendPDFwithPDF(outFile,toAppend):
             while pageCount<numPages:
                 pdfWriter.addPage(toAppendReader.getPage(pageCount))
                 pageCount+=1
-    else:
-        logging.error('Error with input: '+str(toAppend)+' --The input to Append must be a file path or list of file paths.')
-        return False
     
     #write the concatenated file
     pdfStream = file(outFile, "wb")
