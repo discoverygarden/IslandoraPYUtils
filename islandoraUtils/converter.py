@@ -21,7 +21,9 @@ TODO: explore more backup solutions
 '''
 import logging, subprocess, os
 
-'''
+
+def tif_to_jp2(inPath,outPath,kakaduOpts=None,imageMagicOpts=None,*extraArgs):
+    '''
 Converts tiff to jp2
 
 @param inPath: source file or dir
@@ -31,7 +33,6 @@ Converts tiff to jp2
 
 @return bool: true if successful [completion not conversion] false if not
 '''
-def tif_to_jp2(inPath,outPath,kakaduOpts=None,imageMagicOpts=None,*extraArgs):
     
     #error checking, does not take TN
     if checkStd(inPath,outPath,extraArgs,kakaduOpts,imageMagicOpts)==False:
@@ -115,7 +116,9 @@ def tif_to_jp2(inPath,outPath,kakaduOpts=None,imageMagicOpts=None,*extraArgs):
         
     return True
 
-'''
+
+def tif_OCR(inPath,outPath,fileTypeOpts,inputOpts=None,*extraArgs):
+    '''
 ABBYY OCR CLI Command Line Tool support
 
 @param: inPath: source file or dir
@@ -127,17 +130,6 @@ ABBYY OCR CLI Command Line Tool support
 
 TODO: make default output options for all output file types 
 '''
-def tif_OCR(inPath,outPath,fileTypeOpts,inputOpts=None,*extraArgs):
-    '''
-    #quick and dirty parameter input check
-    if(isinstance(fileTypeOpts, dict)!=True and fileTypeOpts!='default')\
-    or(isinstance(inputOpts, list)!=True and inputOpts!='default' and inputOpts!=None)\
-    or isinstance(inPath, str)!=True \
-    or isinstance(outPath, str)!=True\
-    or len(extraArgs)!=0:        
-        logging.error('Bad function call to tif_OCR')
-        return False
-  '''
         #error checking, does not take TN
     if checkPaths(inPath,outPath)==False:
         return False
@@ -233,7 +225,9 @@ def tif_OCR(inPath,outPath,fileTypeOpts,inputOpts=None,*extraArgs):
             logging.info('File OCR\'d: %s'% (absPathFileIn))
     return True
 
-'''
+
+def tif_to_jpg(inPath,outPath, imageMagicOpts,*extraArgs):
+    '''
 This function will use ImageMagick to convert tifs to jpgs
 @param: inPath: source file or dir
 @param: outPath: destination file or dir
@@ -241,7 +235,6 @@ This function will use ImageMagick to convert tifs to jpgs
 
 @return bool: true if successful false if not
 '''
-def tif_to_jpg(inPath,outPath, imageMagicOpts,*extraArgs):
     #error checking
     if checkStd(inPath,outPath,extraArgs,imageMagicOpts)==False:
         return False
@@ -293,7 +286,9 @@ def tif_to_jpg(inPath,outPath, imageMagicOpts,*extraArgs):
             logging.info('File converted: %s'% (filePathOut))
     return True
 
-'''
+
+def pdf_to_swf(inPath,outPath,swfToolsOpts,*extraArgs):
+    '''
 This function will use swftools to convert pdf files to swfs
 @param: inPath: source file or dir
 @param: outPath: destination file or dir
@@ -301,7 +296,6 @@ This function will use swftools to convert pdf files to swfs
 
 @return bool: true if successful [completion not conversion] false if not
 '''
-def pdf_to_swf(inPath,outPath,swfToolsOpts,*extraArgs):
 #error checking
     if checkStd(inPath,outPath,extraArgs,swfToolsOpts)==False:
         return False
@@ -358,7 +352,9 @@ def pdf_to_swf(inPath,outPath,swfToolsOpts,*extraArgs):
             logging.info('File converted: %s'% (filePathOut))
     return True
 
-'''
+
+def wav_to_ogg(inPath,outPath,FFmpegOpts,*extraArgs):
+    '''
 This function will use FFmpeg to turn a wav file into an ogg file
 @param: inPath: source file or dir
 @param: outPath: destination file or dir
@@ -366,7 +362,6 @@ This function will use FFmpeg to turn a wav file into an ogg file
 
 @return bool: true if successful [completion not conversion] false if not
 '''
-def wav_to_ogg(inPath,outPath,FFmpegOpts,*extraArgs):
 #error checking
     if checkStd(inPath,outPath,extraArgs,FFmpegOpts)==False:
         return False
@@ -419,7 +414,9 @@ def wav_to_ogg(inPath,outPath,FFmpegOpts,*extraArgs):
             logging.info('File converted: %s'% (filePathOut))
     return True
 
-'''
+
+def wav_to_mp3(inPath,outPath,lameOpts,*extraArgs):
+    '''
 This function uses the lame tool to make wav files into mp3 files
 @param: inPath: source file or dir
 @param: outPath: destination file or dir
@@ -427,7 +424,6 @@ This function uses the lame tool to make wav files into mp3 files
 
 @return bool: true if successful [completion not conversion] false if not
 '''
-def wav_to_mp3(inPath,outPath,lameOpts,*extraArgs):
 #error checking
     if checkStd(inPath,outPath,extraArgs,lameOpts)==False:
         return False
@@ -479,7 +475,9 @@ def wav_to_mp3(inPath,outPath,lameOpts,*extraArgs):
             logging.info('File converted: %s'% (filePathOut))
     return True
 
-'''
+
+def pdf_to_jpg(inPath,outPath,imageMagicOpts,*extraArgs):
+    '''
 This function will use ImageMagick to convert tifs to jpgs
 @param: inPath: source file or dir
 @param: outPath: destination file or dir
@@ -487,7 +485,6 @@ This function will use ImageMagick to convert tifs to jpgs
 
 @return bool: true if successful [completion not conversion] false if not
 '''
-def pdf_to_jpg(inPath,outPath,imageMagicOpts,*extraArgs):
     #error checking
     if checkStd(inPath,outPath,extraArgs,imageMagicOpts)==False:
         return False
@@ -543,13 +540,16 @@ def pdf_to_jpg(inPath,outPath,imageMagicOpts,*extraArgs):
 collection of helper functions used by the API functions
 '''
 
-'''
+
+def checkPaths(pathIn, pathOut):
+    '''
 Does some standardized error checking on the input and output path arguments
+
 @param pathIn: input path to check
 @param pathOut: output path to check
+
 @return bool: return false if the arguments are not valid, true if they are
 '''
-def checkPaths(pathIn, pathOut):
     #make sure that the indicated paths are valid
     if os.path.lexists(pathIn)==False:
         logging.error('The indicated input path is not valid: '+pathIn)
@@ -571,37 +571,46 @@ def checkPaths(pathIn, pathOut):
     
     return True
 
-'''
+
+def checkOpts(optsIn):
+    '''
 Does some standardized checking on command line option arguments
+
 @param optsIn: option set to check
+
 @return bool: return false if the arguments are not valid, true if they are
 '''
-def checkOpts(optsIn):
     if isinstance(optsIn, list)==False and optsIn!='default' and optsIn!='TN':
         logging.error('CommandLine arguments must be lists or a known keyword like \'TN\' or \'default\'' )
         return False
     return True
 
-'''
+
+def checkExtraArgs(args):
+    '''
 Does a standard check to see if too many args was passed in
+
 @param args: list holding the *args to be checked
+
 @return bool: return false if the arguments are not valid, true if they are
 '''
-def checkExtraArgs(args):
     if len(args)>0:
         logging.error('Too many arguments supplied:'+args)
         return False
     return True
 
-'''
+
+def checkStd(pathIn,pathOut,args,*opts):
+    '''
 Wrapper function that calls all standard error checking
+
 @param pathIn: input path to check
 @param pathOut: output path to check
 @param args: list holding the *args to be checked
 @param optsIn: option set to check
+
 @return bool: return false if the arguments are not valid, true if they are
 '''
-def checkStd(pathIn,pathOut,args,*opts):
     if checkPaths(pathIn,pathOut)==False:
         return False
     if checkExtraArgs(args)==False:

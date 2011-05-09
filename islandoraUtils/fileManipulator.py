@@ -6,7 +6,9 @@ This file is meant to help with file manipulations/alterations.
 '''
 from pyPdf import PdfFileWriter, PdfFileReader
 import logging, os
-'''
+
+def appendPDFwithPDF(outFile,toAppend):
+    '''
 This function is meant to combine multiple pdf files, I'm not sure I like the pyPdf module's issues atm, hope it updates soon
 
 @author: William Panting
@@ -16,7 +18,6 @@ This function is meant to combine multiple pdf files, I'm not sure I like the py
                  or an ordered list of multiple strings representing files
 @return bool: true if successful false if not
 '''
-def appendPDFwithPDF(outFile,toAppend):
     pdfWriter=PdfFileWriter()
     
     #out file must not be a directory
@@ -77,13 +78,14 @@ def appendPDFwithPDF(outFile,toAppend):
     
     return True
 
-'''
+
+def isPDF(input):
+    '''
 This function is a helper function that validates user input as a valid pdf file
 @author William Panting
 @param input: path to anylise for pdf'ness
 @return bool: true if the input is a path to a pdf false if not
 '''
-def isPDF(input):
     if isinstance(input, str):
         if os.path.isfile(input) and input[input.rindex('.'):len(input)]=='.pdf':
             return True

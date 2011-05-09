@@ -6,7 +6,9 @@ Created on Apr 20, 2011
 import string, re, random, subprocess
 from urllib import quote
 
-'''
+
+def mangle_dsid(dsid):
+    '''
 A very aptly named function that will take any string and make it conform [via hack and slash]
 to Fedora's Datastream ID naming requirements 
 
@@ -16,7 +18,6 @@ to Fedora's Datastream ID naming requirements
 
 @return dsid: Mangled ID
 '''
-def mangle_dsid(dsid):
     find = '[^a-zA-Z0-9\.\_\-]';
     replace = '';
     dsid = re.sub(find, replace, dsid)
@@ -36,7 +37,9 @@ def mangle_dsid(dsid):
             dsid += random.choice(string.letters)
 
     return dsid
-'''
+
+def update_datastream(obj, dsid, filename, label='', mimeType='', controlGroup='M'):
+    '''
 This function uses curl to add a datastream to Fedora because of a bug in the pyfcrepo library, that creates unnecessary failures with ugly closed sockets.
 The bug could be related to the use of httplib.
 
@@ -51,7 +54,6 @@ The bug could be related to the use of httplib.
 
 @return the status of the curl subprocess call
 '''
-def update_datastream(obj, dsid, filename, label='', mimeType='', controlGroup='M'): 
     # Using curl due to an incompatibility with the pyfcrepo library.
     conn = obj.client.api.connection 
     return 0 == subprocess.call(['curl', '-i', '-H', '-XPOST', '%(url)s/objects/%(pid)s/datastreams/%(dsid)s?dsLabel=%(label)s&mimeType=%(mimetype)s&controlGroup=%(controlgroup)s'
