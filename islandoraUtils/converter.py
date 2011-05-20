@@ -536,6 +536,77 @@ This function will use ImageMagick to convert tifs to jpgs
             logging.info('File converted: %s'% (filePathOut))
     return True
 
+def exif_to_xml(inPath, outPath, *extraArgs):
+    '''
+    This function will extract the entire exif from an image and send it to an xml file, also for full directories
+    @param input: file or directory to pipe from
+    @param output: file or directory to pipe to
+    @param extList (extraArgs[0]): list of file extensions to perform operations on, only needs to be provided with inPath is a directory
+    @return bool: true on completion of funciton false on cought error
+    TODO: add options
+    '''
+    #if it exists extract the extList var from extraArgs
+    if len(extraArgs)>0:
+        extList=extraArgs[0]
+        extraArgs=extraArgs[1:len(extraArgs)]
+        if isinstance(extList, list)==False:
+            logging.error("The extension List must be a list not:"+str(extList))
+            return False
+    #standard error checking
+    if checkStd(inPath,outPath,extraArgs)==False:
+        return False
+    #determine the output directory for the tempfile and for if there are multiple output files due to a directory batch
+    #put directory not created error handle here'''
+    if os.path.isdir(outPath)==False: #outPath is a file path
+        outDirectory,fileNameOut=os.path.split(outPath)
+        fileList=(fileNameOut)
+    else:#is a driectory
+        outDirectory=outPath
+    #create list of files to be converted
+    if os.path.isdir(inPath)==False:
+        inDirectory, fileListStr=os.path.split(inPath)
+        fileList=[fileListStr]
+    else:
+        inDirectory=inPath
+        fileList=os.listdir(inPath)#get files in the dir
+        for path in os.listdir(inPath):
+            pathLength=len(path)
+            #remove files that do not have an indicated extension from the list to work on
+            for ext in extList:
+                #use of rfind is because I don't want the ValueError thrown from rindex on failure to find the substr
+                if path.rfind(ext)==-1 or path.rfind(ext)!=(pathLength-len(ext)):
+                    fileList.remove(path)
+                    print("removing path: "+path)
+    
+    for fileName in fileList:
+        
+        #if fileNameOut was not in outPath make one up
+        if os.path.isdir(outPath)==True:
+            print('checking fileName: ' + fileName)
+            fileNameOut=fileName[0:fileName.rindex('.')]+'.xml'
+        filePathIn=os.path.join(inDirectory,fileName)
+        filePathOut=os.path.join(outDirectory,fileNameOut)
+        
+        #create exiftool call
+        exiftoolCall=['exiftool','-X',filePathIn]
+        
+        #make exiftool call  (using the Popen constructor because we need to do further work with the obj)
+        r = subprocess.Popen(exiftoolCall,stdout=subprocess.PIPE)
+        #grab exiftool output
+        exif_value = r.communicate()[0]
+        #put exiftool output in the file
+        rFile=open(filePathOut,'w')
+        rFile.write(exif_value)
+        
+        if r.poll() != 0:
+            logging.warning('EXIF XML creation failed (convert return code:%d for file input %s).' % ( r, filePathIn))
+        if r.poll() == 0:
+            logging.info('File converted: %s'% (filePathOut))
+    
+    
+    return True
+    
+    
 '''
 collection of helper functions used by the API functions
 '''
@@ -607,7 +678,7 @@ Wrapper function that calls all standard error checking
 @param pathIn: input path to check
 @param pathOut: output path to check
 @param args: list holding the *args to be checked
-@param optsIn: option set to check
+@param *opts: option set to check
 
 @return bool: return false if the arguments are not valid, true if they are
 '''
