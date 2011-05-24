@@ -583,7 +583,6 @@ def exif_to_xml(inPath, outPath, *extraArgs):
         
         #if fileNameOut was not in outPath make one up
         if os.path.isdir(outPath)==True:
-            print('checking fileName: ' + fileName)
             fileNameOut=fileName[0:fileName.rindex('.')]+'.xml'
         filePathIn=os.path.join(inDirectory,fileName)
         filePathOut=os.path.join(outDirectory,fileNameOut)
@@ -615,9 +614,6 @@ This function will take a MODS xml file and transform it into a SOLR xml file.
 @param outPath: destination file or dir
 
 @return bool: True on successful completion of function False on errors
-
-TODO: check namespace as mods
-TODO: add directory support
 '''
     #error checking
     if checkStd(inPath,outPath,extraArgs)==False:
@@ -1416,17 +1412,42 @@ TODO: add directory support
     xslt_root = etree.XML(mods_to_solr)
     transform = etree.XSLT(xslt_root)
     
-    #read mods file
-    modsURL=inPath
-    solrOut=outPath
-    modsFile=open(modsURL,'r')
-    #modsString=modsFile.read()
-    doc = etree.parse(modsFile)
-    #translate
-    transform_result = transform(doc)
-    #write solr file
-    solrURL=open (solrOut,'w')
-    solrURL.write(str(transform_result))
+    #determine the output directory for the tempfile and for if there are multiple output files due to a directory batch
+    #put directory not created error handle here'''
+    if os.path.isdir(outPath)==False: #outPath is a file path
+        outDirectory,fileNameOut=os.path.split(outPath)
+        fileList=(fileNameOut)
+    else:#is a driectory
+        outDirectory=outPath
+    #create list of files to be converted
+    if os.path.isdir(inPath)==False:
+        inDirectory, fileListStr=os.path.split(inPath)
+        fileList=[fileListStr]
+    else:
+        inDirectory=inPath
+        fileList=os.listdir(inPath)#get files in the dir
+        for path in os.listdir(inPath):
+            if path[(len(path)-4):len(path)]!='.xml' :
+                fileList.remove(path)
+            elif xmlib.rootHasNamespace(os.path.join(inPath,path), 'http://www.loc.gov/mods/v3')!=True:
+                fileList.remove(path)
+            #remove files that are not xml that have the mods namespace
+    
+    for fileName in fileList:
+        #if fileNameOut was not in outPath make one up
+        if os.path.isdir(outPath)==True:
+            fileNameOut=fileName[0:fileName.rindex('.')]+'_solr.xml'
+        #cunstruct the paths
+        filePathIn=os.path.join(inDirectory,fileName)
+        filePathOut=os.path.join(outDirectory,fileNameOut)
+        #read mods file
+        modsFile=open(filePathIn,'r')
+        doc = etree.parse(modsFile)
+        #translate
+        transform_result = transform(doc)
+        #write solr file
+        solrOut=open (filePathOut,'w')
+        solrOut.write(str(transform_result))
     
     
     return True   
