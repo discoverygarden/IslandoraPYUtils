@@ -1199,18 +1199,18 @@ This function will take a MODS xml file and transform it into a SOLR xml file.
     
     <xsl:choose>
     <xsl:when test="$date_splat_w3c_key_date">
-           <xsl:element name="field"><xsl:attribute name="name">raw_date</xsl:attribute>
+           <xsl:element name="field"><xsl:attribute name="name">raw_d</xsl:attribute>
           <xsl:value-of select="$date_splat_w3c_key_date"/>
            </xsl:element>
     </xsl:when>
     <xsl:when test="$date_splat_key_date">
-           <xsl:element name="field"><xsl:attribute name="name">raw_date</xsl:attribute>
+           <xsl:element name="field"><xsl:attribute name="name">raw_d</xsl:attribute>
           <xsl:value-of select="$date_splat_key_date"/>
            </xsl:element>
     </xsl:when>
     <xsl:when test="$date_created">
         <xsl:for-each select="$date_created">
-                <xsl:element name="field"><xsl:attribute name="name">raw_date</xsl:attribute>
+                <xsl:element name="field"><xsl:attribute name="name">raw_d</xsl:attribute>
                     <xsl:choose>
                     <xsl:when test="@point='start'">
                       <xsl:value-of select="."/>
@@ -1226,7 +1226,7 @@ This function will take a MODS xml file and transform it into a SOLR xml file.
         </xsl:when>
     <xsl:when test="$date_issued">
         <xsl:for-each select="$date_issued">
-                <xsl:element name="field"><xsl:attribute name="name">raw_date</xsl:attribute>
+                <xsl:element name="field"><xsl:attribute name="name">raw_d</xsl:attribute>
                     <xsl:choose>
                     <xsl:when test="@point='start'">
                       <xsl:value-of select="."/>
@@ -1245,7 +1245,7 @@ This function will take a MODS xml file and transform it into a SOLR xml file.
     </xsl:when>
     <xsl:when test="$date_copyrighted">
         <xsl:for-each select="$date_copyrighted">
-                <xsl:element name="field"><xsl:attribute name="name">raw_date</xsl:attribute>
+                <xsl:element name="field"><xsl:attribute name="name">raw_d</xsl:attribute>
                     <xsl:choose>
                     <xsl:when test="@point='start'">
                       <xsl:value-of select="."/>
@@ -1264,7 +1264,7 @@ This function will take a MODS xml file and transform it into a SOLR xml file.
     </xsl:when>
     <xsl:when test="$date_other">
         <xsl:for-each select="$date_other">
-                <xsl:element name="field"><xsl:attribute name="name">raw_date</xsl:attribute>
+                <xsl:element name="field"><xsl:attribute name="name">raw_d</xsl:attribute>
                     <xsl:choose>
                     <xsl:when test="@point='start'">
                       <xsl:value-of select="."/>
