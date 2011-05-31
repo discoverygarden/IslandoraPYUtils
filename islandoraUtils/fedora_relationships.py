@@ -112,6 +112,8 @@ class fedora_relationship_element():
             pred_obj = None
         elif type(predicate) == types.StringType:
             pred_obj = rels_predicate(self.nsalias,predicate)
+        elif type(predicate) == types.UnicodeType:#unicode strings will be common, handle by forcing utf8
+            pred_obj = rels_predicate(self.nsalias,str(predicate))
         else:
             pred_obj = predicate
             if(pred_obj.alias == None):
@@ -241,6 +243,8 @@ class rels_int(fedora_relationship):
             obj = None
         elif type(object) == types.StringType:
             obj = rels_object('%s/%s'%(self.obj.pid,object), rels_object.DSID)
+        elif type(object) == types.UnicodeType:#unicode strings will be common, handle by forcing utf8
+            obj = rels_object('%s/%s'%(self.obj.pid,str(object)), rels_object.DSID)
         else:
             if object.type == rels_object.DSID:
                 obj = copy.copy(object)
@@ -356,6 +360,8 @@ class rels_ext(fedora_relationship):
             obj = None
         elif type(object) == types.StringType:
             obj = rels_object(object, rels_object.PID)
+        elif type(object) == types.UnicodeType:#unicode strings will be common, handle by forcing utf8
+            obj = rels_object(str(object), rels_object.PID)
         else:
             if object.type == rels_object.PID or object.type == rels_object.LITERAL:
                 obj = copy.copy(object)
