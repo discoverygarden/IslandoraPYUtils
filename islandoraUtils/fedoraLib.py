@@ -40,7 +40,9 @@ to Fedora's Datastream ID naming requirements
 
 def update_datastream(obj, dsid, filename, label='', mimeType='', controlGroup='M'):
     '''
-This function uses curl to add a datastream to Fedora because [needs confirmation] of a bug in the pyfcrepo library, that creates unnecessary failures with ugly closed sockets.
+This function uses curl to add a datastream to Fedora because 
+of a bug [we need confirmation that this is the bug Alexander referenced in Federa Microservices' code]
+in the pyfcrepo library, that creates unnecessary failures with closed sockets.
 The bug could be related to the use of httplib.
 
 @author Alexander Oneil
@@ -58,4 +60,4 @@ The bug could be related to the use of httplib.
     conn = obj.client.api.connection 
     return 0 == subprocess.call(['curl', '-i', '-H', '-XPOST', '%(url)s/objects/%(pid)s/datastreams/%(dsid)s?dsLabel=%(label)s&mimeType=%(mimetype)s&controlGroup=%(controlgroup)s'
                            % {'url': conn.url, 'pid': obj.pid, 'dsid': dsid, 'label': quote(label), 'mimetype': mimeType, 'controlgroup': controlGroup }, 
-                           '-F', 'file=@%(filename)s' % {'filename': filename}, '-u', '%(username)s:%(password)s' % {'username': conn.username, 'password': conn.password}])
+                           '--data-binary', '@%(filename)s' % {'filename': filename}, '-u', '%(username)s:%(password)s' % {'username': conn.username, 'password': conn.password}])
