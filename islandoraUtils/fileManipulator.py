@@ -83,7 +83,7 @@ def isPDF(input):
     '''
 This function is a helper function that validates user input as a valid pdf file
 @author William Panting
-@param input: path to anylise for pdf'ness
+@param input: path to analyse for pdf-ness
 @return bool: true if the input is a path to a pdf false if not
 '''
     if isinstance(input, str):
