@@ -5,6 +5,7 @@ Created on Apr 20, 2011
 '''
 import string, re, random, subprocess
 from urllib import quote
+import logging
 
 
 def mangle_dsid(dsid):
@@ -56,8 +57,28 @@ The bug could be related to the use of httplib.
 
 @return the status of the curl subprocess call
 '''
+    logger = logging.getLogger('islandoraUtils.fedoraLib.update_datastream')
+    
+    #Get the connection from the object.
+    conn = obj.client.api.connection
+    
+    info_dict = {
+        'url': conn.url, 
+        'username': conn.username, 'password': conn.password,
+        'pid': obj.pid, 'dsid': dsid, 
+        'label': quote(label), 'mimetype': mimeType, 'controlgroup': controlGroup, 
+        'filename': filename
+    }
+
     # Using curl due to an incompatibility with the pyfcrepo library.
-    conn = obj.client.api.connection 
-    return 0 == subprocess.call(['curl', '-i', '-H', '-XPOST', '%(url)s/objects/%(pid)s/datastreams/%(dsid)s?dsLabel=%(label)s&mimeType=%(mimetype)s&controlGroup=%(controlgroup)s'
-                           % {'url': conn.url, 'pid': obj.pid, 'dsid': dsid, 'label': quote(label), 'mimetype': mimeType, 'controlgroup': controlGroup }, 
-                           '--data-binary', '@%(filename)s' % {'filename': filename}, '-u', '%(username)s:%(password)s' % {'username': conn.username, 'password': conn.password}])
+    commands = ['curl', '-i', '-H', '-XPOST', '%(url)s/objects/%(pid)s/datastreams/%(dsid)s?dsLabel=%(label)s&mimeType=%(mimetype)s&controlGroup=%(controlgroup)s' % info_dict, 
+        '--data-binary', '@%(filename)s' % info_dict, '-u', 
+        '%(username)s:%(password)s' % info_dict]
+    
+    logger.debug("Updating/Adding datastream %(dsid)s to %(pid)s with mimetype %(mimetype)s" % info_dict)
+    if 0 == subprocess.call(commands):
+        logger.debug("%(pid)s/%(dsid)s updated!" % info_dict)
+        return True
+    else:
+        logger.error('Error updating %(pid)s/%(dsid)s via CURL!' % info_dict)
+        raise Exception("update_datastream CURL command failed!")

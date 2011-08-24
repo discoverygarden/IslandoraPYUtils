@@ -1,6 +1,7 @@
 from lxml import etree
 import types
 import copy
+import fcrepo #For type checking...
 
 class rels_namespace:
     def __init__(self, alias, uri):
@@ -362,6 +363,8 @@ class rels_ext(fedora_relationship):
             obj = rels_object(object, rels_object.PID)
         elif type(object) == types.UnicodeType:#unicode strings will be common, handle by forcing utf8
             obj = rels_object(str(object), rels_object.PID)
+        elif type(object) == fcrepo.object.FedoraObject:
+            obj = rels_object(object.pid, rels_object.PID)
         else:
             if object.type == rels_object.PID or object.type == rels_object.LITERAL:
                 obj = copy.copy(object)
