@@ -81,6 +81,9 @@ class fedora_relationship_element():
         self.root = etree.Element(self.rdf+'RDF', nsmap=self.nsmap)
     
     def toString(self):       
+        return '%s' % self
+        
+    def __str__(self):
         return etree.tostring(self.root, pretty_print=True)
 
     def _doXPathQuery(self, subject=None, predicate=None, object=None):

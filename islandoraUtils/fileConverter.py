@@ -28,15 +28,15 @@ from lxml import etree
 
 def tif_to_jp2(inPath,outPath,kakaduOpts=None,imageMagicOpts=None,*extraArgs):
     '''
-Converts tiff to jp2
+    Converts tiff to jp2
 
-@param inPath: source file or dir
-@param outPath: destination file or dir
-@param kakaduOpts: a list of options or a string 'default'
-@param imageMagicOpts: a list of options or a string 'default'  
+    @param inPath: source file or dir
+    @param outPath: destination file or dir
+    @param kakaduOpts: a list of options or a string 'default'
+    @param imageMagicOpts: a list of options or a string 'default'  
 
-@return bool: true if successful [completion not conversion] false if not
-'''
+    @return bool: true if successful [completion not conversion] false if not
+    '''
     
     #error checking, does not take TN
     if checkStd(inPath,outPath,extraArgs,kakaduOpts,imageMagicOpts)==False:
@@ -123,17 +123,17 @@ Converts tiff to jp2
 
 def tif_OCR(inPath,outPath,fileTypeOpts,inputOpts=None,*extraArgs):
     '''
-ABBYY OCR CLI Command Line Tool support
+    ABBYY OCR CLI Command Line Tool support
 
-@param: inPath: source file or dir
-@param: outPath: destination file or dir
-@param: inputOpts: the ABBYY command line options not associated with a specific file output tyep, can be None
-@param: fileTypeOpts: 1. a dictionary where the key is a file output type and the vale is a string 'default' or list of options, or 2. a string 'default'
+    @param: inPath: source file or dir
+    @param: outPath: destination file or dir
+    @param: inputOpts: the ABBYY command line options not associated with a specific file output tyep, can be None
+    @param: fileTypeOpts: 1. a dictionary where the key is a file output type and the vale is a string 'default' or list of options, or 2. a string 'default'
 
-@return bool: true if successful [completion not conversion] false if not
+    @return bool: true if successful [completion not conversion] false if not
 
-TODO: make default output options for all output file types 
-'''
+    TODO: make default output options for all output file types 
+    '''
         #error checking, does not take TN
     if not checkPaths(inPath,outPath):
         return False
@@ -223,13 +223,13 @@ TODO: make default output options for all output file types
 
 def tif_to_jpg(inPath,outPath, imageMagicOpts,*extraArgs):
     '''
-This function will use ImageMagick to convert tifs to jpgs
-@param: inPath: source file or dir
-@param: outPath: destination file or dir
-@param imageMagicOpts: can be 'default' 'TN' or a list of options to use
+    This function will use ImageMagick to convert tifs to jpgs
+    @param: inPath: source file or dir
+    @param: outPath: destination file or dir
+    @param imageMagicOpts: can be 'default' 'TN' or a list of options to use
 
-@return bool: true if successful false if not
-'''
+    @return bool: true if successful false if not
+    '''
     #error checking
     if checkStd(inPath,outPath,extraArgs,imageMagicOpts)==False:
         return False
@@ -284,14 +284,14 @@ This function will use ImageMagick to convert tifs to jpgs
 
 def pdf_to_swf(inPath,outPath,swfToolsOpts,*extraArgs):
     '''
-This function will use swftools to convert pdf files to swfs
-@param: inPath: source file or dir
-@param: outPath: destination file or dir
-@param swfToolsOpts: options to be applied to the conversion can be 'default'
+    This function will use swftools to convert pdf files to swfs
+    @param: inPath: source file or dir
+    @param: outPath: destination file or dir
+    @param swfToolsOpts: options to be applied to the conversion can be 'default'
 
-@return bool: true if successful [completion not conversion] false if not
-'''
-#error checking
+    @return bool: true if successful [completion not conversion] false if not
+    '''
+    #error checking
     if checkStd(inPath,outPath,extraArgs,swfToolsOpts)==False:
         return False
     if swfToolsOpts=='TN':
