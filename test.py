@@ -1,4 +1,6 @@
 import xacmlwriter
+import xacmlparser
+import pprint
 
 xacml = {
   'RuleCombiningAlgId' : 'urn:oasis:names:tc:xacml:1.0:rule-combining-algorithm:first-applicable',
@@ -24,4 +26,8 @@ xacml = {
   ]
 }
 
-print xacmlwriter.toXML(xacml,True)
+pp = pprint.PrettyPrinter(indent=4)
+xml = xacmlwriter.toXML(xacml,True)
+print xml
+xacml = xacmlparser.parse(xml)
+pp.pprint(xacml)
