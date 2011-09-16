@@ -15,6 +15,7 @@ from fcrepo.connection import Connection
 from fcrepo.client import FedoraClient as Client
 from metadata import fedora_relationships as FR
 import os
+import time
 
 def mangle_dsid(dsid):
     '''
@@ -113,6 +114,7 @@ def update_datastream(obj, dsid, filename, label='', mimeType='', controlGroup='
             return True
         else:
             logger.warning('Error updating %(pid)s/%(dsid)s from %(filename)s via CURL!  %(tries)s remaining...' % info_dict)
+            time.sleep(3)
     logger.error('Failed updating %(pid)s/%(dsid)s from %(filename)s via CURL!' % info_dict)
     return False
     
