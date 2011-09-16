@@ -65,14 +65,6 @@ def create_thumbnail(obj, dsid, tnid):
    
     if r == 0:
         update_datastream(obj, tnid, directory+'/'+tnid, label='thumbnail', mimeType='image/jpeg')
-
-        # this is necessary because we are using curl, and the library caches 
-        try:
-            if (obj['TN'].label.split('/')[0] != 'image'): 
-                if(obj[dsid].mimeType.split('/')[0] == 'image'):
-                    update_datastream(obj, 'TN', directory+'/'+tnid, label=obj[dsid].mimeType, mimeType='image/jpeg')
-        except FedoraConnectionException:
-            update_datastream(obj, 'TN', directory+'/'+tnid, label=obj[dsid].mimeType, mimeType='image/jpeg')
     else :
         logging.warning('PID:%s DSID:%s Thumbnail creation failed (return code:%d).' % (obj.pid, dsid, r))
         #Try again on failure?

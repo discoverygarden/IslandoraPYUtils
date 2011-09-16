@@ -62,13 +62,12 @@ def get_datastream_as_file(obj, dsid, extension = ''):
             f.write(obj[dsid].getContent().read())
             f.flush() #Flushing should be enough...  Shouldn't actually have to sync the filesystem.  Caching would actually be a good thing, yeah?
             logging.debug("Size of datastream: %(size)d. Size on disk: %(size_disk)d." % {'size': obj[dsid].size, 'size_disk': os.path.getsize(filename)})
-            if os.path.getsize(filename) != obj[dsid].size:
+            success = os.path.getsize(filename) == obj[dsid].size
+            if not success:
                 tries = tries - 1
-            else:
-                success = True
     return d, 'content.'+extension
     
-def update_datastream(obj, dsid, filename, label='', mimeType='', controlGroup='M'):
+def update_datastream(obj, dsid, filename, label='', mimeType='', controlGroup='M', tries=3):
     '''
     This function uses curl to add a datastream to Fedora because 
     of a bug [we need confirmation that this is the bug Alexander referenced in Federa Microservices' code]
@@ -96,7 +95,8 @@ def update_datastream(obj, dsid, filename, label='', mimeType='', controlGroup='
         'username': conn.username, 'password': conn.password,
         'pid': obj.pid, 'dsid': dsid, 
         'label': quote(label), 'mimetype': mimeType, 'controlgroup': controlGroup, 
-        'filename': filename
+        'filename': filename,
+        'tries': tries
     }
 
     # Using curl due to an incompatibility with the pyfcrepo library.
@@ -105,14 +105,17 @@ def update_datastream(obj, dsid, filename, label='', mimeType='', controlGroup='
         '-F', 'file=@%(filename)s' % info_dict, '-u', 
         '%(username)s:%(password)s' % info_dict]
     
-    logger.debug("Updating/Adding datastream %(dsid)s to %(pid)s with mimetype %(mimetype)s" % info_dict)
-    if 0 == subprocess.call(commands):
-        logger.debug("%(pid)s/%(dsid)s updated!" % info_dict)
-        return True
-    else:
-        logger.error('Error updating %(pid)s/%(dsid)s via CURL!' % info_dict)
-        raise Exception("update_datastream CURL command failed!")
-        
+    while info_dict['tries'] > 0:
+        info_dict['tries'] = info_dict['tries'] - 1
+        logger.debug("Updating/Adding datastream %(dsid)s to %(pid)s with mimetype %(mimetype)s from file %(filename)s" % info_dict)
+        if 0 == subprocess.call(commands):
+            logger.debug("%(pid)s/%(dsid)s updated!" % info_dict)
+            return True
+        else:
+            logger.warning('Error updating %(pid)s/%(dsid)s from %(filename)s via CURL!  %(tries)s remaining...' % info_dict)
+    logger.error('Failed updating %(pid)s/%(dsid)s from %(filename)s via CURL!' % info_dict)
+    return False
+    
 def activateObjects(relations, namespaces, client):
     '''
     'rels' should be a dictionary whose keys correspond to content models in SPARQL syntax (eg 'islandora:basicCModel', assuming 'islandora' is set in namespaces), pointing to a list of relationships stored in tuples.  

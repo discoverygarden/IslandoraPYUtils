@@ -175,7 +175,34 @@ class EACCPF(object):
         
         for k, v in name.items():
             etree.SubElement(ne, 'part', {'localType': k}).text = v
-            
+    
+    def __get_subelement(self, path):
+        '''
+        Get (possibly creating) a node at the given path.
+        '''
+        toReturn = self.element.find(path)
+        if toReturn is None:
+            element, sep, sub = path.rpartition('/')
+            if not element:
+                el = self.element
+            else:
+                el = self.element.find(element)
+                if el is None:
+                    el = self.__get_subelement(element)
+                                
+            return etree.SubElement(el, sub)
+        else:
+            return toReturn
+        
+    def add_exist_dates(self, birth=None, death=None):
+        '''
+        Adds a date of birth and/or death to the description.
+        '''
+        if birth:
+            self.__get_subelement('cpfDescription/description/existDates/dateRange/fromDate').set('standardDate', birth)
+        if death:
+            self.__get_subelement('cpfDescription/description/existDates/dateRange/toDate').set('standardDate', death)
+    
     def add_bio(self, bio=None, role='primary'):
         '''
         bio should be sequence of XML elements (which includes an element 
@@ -282,6 +309,7 @@ if __name__ == '__main__':
     test.add_address(addr={'line1': 'here', 'line2': 'there', 'country': 'Everywhere'})
     print('XML:\n%s' % test)
     test.add_address(addr={'line1': 'asdf', 'line2': 'qwerty', 'country': 'yuiop'})
+    test.add_exist_dates('1923', '2010')
     print('XML:\n%s' % test)
     el = test.element.find('control/sources/source/objectBinWrap')
     if el is not None:
