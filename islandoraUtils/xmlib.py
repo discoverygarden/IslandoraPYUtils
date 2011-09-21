@@ -30,9 +30,15 @@ Checks if the indicated xml file's root has the indicated namespace
 
 def import_etree():
     '''
-This function will import the best etree it can find.    
+This function will import the best etree it can find. 
+Because dynamic importing is crazy this function can be used like this:
+<example>
+from .. import xmlib
+etree = xmlib.import_etree()
+</example>
+
 @author
-  Adam
+  Adam, Will
 '''
     #Get etree from somewhere it should be...
     try:
@@ -62,3 +68,4 @@ This function will import the best etree it can find.
                         message = "Failed to import ElementTree from any known place"
                         logging.critical(message)
                         raise ImportError(message)
+    return etree 

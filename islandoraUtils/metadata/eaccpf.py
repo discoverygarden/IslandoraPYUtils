@@ -5,7 +5,7 @@ from StringIO import StringIO
 import base64
 
 from .. import xmlib
-xmlib.import_etree()
+etree = xmlib.import_etree()
                     
 class EACCPF(object):
     '''
@@ -260,10 +260,13 @@ class EACCPF(object):
         
         self.__add_address(node, role, addr)
 
-'''
+      
+def testSchema():
+    '''
 A bit of simple testing--create a garbage EAC-CPF schema
-'''        
-if __name__ == '__main__':
+This is realy unit testing but it is not in a 'if __name__ == '__main__':'
+to simplify the structure because of the dynamic importing of etree
+'''  
     test = EACCPF('test')
     test.add_maintenance_event()
     test.add_XML_source('Blargh', '<Honk/>')
@@ -288,4 +291,3 @@ if __name__ == '__main__':
     el = test.element.find('control/sources/source/objectBinWrap')
     if el is not None:
         print('Decoded base64 test:\n%s' % base64.decodestring(el.text))
-        

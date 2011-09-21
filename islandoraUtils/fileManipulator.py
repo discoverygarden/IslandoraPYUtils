@@ -8,7 +8,7 @@ This file is meant to help with file manipulations/alterations.
 from pyPdf import PdfFileWriter, PdfFileReader
 import logging, os
 from . import xmlib
-xmlib.import_etree()
+etree = xmlib.import_etree()
 
 def appendPDFwithPDF(outFile,toAppend):
     '''
