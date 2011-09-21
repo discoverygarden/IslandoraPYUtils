@@ -15,7 +15,7 @@ from fcrepo.connection import Connection
 from fcrepo.client import FedoraClient as Client
 from metadata import fedora_relationships as FR
 import os
-import time
+from time import sleep
 
 def mangle_dsid(dsid):
     '''
@@ -114,12 +114,13 @@ def update_datastream(obj, dsid, filename, label='', mimeType='', controlGroup='
             return True
         else:
             logger.warning('Error updating %(pid)s/%(dsid)s from %(filename)s via CURL!  %(tries)s remaining...' % info_dict)
-            time.sleep(3)
+            sleep(5)
     logger.error('Failed updating %(pid)s/%(dsid)s from %(filename)s via CURL!' % info_dict)
     return False
     
 def activateObjects(relations, namespaces, client):
     '''
+    ***DOESN'T ACTUALLY DO ANYTHING AT PRESENT (only prints out the query it 'should' use)***
     'rels' should be a dictionary whose keys correspond to content models in SPARQL syntax (eg 'islandora:basicCModel', assuming 'islandora' is set in namespaces), pointing to a list of relationships stored in tuples.  
         (NOTE:  'AnY' indicates a wildcard search, though we check that the matched object is active)
     'client' is an fcrepo client object
