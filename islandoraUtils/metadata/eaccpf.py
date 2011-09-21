@@ -4,34 +4,8 @@ import datetime
 from StringIO import StringIO
 import base64
 
-#Get etree from somewhere it should be...
-try:
-    from lxml import etree
-    logging.debug("running with lxml.etree")
-except ImportError:
-    try:
-        # Python 2.5
-        import xml.etree.cElementTree as etree
-        logging.debug("running with cElementTree on Python 2.5+")
-    except ImportError:
-        try:
-            # Python 2.5
-            import xml.etree.ElementTree as etree
-            logging.debug("running with ElementTree on Python 2.5+")
-        except ImportError:
-            try:
-                # normal cElementTree install
-                import cElementTree as etree
-                logging.debug("running with cElementTree")
-            except ImportError:
-                try:
-                    # normal ElementTree install
-                    import elementtree.ElementTree as etree
-                    logging.debug("running with ElementTree")
-                except ImportError:
-                    message = "Failed to import ElementTree from any known place"
-                    logging.critical(message)
-                    raise ImportError(message)
+from .. import xmlib
+xmlib.import_etree()
                     
 class EACCPF(object):
     '''

@@ -1,22 +1,29 @@
 '''
 Created on May 5, 2011
 
-@author: William Panting
+@author
+  William Panting
 This file is meant to help with file manipulations/alterations.
 '''
 from pyPdf import PdfFileWriter, PdfFileReader
 import logging, os
+from . import xmlib
+xmlib.import_etree()
 
 def appendPDFwithPDF(outFile,toAppend):
     '''
 This function is meant to combine multiple pdf files, I'm not sure I like the pyPdf module's issues atm, hope it updates soon
 
-@author: William Panting
+@author
+  William Panting
 
-@param outFile: a string representing the path of the file that is to be created/modified
-@param toAppend: a string representing the path of the file that is to be appended to the orgional file,
-                 or an ordered list of multiple strings representing files
-@return bool: true if successful false if not
+@param outFile
+  a string representing the path of the file that is to be created/modified
+@param toAppend
+  a string representing the path of the file that is to be appended to the orgional file,
+  or an ordered list of multiple strings representing files
+@return bool
+  true if successful false if not
 '''
     pdfWriter=PdfFileWriter()
     
@@ -79,14 +86,33 @@ This function is meant to combine multiple pdf files, I'm not sure I like the py
     return True
 
 
-def isPDF(input):
+def isPDF(file_path):
     '''
 This function is a helper function that validates user input as a valid pdf file
-@author William Panting
-@param input: path to analyse for pdf-ness
-@return bool: true if the input is a path to a pdf false if not
+but not realy it just checks the extension right now. 
+@todo
+  actualy check
+@author 
+  William Panting
+@param file_path
+  path to analyse for pdf-ness
+@return bool
+  true if the input is a path to a pdf false if not
 '''
-    if isinstance(input, str):
-        if os.path.isfile(input) and input[input.rindex('.'):len(input)]=='.pdf':
+    if isinstance(file_path, str):
+        if os.path.isfile(file_path) and file_path[file_path.rindex('.'):len(file_path)]=='.pdf':
+            return True
+    return False
+
+def breakTEIOnPages(file_path):
+    '''
+This function
+@author
+  William Panting
+@param string file_path
+'''
+    if isinstance(file_path, str):
+        if os.path.isfile(file_path) and (file_path.endswith('.xml') or file_path.endswith('.tei') or file_path.endswith('.TEI') or file_path.endswith('.XML')):
+
             return True
     return False

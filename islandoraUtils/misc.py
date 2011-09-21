@@ -1,7 +1,8 @@
 '''
 Created on May 30, 2011
 
-@author: William Panting
+@author
+  William Panting
 
 This is a holding place for usefull re-usable code 
 that doesn't have a place anywhere else in the package
@@ -16,7 +17,8 @@ def getMimeType(ext):
     @param ext: The file extension to find the mimetype from
     @return mimeType: The mimetype that was associated to the file extension
     
-    TODO: add more mimeTypes
+    TODO
+      add more mimeTypes
     '''
     mimeType=''
     #strip the '.' if it was included in the ext string
