@@ -104,15 +104,37 @@ but not realy it just checks the extension right now.
             return True
     return False
 
-def breakTEIOnPages(file_path):
+def breakTEIOnPages(file_path, output_directory):
     '''
 This function
 @author
   William Panting
 @param string file_path
 '''
-    if isinstance(file_path, str):
-        if os.path.isfile(file_path) and (file_path.endswith('.xml') or file_path.endswith('.tei') or file_path.endswith('.TEI') or file_path.endswith('.XML')):
-
-            return True
+    if os.path.isfile(file_path) and (file_path.endswith('.xml') or file_path.endswith('.tei') or file_path.endswith('.TEI') or file_path.endswith('.XML')):
+        TEIMilestone1 = etree.XSLT(etree.parse(os.path.join(os.path.dirname(__file__), '__resources/TEIMilestone1.xslt')))
+        TEIMilestone2 = etree.XSLT(etree.parse(os.path.join(os.path.dirname(__file__), '__resources/TEIMilestone2.xslt')))
+        TEIMilestone3 = etree.XSLT(etree.parse(os.path.join(os.path.dirname(__file__), '__resources/TEIMilestone3.xslt')))
+        
+        transform = etree.XSLT(TEIMilestone1)
+        intermediary_TEI = transform(file_path)
+        transform = etree.XSLT(TEIMilestone2)
+        intermediary_TEI = transform(intermediary_TEI)
+        transform = etree.XSLT(TEIMilestone3)
+        intermediary_TEI = transform(intermediary_TEI)
+        
+        print(intermediary_TEI)
+        TEI_iterator = etree.iterparse(file_path, events=('start',))
+        #TEI_iterator = etree.iterparse(file_path, events=('end',), tag='whateverAPageBreakIs')
+        #go through file until eof
+        for event, elem in TEI_iterator:
+            #print(event)
+            #print(elem)
+            #go through file until page break
+                #start a page with headers, opening tags etc.
+                #add things into page as you traverse TEI file
+            g=1+1    
+            #close last page xml tags
+            #save page into output_directory
+        return True
     return False
