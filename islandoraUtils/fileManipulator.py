@@ -116,14 +116,19 @@ This function
         TEIMilestone2 = etree.XSLT(etree.parse(os.path.join(os.path.dirname(__file__), '__resources/TEIMilestone2.xslt')))
         TEIMilestone3 = etree.XSLT(etree.parse(os.path.join(os.path.dirname(__file__), '__resources/TEIMilestone3.xslt')))
         
-        transform = etree.XSLT(TEIMilestone1)
-        intermediary_TEI = transform(file_path)
-        transform = etree.XSLT(TEIMilestone2)
-        intermediary_TEI = transform(intermediary_TEI)
-        transform = etree.XSLT(TEIMilestone3)
-        intermediary_TEI = transform(intermediary_TEI)
-        
-        print(intermediary_TEI)
+        file_etree_object = etree.parse(file_path)
+        try:
+            intermediary_TEI = TEIMilestone1(file_etree_object)
+         
+            intermediary_TEI = TEIMilestone2(intermediary_TEI)
+           
+            intermediary_TEI = TEIMilestone3(intermediary_TEI)
+        except Exception:
+            print("%s" % Exception.args)
+            print("%s" % Exception.message)
+        else:
+            print(intermediary_TEI)
+        #print(intermediary_TEI)
         TEI_iterator = etree.iterparse(file_path, events=('start',))
         #TEI_iterator = etree.iterparse(file_path, events=('end',), tag='whateverAPageBreakIs')
         #go through file until eof

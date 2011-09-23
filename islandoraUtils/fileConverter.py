@@ -613,7 +613,7 @@ This function will take a MODS xml file and transform it into a SOLR xml file.
     if checkStd(inPath,outPath,extraArgs)==False:
         return False
     #set up the translator
-    xslt_root = etree.XSLT(etree.parse(os.path.join(os.path.dirname(__file__), '__resources/mods_to_solr.xslt')))
+    xslt_root = etree.parse(os.path.join(os.path.dirname(__file__), '__resources/mods_to_solr.xslt'))
     transform = etree.XSLT(xslt_root)
     
     #determine the output directory for the tempfile and for if there are multiple output files due to a directory batch
