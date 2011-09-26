@@ -112,34 +112,40 @@ This function
 @param string file_path
 '''
     if os.path.isfile(file_path) and (file_path.endswith('.xml') or file_path.endswith('.tei') or file_path.endswith('.TEI') or file_path.endswith('.XML')):
-        TEIMilestone1 = etree.XSLT(etree.parse(os.path.join(os.path.dirname(__file__), '__resources/TEIMilestone1.xslt')))
-        TEIMilestone2 = etree.XSLT(etree.parse(os.path.join(os.path.dirname(__file__), '__resources/TEIMilestone2.xslt')))
-        TEIMilestone3 = etree.XSLT(etree.parse(os.path.join(os.path.dirname(__file__), '__resources/TEIMilestone3.xslt')))
-        
         file_etree_object = etree.parse(file_path)
-        try:
-            intermediary_TEI = TEIMilestone1(file_etree_object)
-         
-            intermediary_TEI = TEIMilestone2(intermediary_TEI)
-           
-            intermediary_TEI = TEIMilestone3(intermediary_TEI)
-        except Exception:
-            print("%s" % Exception.args)
-            print("%s" % Exception.message)
-        else:
-            print(intermediary_TEI)
+        
         #print(intermediary_TEI)
-        TEI_iterator = etree.iterparse(file_path, events=('start',))
+        TEI_iterator = etree.iterparse(file_path, events=('start', 'end'))
         #TEI_iterator = etree.iterparse(file_path, events=('end',), tag='whateverAPageBreakIs')
         #go through file until eof
+        element_tracker = list()
+        tmp = 0 
         for event, elem in TEI_iterator:
-            #print(event)
-            #print(elem)
+            #if the element is root then create current_page root
+            if tmp == 0:
+                root = etree.Element(elem.tag)
+                xmlib.copy_element_attributes(elem, root)
+                current_page = etree.ElementTree(root)
+                current_page.write(os.path.join(output_directory,'tmp'), encoding = "UTF-8")
+                tmp = 1
+            '''
+            if event == 'start':
+                element_tracker.append(elem.tag)
+                
+                #if a page break then close the page file and open a new one
+                if elem.tag.endswith('}pb'):
+                    print(elem)
+            if event == 'end':
+                element_tracker.pop()
+                if elem.tag.endswith('}pb'):
+                    #need to grab text here to make sure it is present in the tree
+                    print(elem)
             #go through file until page break
                 #start a page with headers, opening tags etc.
                 #add things into page as you traverse TEI file
-            g=1+1    
             #close last page xml tags
             #save page into output_directory
+        print (element_tracker)
+        '''
         return True
     return False

@@ -1,32 +1,13 @@
 '''
 Created on Apr 15, 2011
-
+@file
+  This is unavoidable don't move around the order of functions/imports and calls in this file
 @author
   William Panting
 @dependencies
   lxml
 '''
-from lxml import etree
 import logging
-
-def rootHasNamespace(xmlIn,namespaceIn):
-    '''
-Checks if the indicated xml file's root has the indicated namespace
-@param xmlIn
-  xml file to check
-@param namespaceIn
-  namespace to check for
-@return bool
-  return true if namespace found false if not
-'''
-    parser = etree.XMLParser(remove_blank_text=True)
-    xmlFile = etree.parse(xmlIn, parser)
-    xmlFileRoot = xmlFile.getroot()
-    xmlFileRootNamespaces = xmlFileRoot.nsmap
-    for namespace in xmlFileRootNamespaces:
-        if xmlFileRootNamespaces[namespace] == namespaceIn:
-            return True
-    return False
 
 def import_etree():
     '''
@@ -68,4 +49,39 @@ etree = xmlib.import_etree()
                         message = "Failed to import ElementTree from any known place"
                         logging.critical(message)
                         raise ImportError(message)
-    return etree 
+    return etree
+#yuk sory
+etree = import_etree()
+
+def rootHasNamespace(xmlIn,namespaceIn):
+    '''
+Checks if the indicated xml file's root has the indicated namespace
+@param xmlIn
+  xml file to check
+@param namespaceIn
+  namespace to check for
+@return bool
+  return true if namespace found false if not
+'''
+    parser = etree.XMLParser(remove_blank_text=True)
+    xmlFile = etree.parse(xmlIn, parser)
+    xmlFileRoot = xmlFile.getroot()
+    xmlFileRootNamespaces = xmlFileRoot.nsmap
+    for namespace in xmlFileRootNamespaces:
+        if xmlFileRootNamespaces[namespace] == namespaceIn:
+            return True
+    return False
+
+def copy_element_attributes(from_element, to_element):
+    '''
+    This function will copy the attributes from one etree element to anther
+    @param from_element
+      Get attributes from this one
+    @param to_element
+      Put attributes on this one
+    @author
+      William Panting
+    '''
+    attributes = from_element.attrib
+    for attribute, value in attributes.iteritems():
+        to_element.set(attribute, value)
