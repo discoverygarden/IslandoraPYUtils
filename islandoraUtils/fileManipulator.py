@@ -155,6 +155,14 @@ It explodes on non expanded pb tags. it will likely break on expanded ones
                    then print it to file
                 '''
                 if elem.tag.endswith('}pb'):
+                    #populate the .text of the incomplete elements of the current page
+                    #if they were not populated in a previous page
+                    #todo: FIX !!!
+                    for element in element_tracker:#only get text if it isn't on a page already
+                        if DoNotRepeat_list.count(element) == 0:
+                            page_element = page_element_tracker[element_tracker.index(element)]
+                            page_element.text = element.text
+                        
                     DoNotRepeat_list = list()#clear so we aren't appending each pb
                     #create the next page parser
                     root_element_sentinal = True
@@ -174,24 +182,8 @@ It explodes on non expanded pb tags. it will likely break on expanded ones
                         DoNotRepeat_list.append(element_copy)
                     
                     
-                    print('first: '+str(current_page.getroot().text))
-                    #populate the .text of the incomplete elements of the current page
-                    #if they were not populated in a previous page
-                    #todo: FIX !!!
-                    
-                    
-                    for element in element_tracker:
-                        page_element = page_element_tracker[element_tracker.index(element)]
-                        page_element.text = element.text
-                       
-                    for element in element_tracker:
-                        print('source: ' + str(element_tracker.index(element)) + 'tag: ' +element.tag)
-                    for element in page_element_tracker:
-                        print('page: ' + str(page_element_tracker.index(element)) + 'tag: ' +element.tag)
-                    
                     #print to file, but don't print the 'first page' it's metadata
                     if page_number > 0:
-                        print('second'+str(current_page.getroot().text))
                         output_path = os.path.join(output_directory,  os.path.basename(file_path)[:-4] + '_page_' + str(page_number) + '.xml')
                         current_page.write(output_path, encoding = "UTF-8")
                     
@@ -229,10 +221,8 @@ It explodes on non expanded pb tags. it will likely break on expanded ones
                     
                     #push preceding text onto current page
                     last_page_elem.tail = last_elem.tail #gets closing text
-                    '''need to make this only get text if it isn't on a page already'''
+                    #only get text if it isn't on a page already
                     if DoNotRepeat_list.count(last_elem) == 0:
                         last_page_elem.text = last_elem.text #gets opening text
-                    '''else:
-                        last_page_elem.text = '' #erase the text should this realy be necessary? the page elem.text shouldn't be set'''
         return True
     return False
