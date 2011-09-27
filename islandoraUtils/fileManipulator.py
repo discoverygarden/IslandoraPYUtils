@@ -106,46 +106,133 @@ but not realy it just checks the extension right now.
 
 def breakTEIOnPages(file_path, output_directory):
     '''
-This function
+This function will break a tei file into tei snipits for each page
+This may not work with tei files not from Hamilton
+It explodes on non expanded pb tags. it will likely break on expanded ones
 @author
   William Panting
 @param string file_path
+@param string output_directory
+@todo
+  make sure to get the last page
+@todo
+  start not repeating the DNR list
 '''
     if os.path.isfile(file_path) and (file_path.endswith('.xml') or file_path.endswith('.tei') or file_path.endswith('.TEI') or file_path.endswith('.XML')):
-        file_etree_object = etree.parse(file_path)
         
-        #print(intermediary_TEI)
+        #init
         TEI_iterator = etree.iterparse(file_path, events=('start', 'end'))
-        #TEI_iterator = etree.iterparse(file_path, events=('end',), tag='whateverAPageBreakIs')
-        #go through file until eof
         element_tracker = list()
-        tmp = 0 
+        page_element_tracker = list()
+        first_page_sentinal = True
+        root_text_sentinal = 0 #to be considered true only if ==1
+        page_number = 0
+        pb_parent = etree.Element
+        DoNotRepeat_list = list()
+        #go through file until eof
         for event, elem in TEI_iterator:
+            #consider coping headers
             #if the element is root then create current_page root
-            if tmp == 0:
+            if first_page_sentinal == True:
                 root = etree.Element(elem.tag)
                 xmlib.copy_element_attributes(elem, root)
                 current_page = etree.ElementTree(root)
-                current_page.write(os.path.join(output_directory,'tmp'), encoding = "UTF-8")
-                tmp = 1
-            '''
+                first_page_sentinal = False
+            
             if event == 'start':
-                element_tracker.append(elem.tag)
-                
-                #if a page break then close the page file and open a new one
+                #handles getting root text as soon as it is available
+                if root_text_sentinal == 1:
+                    last_elem = element_tracker.pop()
+                    current_page_root = current_page.getroot()
+                    current_page_root.text = last_elem.text
+                    element_tracker.append(last_elem)
+                    root_text_sentinal+=1
+                elif root_text_sentinal == 0:
+                    root_text_sentinal+=1
+                    
+                '''on a page break open iterate through everything on on the element stack 
+                   grab the textual content posting it to the current page's elements
+                   then print it to file
+                '''
                 if elem.tag.endswith('}pb'):
-                    print(elem)
+                    DoNotRepeat_list = list()#clear so we aren't appending each pb
+                    #create the next page parser
+                    root_element_sentinal = True
+                    for element in page_element_tracker:
+                        if root_element_sentinal == True:
+                            root = etree.Element(element.tag)
+                            xmlib.copy_element_attributes(element, root)
+                            next_page = etree.ElementTree(root)
+                            root_element_sentinal = False
+                            element_copy = root
+                        else:
+                            element_copy = etree.Element(element.tag)
+                            xmlib.copy_element_attributes(element, element_copy)
+                            last_element = DoNotRepeat_list.pop()
+                            last_element.append(element_copy)
+                            DoNotRepeat_list.append(last_element)
+                        DoNotRepeat_list.append(element_copy)
+                    
+                    
+                    print('first: '+str(current_page.getroot().text))
+                    #populate the .text of the incomplete elements of the current page
+                    #if they were not populated in a previous page
+                    #todo: FIX !!!
+                    
+                    
+                    for element in element_tracker:
+                        page_element = page_element_tracker[element_tracker.index(element)]
+                        page_element.text = element.text
+                       
+                    for element in element_tracker:
+                        print('source: ' + str(element_tracker.index(element)) + 'tag: ' +element.tag)
+                    for element in page_element_tracker:
+                        print('page: ' + str(page_element_tracker.index(element)) + 'tag: ' +element.tag)
+                    
+                    #print to file, but don't print the 'first page' it's metadata
+                    if page_number > 0:
+                        print('second'+str(current_page.getroot().text))
+                        output_path = os.path.join(output_directory,  os.path.basename(file_path)[:-4] + '_page_' + str(page_number) + '.xml')
+                        current_page.write(output_path, encoding = "UTF-8")
+                    
+                    #switch to new page
+                    page_number += 1
+                    current_page = next_page
+                    page_element_tracker = DoNotRepeat_list
+                    DoNotRepeat_list = list(element_tracker)
+                else:#push tag into new page
+                    #construct element
+                    page_elem = etree.Element(elem.tag)
+                    xmlib.copy_element_attributes(elem, page_elem)
+                    #put element on the current page
+                    if page_element_tracker:
+                        last_page_elem = page_element_tracker.pop()
+                        last_page_elem.append(page_elem)
+                        page_element_tracker.append(last_page_elem)
+                    else:
+                        last_page_elem = current_page.getroot()
+                        last_page_elem.append(page_elem)
+                        
+                element_tracker.append(elem)
+                page_element_tracker.append(page_elem)
+                #push tag with attributes onto the current page
+                    
             if event == 'end':
-                element_tracker.pop()
-                if elem.tag.endswith('}pb'):
-                    #need to grab text here to make sure it is present in the tree
-                    print(elem)
-            #go through file until page break
-                #start a page with headers, opening tags etc.
-                #add things into page as you traverse TEI file
-            #close last page xml tags
-            #save page into output_directory
-        print (element_tracker)
-        '''
+                #if close of file print to page
+                if elem.tag.endswith('}TEI'):
+                    output_path = os.path.join(output_directory,  os.path.basename(file_path)[:-4] + '_page_' + str(page_number) + '.xml')
+                    current_page.write(output_path, encoding = "UTF-8")
+                else:
+                    #pop the stack to work on it
+                    last_elem = element_tracker.pop()
+                    last_page_elem = page_element_tracker.pop()
+                    
+                    #push preceding text onto current page
+                    last_page_elem.tail = last_elem.tail #gets closing text
+                    '''need to make this only get text if it isn't on a page already'''
+                    if DoNotRepeat_list.count(last_elem) == 0:
+                        last_page_elem.text = last_elem.text #gets opening text
+                    '''else:
+                        last_page_elem.text = '' #erase the text should this realy be necessary? the page elem.text shouldn't be set'''
         return True
     return False
