@@ -20,6 +20,6 @@ setup(
       author_email='will@discoverygarden.ca',
       license = "GPL",
       packages=find_packages(),
-      long_description=read('README.txt'),
+      long_description=read('README'),
       install_requires=['setuptools','lxml']
       )

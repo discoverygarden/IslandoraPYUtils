@@ -61,7 +61,7 @@ def create_thumbnail(obj, dsid, tnid):
     
     # Make a thumbnail with convert
     r = subprocess.call(['convert', directory+'/'+file+'[0]', '-thumbnail', \
-         '%sx%s' % tn_size, directory+'/'+tnid])
+         '%sx%s' % tn_size, '-colorspace', 'rgb', 'jpg:'+directory+'/'+tnid])
    
     if r == 0:
         update_datastream(obj, tnid, directory+'/'+tnid, label='thumbnail', mimeType='image/jpeg')
@@ -145,6 +145,25 @@ def create_swf(obj, dsid, swfid):
 
     rmtree(directory, ignore_errors=True)
     return r
+
+def create_pdf(obj, dsid, pdfid):
+    #recieve document and create a PDF with libreoffice if possible
+    directory, file = get_datastream_as_file(obj, dsid, "document")
+    
+    subprocess.call(['soffice', '--headless', '-convert-to', 'pdf', '-outdir', directory, directory+'/'+file])
+    newfile = file.split('.',1)[0]
+    newfile += '.pdf'
+
+    if os.path.isfile(directory + '/' + newfile):
+        update_datastream(obj, pdfid, directory+'/'+newfile, label='doc to pdf', mimeType='application/pdf')
+        # we should probably be using true or false like normal python, but i stay consistant here
+        value = 0
+    else:
+        value = 1
+        logging.warning('PID:%s DSID:%s PDF creation failed.' % (obj.pid, dsid))
+
+    rmtree(directory, ignore_errors=True)
+    return value
 
 def marcxml_to_mods(obj, dsid, dsidOut='MODS'):
     logger = logging.getLogger('islandoraUtils.DSConverter.marcxml_to_mods')
