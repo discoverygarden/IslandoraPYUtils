@@ -80,13 +80,12 @@ def create_thumbnail(obj, dsid, tnid):
 def create_jp2(obj, dsid, jp2id):
     # We receive a TIFF and create a Lossless JPEG 2000 file from it.
     directory, file = get_datastream_as_file(obj, dsid, 'tiff') 
-    r = subprocess.call(["convert", directory+'/'+file, '+compress', directory+'/uncompressed.tiff'])
+    r = subprocess.call(["convert", directory+'/'+file, '+compress', '-colorspace', 'RGB', directory+'/uncompressed.tiff'])
     if r != 0:
         logging.warning('PID:%s DSID:%s JP2 creation failed (convert return code:%d).' % (obj.pid, dsid, r))
         rmtree(directory, ignore_errors=True)
         return r;
-    r = subprocess.call(["kdu_compress", "-i", directory+'/uncompressed.tiff', 
-      "-o", directory+"/tmpfile_lossy.jp2", "-rate", "0.5", "Clayers=1", "Clevels=7", "Cprecincts={256,256},{256,256},{256,256},{128,128},{128,128},{64,64},{64,64},{32,32},{16,16}", "Corder=RPCL", "ORGgen_plt=yes", "ORGtparts=R", "Cblk={32,32}", "Cuse_sop=yes"])
+    r = subprocess.call(["kdu_compress", "-i", directory+'/uncompressed.tiff', "-o", directory+"/tmpfile_lossy.jp2", "-rate", "0.5", "Clayers=1", "Clevels=7", "Cprecincts={256,256},{256,256},{256,256},{128,128},{128,128},{64,64},{64,64},{32,32},{16,16}", "Corder=RPCL", "ORGgen_plt=yes", "ORGtparts=R", "Cblk={32,32}", "Cuse_sop=yes"])
     if r != 0:
         logging.warning('PID:%s DSID:%s JP2 creation failed. Trying alternative.' % (obj.pid, dsid))
     	r = subprocess.call(["convert", directory+'/'+file, '-compress', 'JPEG2000', '-quality', '50%', directory+'/tmpfile_lossy.jp2'])
