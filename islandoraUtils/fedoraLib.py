@@ -53,6 +53,9 @@ def get_datastream_as_file(obj, dsid, extension = ''):
     Download the indicated datastream (probably for processing)
     
     Taken out of Fedora Microservices
+    
+    @author Alexander O'Neil
+
     '''
     d = tempfile.mkdtemp()
     success = False
@@ -120,6 +123,7 @@ def update_datastream(obj, dsid, filename, label='', mimeType='', controlGroup='
     
 def activateObjects(relations, namespaces, client):
     '''
+    @author: Adam Vessey
     ***DOESN'T ACTUALLY DO ANYTHING AT PRESENT (only prints out the query it 'should' use)***
     'rels' should be a dictionary whose keys correspond to content models in SPARQL syntax (eg 'islandora:basicCModel', assuming 'islandora' is set in namespaces), pointing to a list of relationships stored in tuples.  
         (NOTE:  'AnY' indicates a wildcard search, though we check that the matched object is active)

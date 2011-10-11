@@ -3,26 +3,18 @@ Created on March 5, 2011
 
 @author: jonathangreen
 Copyied into islandoraUtils by Adam Vessey
-TODO:  Should likely be made to use the fileConverter module, so as not to have two copies of code which do much of the same thing...
+TODO:  Should likely be made to use the fileConverter module, so as not to have
+two copies of code which do much of the same thing... If someone is doing this
+this should be treated as the cannonical copy. I have been updating these
+conversion scripts with input from JWA and Colorado.
 '''
 
-# These will appear in an IDE as broken dependencies.
-# This is OK because they live in the plugins folder but are invoked in the app's main folder
-# by the plugin manager
-from islandoraUtils.fedoraLib import get_datastream_as_file, update_datastream, mangle_dsid
+from islandoraUtils.fedoraLib import get_datastream_as_file, update_datastream
 from shutil import rmtree
 from datetime import datetime
-from islandoraUtils.metadata.fedora_relationships import rels_int
 import os
 import subprocess
-import string
-import httplib
-import re
-import random
-import types
 import logging
-import fcrepo
-#Get etree from somewhere...
 from lxml import etree
 
 
