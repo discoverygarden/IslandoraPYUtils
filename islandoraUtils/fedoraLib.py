@@ -16,6 +16,7 @@ from fcrepo.client import FedoraClient as Client
 from metadata import fedora_relationships as FR
 import os
 from time import sleep
+import hashlib
 
 def mangle_dsid(dsid):
     '''
@@ -71,7 +72,7 @@ def get_datastream_as_file(obj, dsid, extension = ''):
                 tries = tries - 1
     return d, 'content.'+extension
     
-def update_datastream(obj, dsid, filename, label='', mimeType='', controlGroup='M', tries=3):
+def update_datastream(obj, dsid, filename, label='', mimeType='', controlGroup='M', tries=3, checksumType=None, checksum=None):
     '''
     This function uses curl to add a datastream to Fedora because 
     of a bug [we need confirmation that this is the bug Alexander referenced in Federa Microservices' code]
@@ -86,7 +87,9 @@ def update_datastream(obj, dsid, filename, label='', mimeType='', controlGroup='
     @param label:
     @param mimeType:
     @param controlGroup:
-
+    @param tries:  The number of attempts at uploading
+    @param checksumType:  A hashing algorigm to attempt...
+    @param checksum: A precalculated sum for the file.
     @return the status of the curl subprocess call
     '''
     logger = logging.getLogger('islandoraUtils.fedoraLib.update_datastream')
@@ -100,14 +103,43 @@ def update_datastream(obj, dsid, filename, label='', mimeType='', controlGroup='
         'pid': obj.pid, 'dsid': dsid, 
         'label': quote(label), 'mimetype': mimeType, 'controlgroup': controlGroup, 
         'filename': filename,
-        'tries': tries
+        'tries': tries,
+        'checksumType': checksumType,
+        'checksum': checksum
     }
+    
+    #The checksum/hashing algorithms supported by Fedora (mapped to the names that Python's hashlib uses)
+    hashes = {
+        'MD5': 'md5', 
+        'SHA-1': 'sha1',
+        'SHA-256': 'sha256',
+        'SHA-384': 'sha384',
+        'SHA-385': 'sha384', #Seems to be an error in the documentation?  Let's try to account for it.
+        'SHA-512': 'sha512'
+    }
+    
+    url = '%(url)s/objects/%(pid)s/datastreams/%(dsid)s?dsLabel=%(label)s&mimeType=%(mimetype)s&controlGroup=%(controlgroup)s' % info_dict
+    
+    #Wanna do checksumming?
+    if checksumType in hashes:
+        #Let's figure it out ourselves!
+        if checksum is None:
+            with open(filename) as temp:
+                h = hashlib.new(hashes[checksumType])
+                #Should chunk the hashing in 10MB pieces or so...  Yay memory efficiency?
+                #This seems to work, it seems a little weird in my head...  May have to look at it in the future?
+                for chunk in temp.read(10*1024*1024):
+                    h.update(chunk)
+                info_dict['checksum'] = h.hexdigest()
+                
+        url += '&checksumType=%(checksumType)s&checksum=%(checksum)s' % info_dict
 
     # Using curl due to an incompatibility with the pyfcrepo library.
     #Go figure...  You'd think that instead of [..., '-F', 'file=@%(filename)s', ...], you should be using [..., '--data-binary', '@%(filename)s', ...], but the latter here fails to upload text correctly...
-    commands = ['curl', '-i', '-H', '-XPOST', '%(url)s/objects/%(pid)s/datastreams/%(dsid)s?dsLabel=%(label)s&mimeType=%(mimetype)s&controlGroup=%(controlgroup)s' % info_dict, 
-        '-F', 'file=@%(filename)s' % info_dict, '-u', 
-        '%(username)s:%(password)s' % info_dict]
+    #Strictly, 'update' (modify) should use HTTP PUT, while add should use HTTP POST...  There doesn't really seem to be a difference, though...
+    commands = ['curl', '-i', '-H', '-XPOST', url, '-F', 
+        'file=@%(filename)s' % info_dict, '-u', '%(username)s:%(password)s' % info_dict]
+    
     
     while info_dict['tries'] > 0:
         info_dict['tries'] = info_dict['tries'] - 1
