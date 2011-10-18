@@ -134,6 +134,7 @@ def create_pdf(obj, dsid, pdfid):
         value = 1
         logger.warning('PID:%s DSID:%s PDF creation failed.' % (obj.pid, dsid))
 
+    logger.debug(os.listdir(directory))
     rmtree(directory, ignore_errors=True)
     return value
 
