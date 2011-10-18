@@ -41,7 +41,7 @@ def parseXacml(xacml, root):
         findDsidMime(rule, rule_element)
         findMethods(rule, rule_element)
         findRoles(rule, rule_element)
-        #findUsers(rule, rule_element)
+        findUsers(rule, rule_element)
 
         xacml['rules'].append(rule)
 
@@ -72,14 +72,16 @@ def findMethods(rule, element):
             rule['methods'].append(method[38:])
 
 def findRoles(rule, element):
-    role_designator = element.find('.//' + xacmlconstants.XACML + 'Apply[@FunctionId=' + xacmlconstants.onememeberof + ']/' + xacmlconstants.XACML + 'SubjectAttributeDesignator[@AttributeId="fedoraRole"]')
-    print role_designator
+    role_designator = element.xpath('.//xacml:Apply[@FunctionId="'+xacmlconstants.onememeberof+'"]/xacml:SubjectAttributeDesignator[@AttributeId="fedoraRole"]', namespaces=xacmlconstants.XPATH_MAP)
+    if len(role_designator) != 0:
+        role_attrib = role_designator[0].xpath('../xacml:Apply/xacml:AttributeValue', namespaces=xacmlconstants.XPATH_MAP)
+        for role in role_attrib:
+            rule['roles'].append(role.text)
 
-#    if($role_designator->length != 0) {
-#      $role_attrib = $xpath->query('../xacml:Apply/xacml:AttributeValue',$role_designator->item(0));
-#
-#      foreach($role_attrib as $role) {
-#        $rule['roles'][] = $role->nodeValue;
-#      }
-#    }
-#  }
+def findUsers(rule, element):
+    user_designator = element.xpath('.//xacml:Apply[@FunctionId="'+xacmlconstants.onememeberof+'"]/xacml:SubjectAttributeDesignator[@AttributeId="urn:fedora:names:fedora:2.1:subject:loginId"]', namespaces=xacmlconstants.XPATH_MAP)
+    if len(user_designator) != 0:
+        user_attrib = user_designator[0].xpath('../xacml:Apply/xacml:AttributeValue', namespaces=xacmlconstants.XPATH_MAP)
+
+        for user in user_attrib:
+            rule['users'].append(user.text)
