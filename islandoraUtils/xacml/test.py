@@ -1,5 +1,5 @@
-import xacmlwriter
-import xacmlparser
+import islandoraUtils.xacml.writer as xacmlwriter
+import islandoraUtils.xacml.parser as xacmlparser
 import pprint
 
 xacml = {

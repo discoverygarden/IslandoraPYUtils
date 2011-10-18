@@ -1,6 +1,6 @@
-import xacmlconstants
+import islandoraUtils.xacml.constants as xacmlconstants
+from islandoraUtils.xacml.exception import XacmlException
 import string
-from xacmlexception import XacmlException
 from lxml import etree
 
 def parse (xacml_string):

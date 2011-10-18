@@ -1,6 +1,6 @@
 from lxml import etree
-import xacmlconstants
-from xacmlexception import XacmlException
+import islandoraUtils.xacml.constants as xacmlconstants
+from islandoraUtils.xacml.exception import XacmlException
 
 def toXML(xacml, prettyprint=False):
     # create the root element
