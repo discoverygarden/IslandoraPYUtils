@@ -137,7 +137,7 @@ def update_datastream(obj, dsid, filename, label='', mimeType='', controlGroup='
     # Using curl due to an incompatibility with the pyfcrepo library.
     #Go figure...  You'd think that instead of [..., '-F', 'file=@%(filename)s', ...], you should be using [..., '--data-binary', '@%(filename)s', ...], but the latter here fails to upload text correctly...
     #Strictly, 'update' (modify) should use HTTP PUT, while add should use HTTP POST...  There doesn't really seem to be a difference, though...
-    commands = ['curl', '-i', '-H', '-XPOST', url, '-F', 
+    commands = ['curl', '-i', '-H', '-XPOST', url, '-f', '-F', 
         'file=@%(filename)s' % info_dict, '-u', '%(username)s:%(password)s' % info_dict]
     
     
