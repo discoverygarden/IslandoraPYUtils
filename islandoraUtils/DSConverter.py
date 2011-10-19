@@ -16,6 +16,7 @@ import os
 import subprocess
 import logging
 from lxml import etree
+from fcrepo.connection import FedoraConnectionException
 import re
 
 # thumbnail constants
@@ -254,8 +255,11 @@ def marcxml_to_mods(obj, dsid, dsidOut='MODS'):
     return r
 
 def check_dates(obj, dsid, derivativeid):
-    date = datetime.strptime( obj[dsid].createdDate, '%Y-%m-%dT%H:%M:%S.%fZ' )
-    derdate = datetime.strptime( obj[derivativeid].createdDate, '%Y-%m-%dT%H:%M:%S.%fZ' )
+    try:
+        date = datetime.strptime( obj[dsid].createdDate, '%Y-%m-%dT%H:%M:%S.%fZ' )
+        derdate = datetime.strptime( obj[derivativeid].createdDate, '%Y-%m-%dT%H:%M:%S.%fZ' )
+    except FedoraConnectionException:
+        return True
 
     if date > derdate:
         return True
