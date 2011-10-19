@@ -10,13 +10,13 @@ conversion scripts with input from JWA and Colorado.
 '''
 
 from islandoraUtils.fedoraLib import get_datastream_as_file, update_datastream
-from shutil import rmtree
+from shutil import rmtree, move
 from datetime import datetime
 import os
 import subprocess
 import logging
 from lxml import etree
-
+import re
 
 # thumbnail constants
 tn_postfix = '-tn.jpg'
@@ -24,18 +24,37 @@ tn_size = (150, 200)
 
 def create_thumbnail(obj, dsid, tnid):
     logger = logging.getLogger('islandoraUtils.DSConverter.create_thumbnail')
+
     # We receive a file and create a jpg thumbnail
     directory, file = get_datastream_as_file(obj, dsid, "tmp")
     
-    # Make a thumbnail with convert
-    r = subprocess.call(['convert', directory+'/'+file+'[0]', '-thumbnail', \
-         '%sx%s' % tn_size, '-colorspace', 'rgb', 'jpg:'+directory+'/'+tnid])
+    # fine out what mimetype the input file is
+    try:
+        mime = obj[dsid].mimeType
+    except KeyError:
+        mime = None
+
+    infile = os.path.join(directory, file)
+    tmpfile = os.path.join(directory, 'tmp.jpg')
+    tnfile = os.path.join(directory, tnid)
+
+    # make the thumbnail based on the mimetype of the input
+    # right now we assume everything but video/mp4 can be handled 
+    if mime == 'video/mp4':
+        r = subprocess.call(['ffmpeg', '-itsoffset', '-4', '-i', infile, '-vcodec', 'mjpeg',\
+             '-vframes', '1', '-an', '-f', 'rawvideo', tmpfile])
+        if r == 0:
+            r = subprocess.call(['convert', '%s[0]' % tmpfile, '-thumbnail', '%sx%s' % tn_size,\
+                 '-colorspace', 'rgb', 'jpg:%s'%tnfile])
+    else:
+        # Make a thumbnail with convert
+        r = subprocess.call(['convert', '%s[0]' % infile, '-thumbnail', \
+             '%sx%s' % tn_size, '-colorspace', 'rgb', 'jpg:%s'%tnfile])
    
     if r == 0:
         update_datastream(obj, tnid, directory+'/'+tnid, label='thumbnail', mimeType='image/jpeg')
     else :
         logger.warning('PID:%s DSID:%s Thumbnail creation failed (return code:%d).' % (obj.pid, dsid, r))
-        #Try again on failure?
        
     logger.debug(directory)
     logger.debug(file)
@@ -67,16 +86,92 @@ def create_jp2(obj, dsid, jp2id):
     rmtree(directory, ignore_errors=True)
     return r
 
-def create_mp3(obj, dsid, mp3id):
-    logger = logging.getLogger('islandoraUtils.DSConverter.create_mp3')
-    # We recieve a WAV file. Create a MP3
-    directory, file = get_datastream_as_file(obj, dsid, "wav")
+def create_mp4(obj, dsid, mp4id):
+    logger = logging.getLogger('islandoraUtils.DSConverter.create_mp4')
+    directory, file = get_datastream_as_file(obj, dsid, 'video') 
+
+    infile = os.path.join(directory, file)
+    avifile = os.path.join(directory, 'output.avi')
+    mp4file = os.path.join(directory, 'output.mp4')
+    h264file = os.path.join(directory, 'output_video.h264')
+    rawfile = os.path.join(directory, 'output_audio.raw')
+    aacfile = os.path.join(directory, 'output_audio.aac')
+
+    r = subprocess.call(["mencoder", infile, '-o', avifile, '-vf', 'scale=640:480,harddup', '-af',\
+    'resample=44100', '-oac', 'faac', '-faacopts', 'br=96', '-ovc', 'x264', '-x264encopts',\
+    'bitrate=200:threads=2:turbo=2:bframes=1:nob_adapt:frameref=4:subq=5:me=umh:partitions=all'])
+
+    if r != 0:
+        logger.error('PID:%s DSID:%s MP4 creation (mencoder) failed.' % (obj.pid, dsid))
+        return r
+
+    # mp4box is stupid as a bag of hammers. if you do not check if there is a audio stream it will 
+    # fill the filesystem by creating a file full of junk. It also will just assume the frame rate
+    # is 25fps no matter what it is, so we need to get that
+    p = subprocess.Popen(['mediainfo', avifile], stdout=subprocess.PIPE)
+    out, err = p.communicate()
+
+    # we need the framerate this is sort of ugly
+    frame_rate = re.search('Frame rate\s*:\s*(\d*\.\d*) fps', out).group(1)
     
-    # Make MP3 with lame
-    # Allow it (joint) Stereo (might be good to check if the input is stereo?) and VBR...  Probably a good idea to enforce ISO, given our area.
-    r = subprocess.call(['lame', '-mj', '-v', '-V6', '-B224', '--strictly-enforce-ISO', directory+'/'+file, directory+'/'+mp3id])
+    # check if we have audio we can probably do this more efficiently
+    audio = re.search('Audio\n', out)
+
+    if(audio):
+        subprocess.call(['MP4Box', '-aviraw', 'audio', avifile])
+        # again MP4Box contains vacuous space instead of logic, so we have to rename this file
+        move(rawfile, aacfile)
+
+    subprocess.call(['MP4Box', '-aviraw', 'video', avifile])
+
+    args = ['MP4Box', '-add', h264file]
+    if(audio):
+        args.append('-add')
+        args.append(aacfile)
+    args.append('-fps')
+    args.append(frame_rate)
+    args.append(mp4file)
+
+    r = subprocess.call(args)
     if r == 0:
-      update_datastream(obj, mp3id, directory+'/'+mp3id, label='compressed to mp3', mimeType='audio/mpeg')
+        update_datastream(obj, mp4id, mp4file, label='compressed mp4', mimeType='video/mp4')
+    else:
+        logger.warning('PID:%s DSID:%s MP4 creation (MP4Box) failed.' % (obj.pid, dsid))
+
+    rmtree(directory, ignore_errors=True)
+    return r
+
+def create_mp3(obj, dsid, mp3id, args = None):
+
+    logger = logging.getLogger('islandoraUtils.DSConverter.create_mp3')
+    
+    #mimetype throws keyerror if it doesn't exist
+    try:
+        mime = obj[dsid].mimeType
+    except KeyError:
+        mime = None
+
+    if mime == 'audio/mpeg':
+        ext = 'mp3'
+    else:
+        ext = 'wav'
+
+    # We recieve a WAV file. Create a MP3
+    directory, file = get_datastream_as_file(obj, dsid, ext)
+    
+    # I think we need more sensible defaults for web streaming
+    if args == None:
+        args = ['-mj', '-v', '-V6', '-B224', '--strictly-enforce-ISO']
+
+    args.insert(0, 'lame')
+    args.append(os.path.join(directory,file))
+    outpath = os.path.join(directory,mp3id)
+    args.append(outpath)
+
+    # Make MP3 with lame
+    r = subprocess.call(args)
+    if r == 0:
+      update_datastream(obj, mp3id, outpath, label='compressed to mp3', mimeType='audio/mpeg')
     else:
       logger.warning('PID:%s DSID:%s MP3 creation failed (lame return code:%d).' % (obj.pid, dsid, r))
 
@@ -89,7 +184,7 @@ def create_ogg(obj, dsid, oggid):
     directory, file = get_datastream_as_file(obj, dsid, "wav")
     
     # Make OGG with ffmpeg
-    r = subprocess.call(['ffmpeg', '-i', directory+'/'+file, '-acodec', 'libvorbis', '-ab', '48k', directory+'/'+oggid])
+    r = subprocess.call(['ffmpeg', '-i', directory+'/'+file, '-acodec', 'libvorbis', '-ab', '96k', directory+'/'+oggid])
     if r == 0:
         update_datastream(obj, oggid, directory+'/'+oggid, label='compressed to ogg', mimeType='audio/ogg')
     else:
