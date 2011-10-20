@@ -64,7 +64,12 @@ def getMimeType(ext):
     
     return mimeType
 
-def hash_file(file_name, hash_type='SHA-1', chunksize=(10*1024*1024)):
+def __chunk(file_name, size):
+    start = 0
+    with open(file_name, 'r+b') as temp:
+        pass
+    
+def hash_file(file_name, hash_type='SHA-1', chunks=2**20):
     '''
         Hashes a file at the given path with the given algorithm, and returns the hash.
         
@@ -74,9 +79,11 @@ def hash_file(file_name, hash_type='SHA-1', chunksize=(10*1024*1024)):
         @param hash_type A hashing algorithm, currently restricted to those 
             available in Fedora 3.4.2 {MD5,SHA-{1,256,38{4,5},512}} 
             NOTE:  385 is made to point to 384
-        @param chunksize The number of bytes to hash at a time, to help avoid memory issues
+        @param chunks The number of hash blocks to read at a time
         
         @return A string containing the hex digest of the file.
+        
+        @todo:  Remove commented debug code.
     '''
     #FIXME:  This is duplicated here and in fedoraLib.update_datastream
     #The checksum/hashing algorithms supported by Fedora (mapped to the names that Python's hashlib uses)
@@ -90,12 +97,24 @@ def hash_file(file_name, hash_type='SHA-1', chunksize=(10*1024*1024)):
     }
     
     if os.path.exists(file_name):
-        with open(file_name) as temp:
+        with open(file_name, 'rb') as temp:
             h = hashlib.new(hashes[hash_type])
-            #Should chunk the hashing in the pieces of the size specified above..  Yay memory efficiency?
+            
+            #Should chunk the hashing based on the hash's block_size, and the number of chunks specified.  Yay memory efficiency?
             #This seems to work, it seems a little weird in my head...  May have to look at it in the future?
-            for chunk in temp.read(chunksize):
+            #total = 0
+            chunksize = chunks * h.block_size
+            #Lamba craziness borrowed from stackoverflow.  Huzzah!
+            for chunk in iter(lambda: temp.read(chunksize), ''):
+                #total += len(chunk)
+                #print('Chunksize: %s\tTotal: %s' % (len(chunk), total))
                 h.update(chunk)
+            #print('File size: %s' % temp.tell())
             return h.hexdigest()
     else:
         raise ValueError('File %s does not exist!' % file_name)
+
+        
+if __name__ == '__main__':
+    print(hash_file('/mnt/fjm_obj/dump/Fotos/949_0227818_53.jpg', 'SHA-1'))
+    pass
