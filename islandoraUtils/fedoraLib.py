@@ -17,6 +17,7 @@ from metadata import fedora_relationships as FR
 import os
 from time import sleep
 import hashlib
+from islandoraUtils.misc import hash_file
 
 def mangle_dsid(dsid):
     '''
@@ -108,29 +109,17 @@ def update_datastream(obj, dsid, filename, label='', mimeType='', controlGroup='
         'checksum': checksum
     }
     
-    #The checksum/hashing algorithms supported by Fedora (mapped to the names that Python's hashlib uses)
-    hashes = {
-        'MD5': 'md5', 
-        'SHA-1': 'sha1',
-        'SHA-256': 'sha256',
-        'SHA-384': 'sha384',
-        'SHA-385': 'sha384', #Seems to be an error in the documentation?  Let's try to account for it.
-        'SHA-512': 'sha512'
-    }
-    
     url = '%(url)s/objects/%(pid)s/datastreams/%(dsid)s?dsLabel=%(label)s&mimeType=%(mimetype)s&controlGroup=%(controlgroup)s' % info_dict
     
     #Wanna do checksumming?
     if checksumType in hashes:
         #Let's figure it out ourselves!
         if checksum is None:
-            with open(filename) as temp:
-                h = hashlib.new(hashes[checksumType])
-                #Should chunk the hashing in 10MB pieces or so...  Yay memory efficiency?
-                #This seems to work, it seems a little weird in my head...  May have to look at it in the future?
-                for chunk in temp.read(10*1024*1024):
-                    h.update(chunk)
-                info_dict['checksum'] = h.hexdigest()
+            #No sum provided, calculate it:
+            info_dict['checksum'] = hash_file(filename)
+        else:
+            #We trust the user to provide the proper checksum (don't think that Fedora does, though)
+            pass
                 
         url += '&checksumType=%(checksumType)s&checksum=%(checksum)s' % info_dict
 
@@ -152,59 +141,50 @@ def update_datastream(obj, dsid, filename, label='', mimeType='', controlGroup='
             sleep(5)
     logger.error('Failed updating %(pid)s/%(dsid)s from %(filename)s via CURL!' % info_dict)
     return False
-    
-def activateObjects(relations, namespaces, client):
+
+def update_hashed_datastream_without_dup(obj, dsid, **params):
     '''
-    @author: Adam Vessey
-    ***DOESN'T ACTUALLY DO ANYTHING AT PRESENT (only prints out the query it 'should' use)***
-    'rels' should be a dictionary whose keys correspond to content models in SPARQL syntax (eg 'islandora:basicCModel', assuming 'islandora' is set in namespaces), pointing to a list of relationships stored in tuples.  
-        (NOTE:  'AnY' indicates a wildcard search, though we check that the matched object is active)
-    'client' is an fcrepo client object
-    
-    NOTE:  I hacked the predicate 'fedora-view:disseminates' is handled differently...  The 'subject' of the relationship should be something like 'fedora:*/JPG'
-    '''
-    NSs = {
-        'fedora': 'info:fedora/', 
-        'fedora-model': 'info:fedora/fedora-sys:def/model#'
-    }
-    if namespaces:
-        NSs.update(namespaces)
-    query = StringIO()
-    for alias, uri in NSs.items():
-        if isinstance(uri, FR.rels_namespace):
-            query.write('PREFIX %s: <%s>\n' % (alias, uri.uri))
-        else:
-            query.write('PREFIX %s: <%s>\n' % (alias, uri))
-    query.write('FROM <#ri> \
-SELECT $obj \
-WHERE {')
-        
-    sections = list() #List of stringIOs used to build the query for individual objects.  Each item in the list will the be joined together with 'union' separating
-    for cmodel, rels in relations.items():
-        section = StringIO('{\n')
-        vars = 0
-        for pred, obj in rels:
-            u_pred = pred
-            u_obj = '$obj%s' % vars
-            section.write('$obj %s %s .\n' % (u_pred, u_obj))
+        @author Adam Vessey
+        NOTE:  This function essentially wraps update_datastream, and as such takes an 
+            identical set of parameters
             
-            #XXX:  A terrible, terrible hack...  But it should work?
-            if u_pred == 'fedora-view:disseminates':
-                section.write('%s fedora-view:disseminationType <%s>.\n' % (u_obj, obj))
-                section.write('%s fedora-model:State fedora-model:Active .\n')
-                
-            vars += 1
-        section.write('$obj fedora-model:State fedora-model:Inactive .\n')
-        section.write('}')
-        sections.append(section)
-    query.write('\nUNION\n'.join(sections))
-    query.write('}')
-    print query
-    #for result in client.searchTriples(query=query, limit='1000000'):
-    #    client.getObject(result['obj']['value'].rpartition('/')[2]).state = 'Active'
+        Get the DS profile
+        if 404'd due to DS, then 
+            update; 
+        else if there is an algorithm in the profile, then 
+            use it to hash;
+                if the calculated hash is not the same as that from the profile, update
+            else, 
+                use the provided checksumType to hash and update
+    '''
+    
+    if params['checksumType'] and params['checksumType'] != 'DISABLED': #If we do really want to hash, 
+        if params['checksumType'] == obj[dsid].checksumType: #And we want to use the same algorithm as is already in use
+            #Figure out the checksum for the given file (if it isn't given)
+            if not params['checksum']:
+                params['checksum'] = hash_file(filename, params['checksumType'])
+            
+            
+            #And compare the checksums.
+            if params['checksum'] == obj[dsid].checksum:
+                #If it's the same, we don't actually need to add the new version.
+                return True
+            else:
+                #If the sums are different, we need to update (fall through to end of function)
+                pass
+        else:
+            #We're trying to use a different algorithm.  Log in info and update? (fall through to end of function)
+            pass
+    else:
+        #No algorithm specified:  Nothing to compare, so update (fall through)
+        pass
+        
+    return update_datastream(obj=obj, dsid=dsid, **params)
     
 if __name__ == '__main__':
+    import fcrepo
     connection = fcrepo.connection.Connection('http://localhost:8080/fedora', username='fedoraAdmin', password='fedoraAdmin', persistent=False)
     client = fcrepo.client.FedoraClient(connection)
-    activateObjects([('fedora-view:disseminates', 'fedora:*/JPG')], {'asdf': 'fedora:atm:', 'atm-rel': 'http://www.example.org/dummy#'}, client)
+    #print(client.getDatastreamProfile('atm:1250', 'DC'))
+    #print(client.getDatastreamProfile('atm:1075', 'DC'))
     
