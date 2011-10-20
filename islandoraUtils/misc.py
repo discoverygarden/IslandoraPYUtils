@@ -85,7 +85,7 @@ def hash_file(file_name, hash_type='SHA-1', chunksize=(10*1024*1024)):
         'SHA-512': 'sha512'
     }
     
-    if os.exists(file_name):
+    if os.path.exists(file_name):
         with open(file_name) as temp:
             h = hashlib.new(hashes[checksumType])
             #Should chunk the hashing in the pieces of the size specified above..  Yay memory efficiency?
