@@ -17,7 +17,9 @@ Because dynamic importing is crazy this function can be used like this:
 from .. import xmlib
 etree = xmlib.import_etree()
 </example>
-
+ONLY USE THIS FUNCTION IF YOU ARE NOT USING LXML SPECIFIC APIS (GRR THIS INCLUDES .XPATH())
+THIS FUNCTION ALSO SCREWS WITH LOGGING, SETUP YOUR LOGGER BEFORE CALLING IT
+FIXME: AVOID LOGGING ISSUES
 @author
   Adam, Will
 '''
