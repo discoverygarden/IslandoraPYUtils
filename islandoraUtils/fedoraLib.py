@@ -111,6 +111,17 @@ def update_datastream(obj, dsid, filename, label='', mimeType='', controlGroup='
     
     url = '%(url)s/objects/%(pid)s/datastreams/%(dsid)s?dsLabel=%(label)s&mimeType=%(mimetype)s&controlGroup=%(controlgroup)s' % info_dict
     
+    #FIXME:  This is duplicated here and in misc.hash_file
+    #The checksum/hashing algorithms supported by Fedora (mapped to the names that Python's hashlib uses)
+    hashes = {
+        'MD5': 'md5', 
+        'SHA-1': 'sha1',
+        'SHA-256': 'sha256',
+        'SHA-384': 'sha384',
+        'SHA-385': 'sha384', #Seems to be an error in the Fedora documentation (SHA-385 doesn't actually exist)?  Let's try to account for it.
+        'SHA-512': 'sha512'
+    }
+    
     #Wanna do checksumming?
     if checksumType in hashes:
         #Let's figure it out ourselves!
@@ -142,7 +153,7 @@ def update_datastream(obj, dsid, filename, label='', mimeType='', controlGroup='
     logger.error('Failed updating %(pid)s/%(dsid)s from %(filename)s via CURL!' % info_dict)
     return False
 
-def update_hashed_datastream_without_dup(obj, dsid, **params):
+def update_hashed_datastream_without_dup(obj, dsid, filename, **params):
     '''
         @author Adam Vessey
         NOTE:  This function essentially wraps update_datastream, and as such takes an 
@@ -179,7 +190,7 @@ def update_hashed_datastream_without_dup(obj, dsid, **params):
         #No algorithm specified:  Nothing to compare, so update (fall through)
         pass
         
-    return update_datastream(obj=obj, dsid=dsid, **params)
+    return update_datastream(obj=obj, dsid=dsid, filename=filename, **params)
     
 if __name__ == '__main__':
     import fcrepo

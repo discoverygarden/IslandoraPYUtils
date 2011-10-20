@@ -5,6 +5,9 @@ This is a holding place for usefull re-usable code
 that doesn't have a place anywhere else in the package
 '''
 
+import os
+import hashlib
+
 def getMimeType(ext):
     '''
     @author William Panting
@@ -75,6 +78,7 @@ def hash_file(file_name, hash_type='SHA-1', chunksize=(10*1024*1024)):
         
         @return A string containing the hex digest of the file.
     '''
+    #FIXME:  This is duplicated here and in fedoraLib.update_datastream
     #The checksum/hashing algorithms supported by Fedora (mapped to the names that Python's hashlib uses)
     hashes = {
         'MD5': 'md5', 
@@ -87,7 +91,7 @@ def hash_file(file_name, hash_type='SHA-1', chunksize=(10*1024*1024)):
     
     if os.path.exists(file_name):
         with open(file_name) as temp:
-            h = hashlib.new(hashes[checksumType])
+            h = hashlib.new(hashes[hash_type])
             #Should chunk the hashing in the pieces of the size specified above..  Yay memory efficiency?
             #This seems to work, it seems a little weird in my head...  May have to look at it in the future?
             for chunk in temp.read(chunksize):
