@@ -78,6 +78,9 @@ class fedora_relationship_element():
         else:
             self.nsalias = 'fedora'
 
+        # state variable to know if the tree has been modified
+        self.modified = False
+
         self.root = etree.Element(self.rdf+'RDF', nsmap=self.nsmap)
     
     def toString(self):       
@@ -141,6 +144,8 @@ class fedora_relationship_element():
         if( subject == None or predicate == None or object == None):
             raise TypeError
 
+        self.modified = True
+
         pred_obj = self._objectifyPredicate(predicate)
         relationship = self._addRelationship(subject, pred_obj)
 
@@ -197,6 +202,9 @@ class fedora_relationship_element():
 
         result_elements = self._doXPathQuery(subject,predicate,object)
 
+        if result_elements:
+            self.modified = True
+
         for element in result_elements:
             parent = element.getparent()
             parent.remove(element)
@@ -218,10 +226,11 @@ class fedora_relationship(fedora_relationship_element):
         self.obj = obj
     
     def update(self):
-        if self.dsid not in self.obj:
-            self.obj.addDataStream(self.dsid, self.toString())
-        else:
-            self.obj[self.dsid].setContent(self.toString())
+        if self.modified:
+            if self.dsid not in self.obj:
+                self.obj.addDataStream(self.dsid, self.toString())
+            else:
+                self.obj[self.dsid].setContent(self.toString())
 
 class rels_int(fedora_relationship):
     """Class to update a fedora RELS-INT datastream."""
