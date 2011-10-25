@@ -36,7 +36,7 @@ def createRules(policy, xacml):
 def createRule(policy, rule):
     root = etree.SubElement(policy, xacmlconstants.XACML + 'Rule')
 
-    root.set('RuleId', rule['id'])
+    root.set('RuleId', rule['ruleid'])
     root.set('Effect', rule['effect'])
 
     createRuleTarget(root, rule)
@@ -110,7 +110,7 @@ def createRuleTargetResource(resources, name, type):
         ResourceAttributeDesignator.set("AttributeId","urn:fedora:names:fedora:2.1:resource:datastream:id")
 
 def createRuleCondition(target, rule):
-    condition = etree.SubElement(target, xacmlconstants.XACML + "Condition")
+    condition = etree.Element(xacmlconstants.XACML + "Condition")
     condition.set("FunctionId", "urn:oasis:names:tc:xacml:1.0:function:not")
 
     if rule['users']:
@@ -125,13 +125,16 @@ def createRuleCondition(target, rule):
         apply.append(users)
         apply.append(roles)
         condition.append(apply)
+        target.append(condition)
     except NameError:
         try:
             condition.append(users)
+            target.append(condition)
         except NameError:
             pass
         try:
             condition.append(roles)
+            target.append(condition)
         except NameError:
             pass
  

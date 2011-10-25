@@ -1,33 +1,19 @@
-import islandoraUtils.xacml.writer as xacmlwriter
-import islandoraUtils.xacml.parser as xacmlparser
-import pprint
+from islandoraUtils.xacml.tools import Xacml
 
-xacml = {
-  'RuleCombiningAlgId' : 'urn:oasis:names:tc:xacml:1.0:rule-combining-algorithm:first-applicable',
-  'rules' : [
-    {
-      'id' : 'denyapi-access-to-datastream-except-to-user-or-role',
-      'effect' : 'Deny',
-      'methods' : ['getDatastreamDissemination'],
-      'dsids' : ['AboutStacks.pdf'],
-      'users' : ['usera', 'userb'],
-      'roles' : [],
-      'mimes' : ['image/tiff', 'audio/x-wave'],
-    },
-    {
-      'id' : 'denyapi-except-to-user-or-role',
-      'effect' : 'Deny',
-      'methods' : ['ingest', 'modifyDatastreamByReference', 'modifyDatastreamByValue', 'modifyDisseminator', 'purgeObject', 'purgeDatastream', 'purgeDisseminator', 'setDatastreamState', 'setDisseminatorState', 'setDatastreamVersionable', 'addDatastream', 'addDisseminator'],
-      'dsids' : [],
-      'mimes' : [],
-      'users' : [],
-      'roles' : ['roleb', 'rolec'],
-    },
-  ]
-}
+xacml = Xacml()
+xacml.managementRule.addUser('jon')
+xacml.managementRule.addRole(['roleA', 'roleB'])
+xacml.managementRule.removeRole('roleB')
 
-pp = pprint.PrettyPrinter(indent=4)
-xml = xacmlwriter.toXML(xacml,True)
-print xml
-xacml = xacmlparser.parse(xml)
-pp.pprint(xacml)
+xacml.viewingRule.addUser('feet')
+xacml.viewingRule.addRole('toes')
+
+xacml.datastreamRule.addUser('22')
+xacml.datastreamRule.addDsid('OBJ')
+xacml.datastreamRule.addMimetype('image/pdf')
+
+xstring = xacml.getXmlString()
+xacml = Xacml(xstring)
+xstring2 = xacml.getXmlString()
+
+print xstring2
