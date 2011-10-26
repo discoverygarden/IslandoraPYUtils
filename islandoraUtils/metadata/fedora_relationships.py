@@ -60,7 +60,8 @@ class fedora_relationship_element():
         'fedora' : fedora,
     }
 
-    def __init__(self, namespaces=None, default_namespace=None):        
+    def __init__(self, namespaces=None, default_namespace=None, xml=None):
+
         if namespaces:
             if type(namespaces) == types.InstanceType:
                 self.nsmap[namespaces.alias] = namespaces.uri
@@ -69,6 +70,27 @@ class fedora_relationship_element():
                 for namespace in namespaces:
                     self.nsmap[namespace.alias] = namespace.uri
                     self.ns[namespace.alias] = '{%s}' % namespace.uri
+
+        if(xml):
+            parser = etree.XMLParser(remove_blank_text=True) # xml parser ignoring whitespace
+            root = etree.fromstring(xml, parser)
+
+            # we unfortunatly have to go through quite a lot of crap to add new namespaces to
+            # an existing xml document. There is a lxml bug filed against this but currently
+            # its on the wishlist. if that is like our wishlish this will be here for awhile.
+            # https://bugs.launchpad.net/lxml/+bug/555602
+            if namespaces:
+                oldnsmap = root.nsmap
+                for (alias, uri) in oldnsmap.items():
+                    self.ns[alias] = '{%s}' % uri
+                self.nsmap.update(oldnsmap)
+                self.root = etree.Element(root.tag, nsmap=self.nsmap)
+                self.root[:] = root[:]
+            else:
+                self.root = root
+                
+        else:
+            self.root = etree.Element(self.rdf+'RDF', nsmap=self.nsmap)
 
         #set deafult namespace for predicates
         if(default_namespace):
@@ -80,8 +102,6 @@ class fedora_relationship_element():
 
         # state variable to know if the tree has been modified
         self.modified = False
-
-        self.root = etree.Element(self.rdf+'RDF', nsmap=self.nsmap)
     
     def toString(self):       
         return '%s' % self
@@ -216,11 +236,14 @@ class fedora_relationship_element():
 class fedora_relationship(fedora_relationship_element):
     """This class adds fcrepo functionality to fedora_relationship_element."""
     def __init__(self, obj, reldsid, namespaces=None, default_namespace=None):
-        fedora_relationship_element.__init__(self, namespaces, default_namespace)
 
         if reldsid in obj:
-            parser = etree.XMLParser(remove_blank_text=True) # xml parser ignoring whitespace
-            self.root = etree.fromstring(obj[reldsid].getContent().read(), parser)
+            xmlstring = obj[reldsid].getContent().read()
+        else:
+            xmlstring = None
+
+
+        fedora_relationship_element.__init__(self, namespaces, default_namespace, xml=xmlstring)
 
         self.dsid = reldsid
         self.obj = obj
