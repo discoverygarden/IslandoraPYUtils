@@ -63,13 +63,21 @@ class fedora_relationship_element():
     def __init__(self, namespaces=None, default_namespace=None, xml=None):
 
         if namespaces:
-            if type(namespaces) == types.InstanceType:
+            if isinstance(namespaces,rels_namespace):
                 self.nsmap[namespaces.alias] = namespaces.uri
                 self.ns[namespaces.alias] = '{%s}' % namespaces.uri
+            elif isinstance(namespaces,list):
+                if isinstance(namespaces[0],basestring):
+                    self.nsmap[namespaces[0]] = namespaces[1]
+                    self.ns[namespaces[0]] = '{%s}' % namespaces[1]
+                elif isinstance(namespaces[0],rels_namespace):    
+                    for namespace in namespaces:
+                        self.nsmap[namespace.alias] = namespace.uri
+                        self.ns[namespace.alias] = '{%s}' % namespace.uri
+                else:
+                    raise TypeError
             else:
-                for namespace in namespaces:
-                    self.nsmap[namespace.alias] = namespace.uri
-                    self.ns[namespace.alias] = '{%s}' % namespace.uri
+                raise TypeError
 
         if(xml):
             parser = etree.XMLParser(remove_blank_text=True) # xml parser ignoring whitespace
@@ -135,19 +143,22 @@ class fedora_relationship_element():
         return self.root.xpath(description_xpath + predicate_xpath + object_xpath, namespaces=self.nsmap)
 
     def _objectifyPredicate(self, predicate):
-        if type(predicate) == types.NoneType:
-            pred_obj = None
-        elif type(predicate) == types.StringType:
-            pred_obj = rels_predicate(self.nsalias,predicate)
-        elif type(predicate) == types.UnicodeType:#unicode strings will be common, handle by forcing utf8
-            pred_obj = rels_predicate(self.nsalias,str(predicate))
-        else:
+        if predicate == None:
             pred_obj = predicate
-            if(pred_obj.alias == None):
-                pred_obj.alias = self.nsalias
-            elif pred_obj.alias not in self.ns:
+        elif isinstance(predicate,basestring):
+            pred_obj = rels_predicate(self.nsalias,predicate)
+        elif isinstance(predicate,list):
+            pred_obj = rels_predicate(predicate[0], predicate[1])
+            if prediacte[0] not in self.ns:
                 raise KeyError
-
+        elif isinstance(predicate,rels_predicate):
+            pred_obj = predicate
+            if pred_obj.alias == None:
+                pred_obj.alias = self.nsalias
+            if pred_obj.alias not in self.ns:
+                raise KeyError
+        else:
+            raise TypeError
         return pred_obj
 
     def _addRelationship(self, subject, predicate):
@@ -247,7 +258,37 @@ class fedora_relationship(fedora_relationship_element):
 
         self.dsid = reldsid
         self.obj = obj
-    
+
+    def _updateObject(self, object):
+        """Private method to overload object. Turns everything into a rels_object"""
+        if object == None:
+            obj = None
+        elif isinstance(object,basestring):
+            obj = rels_object('%s/%s'%(self.obj.pid,object), rels_object.DSID)
+        elif isinstance(object,rels_object):
+            if object.type not in rels_object.types:
+                raise TypeError
+            if object.type == rels_object.DSID:
+                obj = copy.copy(object)
+                obj.data = '%s/%s'%(self.obj.pid, object.data)
+            elif object.type == rels_object.LITERAL or object.type == rels_object.PID:
+                obj = copy.copy(object)
+        elif isinstance(object, list):
+            reltype = object[1].lower()
+            if reltype == 'dsid':
+                obj = rels_object('%s/%s'%(self.obj.pid, object[0]), rels_object.DSID)
+            elif reltype == 'pid':
+                obj = rels_object(object[0], rels_object.PID)
+            elif reltype == 'literal':
+                obj = rels_object(object[0], rels_object.LITERAL)
+            else:
+                raise KeyError
+        elif isinstance(object,fcrepo.object.FedoraObject):
+            obj = rels_object(object.pid, rels_object.PID)
+        else:
+            raise TypeError
+        return obj
+
     def update(self):
         if self.modified:
             if self.dsid not in self.obj:
@@ -264,32 +305,16 @@ class rels_int(fedora_relationship):
         Arguements:
           obj -- The fcrepo object to modify/create rels_int for.
           namespaces -- Namespaces to be added to the rels_int.
-              rels_namespace - rels_namespace object containing namespace and alias.
+              [] - list containing ['alias','uri']
               [rels_namespace, ...] - list of rels_namespace objects.
+              [[],[],...[]] - list of ['alias','uri'] 
+              rels_namespace - rels_namespace object containing namespace and alias.
           default_namespace -- String containing the alias of the default namespace.
           If no namespace is passed in then this is assumed:
           info:fedora/fedora-system:def/relations-external#
 
         """
         fedora_relationship.__init__(self, obj, 'RELS-INT', namespaces, default_namespace)
-
-    def _updateObject(self, object):
-        """Private method to overload object. Turns everything into a rels_object"""
-        if type(object) == types.NoneType:
-            obj = None
-        elif type(object) == types.StringType:
-            obj = rels_object('%s/%s'%(self.obj.pid,object), rels_object.DSID)
-        elif type(object) == types.UnicodeType:#unicode strings will be common, handle by forcing utf8
-            obj = rels_object('%s/%s'%(self.obj.pid,str(object)), rels_object.DSID)
-        else:
-            if object.type == rels_object.DSID:
-                obj = copy.copy(object)
-                obj.data = '%s/%s'%(self.obj.pid, object.data)
-            elif object.type == rels_object.LITERAL:
-                obj = copy.copy(object)
-            else:
-                raise TypeError
-        return obj
 
     def _updateSubject(self, subject):
         """Private method to add pid/dsid to the passed in dsid."""
@@ -305,9 +330,11 @@ class rels_int(fedora_relationship):
           predicate -- The predicate.
               String - The predicate string. The default namespace is assumed.
               rels_predicate - object with namespace alias and predicate set.
+              list - ['alias','predicate']
           object -- The object.
               string - String containing a DSID.
-              rels_object - Rels object with type set to DSID or LITERAL.
+              rels_object - Rels object.
+              list - ['string','type'] where: type is in ['dsid', 'pid', 'literal']
 
         """
         obj = self._updateObject(object)
@@ -327,10 +354,12 @@ class rels_int(fedora_relationship):
               None - Any predicate.
               String - The predicate string. The default namespace is assumed.
               rels_predicate - object with namespace alias and predicate set.
+              list - ['alias','predicate']
           object -- The object to search for.
               None - Any object.
               string - String containing a DSID.
-              rels_object - Rels object with type set to DSID or LITERAL.
+              rels_object - Rels object.
+              list - ['string','type'] where: type is in ['dsid', 'pid', 'literal']
 
         Returns:
           List of lists of the form:
@@ -357,10 +386,12 @@ class rels_int(fedora_relationship):
               None - Any predicate.
               String - The predicate string. The default namespace is assumed.
               rels_predicate - object with namespace alias and predicate set.
+              list - ['alias','predicate']
           object -- The object to remove.
               None - Any object.
               string - String containing a DSID.
-              rels_object - Rels object with type set to DSID or LITERAL.
+              rels_object - Rels object.
+              list - ['string','type'] where: type is in ['dsid', 'pid', 'literal']
 
         """
         obj = self._updateObject(object)
@@ -381,31 +412,16 @@ class rels_ext(fedora_relationship):
         Arguements:
           obj -- The fcrepo object to modify/create rels_ext for.
           namespaces -- Namespaces to be added to the rels_ext.
-              rels_namespace - rels_namespace object containing namespace and alias.
+              [] - list containing ['alias','uri']
               [rels_namespace, ...] - list of rels_namespace objects.
+              [[],[],...[]] - list of ['alias','uri'] 
+              rels_namespace - rels_namespace object containing namespace and alias.
           default_namespace -- String containing the alias of the default namespace.
           If no namespace is passed in then this is assumed:
           info:fedora/fedora-system:def/relations-external#
 
         """
         fedora_relationship.__init__(self, obj, 'RELS-EXT', namespaces, default_namespace)
-
-    def _updateObject(self, object):
-        """Private function to turn all objects into a rels_object."""
-        if type(object) == types.NoneType:
-            obj = None
-        elif type(object) == types.StringType:
-            obj = rels_object(object, rels_object.PID)
-        elif type(object) == types.UnicodeType:#unicode strings will be common, handle by forcing utf8
-            obj = rels_object(str(object), rels_object.PID)
-        elif type(object) == fcrepo.object.FedoraObject:
-            obj = rels_object(object.pid, rels_object.PID)
-        else:
-            if object.type == rels_object.PID or object.type == rels_object.LITERAL:
-                obj = copy.copy(object)
-            else:
-                raise TypeError
-        return obj
 
     def addRelationship(self, predicate, object):
         """Add new relationship to rels_ext XML.
@@ -415,9 +431,11 @@ class rels_ext(fedora_relationship):
               This is an overloaded method:
               String - The predicate string. The default namespace is assumed.
               rels_predicate - object with namespace alias and predicate set.
+              list - ['alias','predicate']
           object -- The object.
               string - String containing a PID.
-              rels_object - Rels object with type set to PID or LITERAL.
+              rels_object - Rels object.
+              list - ['string','type'] where: type is in ['dsid', 'pid', 'literal']
 
         """
         obj = self._updateObject(object)
@@ -435,10 +453,12 @@ class rels_ext(fedora_relationship):
               None - Any predicate.
               String - The predicate string. The default namespace is assumed.
               rels_predicate - object with namespace alias and predicate set.
+              list - ['alias','predicate']
           object -- The object to search for.
               None - Any object.
               string - String containing a PID.
-              rels_object - Rels object with type set to PID or LITERAL.
+              rels_object - Rels object.
+              list - ['string','type'] where: type is in ['dsid', 'pid', 'literal']
 
         Returns:
           List of lists of the form:
@@ -464,10 +484,12 @@ class rels_ext(fedora_relationship):
               None - Any predicate.
               String - The predicate string. The default namespace is assumed.
               rels_predicate - object with namespace alias and predicate set.
+              list - ['alias','predicate']
           object -- The object to remove.
               None - Any object.
               string - String containing a PID.
-              rels_object - Rels object with type set to PID or LITERAL.
+              rels_object - Rels object.
+              list - ['string','type'] where: type is in ['dsid', 'pid', 'literal']
 
         """
         obj = self._updateObject(object)
