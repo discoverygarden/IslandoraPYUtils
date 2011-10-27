@@ -20,6 +20,8 @@ setup(
       author_email='will@discoverygarden.ca',
       license = "GPL",
       packages=find_packages(),
+      package_dir={"islandoraUtils" : "islandoraUtils"},
+      package_data={"islandoraUtils" : ["__resources/*.xslt"]},
       long_description=read('README'),
       install_requires=['setuptools','lxml']
       )
