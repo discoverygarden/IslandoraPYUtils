@@ -1,5 +1,4 @@
 from lxml import etree
-import types
 import copy
 import fcrepo #For type checking...
 
@@ -266,7 +265,7 @@ class fedora_relationship(fedora_relationship_element):
         elif isinstance(object,basestring):
             obj = rels_object('%s/%s'%(self.obj.pid,object), rels_object.DSID)
         elif isinstance(object,rels_object):
-            if object.type not in rels_object.types:
+            if object.type not in rels_object.TYPES:
                 raise TypeError
             if object.type == rels_object.DSID:
                 obj = copy.copy(object)
