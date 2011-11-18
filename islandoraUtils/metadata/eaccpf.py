@@ -4,13 +4,15 @@ import datetime
 from StringIO import StringIO
 import base64
 
-from .. import xmlib
+from islandoraUtils import xmlib
 etree = xmlib.import_etree()
                     
 class EACCPF(object):
     '''
     A python library to deal with (a tiny subset) of EAC-CPF 
     See http://eac.staatsbibliothek-berlin.de/eac-cpf-schema.html
+    
+    TODO:  Ensure ordering of elements, for validation purposes...
     '''
     def __init__(self, id, element=None, xml=None, agency=('DGI', 'DiscoveryGarden Inc.'), language=('eng', 'English'), script=('Latn', 'Latin'), loggerName='islandoraUtils.metadata.eaccpf'):
         '''
@@ -28,10 +30,15 @@ class EACCPF(object):
         else:
             #Build a fairly bare eac-cpf schema for a base.
             root = etree.Element('eac-cpf', 
-                {'{http://www.w3.org/2001/XMLSchema-instance}schemaLocation': "http://eac.staatsbibliothek.de/schema/cpf.xsd"}, 
-                {'xsi': "http://www.w3.org/2001/XMLSchema-instance"})
+                attrib={'{http://www.w3.org/2001/XMLSchema-instance}schemaLocation': 'urn:isbn:1-931666-33-4 http://eac.staatsbibliothek-berlin.de/schema/cpf.xsd'}, 
+                nsmap={
+                    'xsi': 'http://www.w3.org/2001/XMLSchema-instance',
+                    None: 'urn:isbn:1-931666-33-4' #default namespace
+                })
             control = etree.SubElement(root, 'control')
-            etree.SubElement(control, 'recordId').text = '%(id)s/EAC-CPF' % {'id': id}
+            etree.SubElement(control, 'recordId').text = '%(id)s--EAC-CPF' % {'id': id}
+            etree.SubElement(control, 'maintenanceStatus').text = 'new'
+            agent = etree.SubElement(control, 'maintenanceAgency')
             
             #FIXME...  The unpacking use could probably be a little clearer...  Anyway.
             lang = etree.SubElement(control, 'languageDeclaration')
@@ -40,12 +47,13 @@ class EACCPF(object):
             a, b = script
             etree.SubElement(lang, 'script', {'scriptCode': a}).text = b
             
-            agent = etree.SubElement(control, 'maintenanceAgency')
             etree.SubElement(control, 'maintenanceHistory')
             etree.SubElement(control, 'sources')
             
             #Deliciously awesome tuple unpacking!
-            etree.SubElement(agent, 'agencyCode').text, etree.SubElement(agent, 'agencyName').text = agency
+            a, b = agency
+            #etree.SubElement(agent, 'agencyCode').text = a #Needs to be in a defined set to validate
+            etree.SubElement(agent, 'agencyName').text = b
             
             etree.SubElement(root, 'cpfDescription')
             
@@ -68,7 +76,7 @@ class EACCPF(object):
         '''Get the XML as a string'''
         return etree.tostring(self.element, pretty_print=True, encoding="utf8")
             
-    def add_maintenance_event(self, type="modified", time="now", agent_type="human", agent="Me"):
+    def add_maintenance_event(self, type="derived", time="now", agent_type="human", agent="Me"):
         '''
         If 'time' is not provided, or is 'now', utcnow will be used.
         If 'time' is an instance of datetime, it will be used directly
@@ -130,7 +138,7 @@ class EACCPF(object):
     
     #FIXME:  Should probably verify that 'role' is in the agreed upon vocab?
     #TODO:  Checking whether or not a the entry to add already exists would probably be a good idea.
-    def add_name_entry(self, role='primary', name={'forename': 'first', 'middle': 'middle', 'surname': 'last'}):
+    def add_name_entry(self, role='primary', name={'forename': 'first', 'middle': 'middle', 'surname': 'last'}, entityType='person'):
         '''
         * "name" should be a dictionary whose keys will be used as the 
             "localType" attribute in nameEntry/part, with the text set 
@@ -141,6 +149,10 @@ class EACCPF(object):
         id = self.element.find('cpfDescription/identity')
         if id is None:
             id = etree.SubElement(self.element.find('cpfDescription'), 'identity')
+            
+        et = id.find('entityType')
+        if et is None:
+            et = etree.SubElement(id, 'entityType').text = entityType
             
         if role is 'primary':
             for old_primary in id.findall('nameEntry[@localType="primary"]'):
@@ -270,24 +282,26 @@ to simplify the structure because of the dynamic importing of etree
     test = EACCPF('test')
     test.add_maintenance_event()
     test.add_XML_source('Blargh', '<Honk/>')
-    test.add_maintenance_event(type='modified', agent="Him")
+    test.add_maintenance_event(type='revised', agent="Him")
     test.add_XML_source('Bob', etree.Element('Loblaw'))
-    test.add_maintenance_event(type='modified', agent="They", agent_type="machine")
+    test.add_maintenance_event(type='revised', agent="They", agent_type="machine")
     #with open('./FileHandler.py') as aFile:
     #    test.add_bin_source('Try a file object', aFile)
+    test.add_name_entry()
+    test.add_name_entry(name={'a': 'asdf', 'b': '2', 'c': '3'})
+    test.add_exist_dates('1923', '2010')
+    test.add_address(addr={'line1': 'here', 'line2': 'there', 'country': 'Everywhere'})
+    test.add_address(addr={'line1': 'asdf', 'line2': 'qwerty', 'country': 'yuiop'})
     test.add_bio('this is not xml!')
     b_tmp = etree.Element('bio')
     etree.SubElement(b_tmp, 'p').text = 'Ceci est de XML'
     test.add_bio(b_tmp)
     test.add_bio("<bio><p>C'est de la XML fausse!</p><asdf><p>other</p></asdf></bio>")
-    test.add_name_entry()
-    test.add_name_entry(name={'a': 'asdf', 'b': '2', 'c': '3'})
     test.add_bin_source('Some text and stuff...', '<>></\'e2345^&lt;!')
-    test.add_address(addr={'line1': 'here', 'line2': 'there', 'country': 'Everywhere'})
-    print('XML:\n%s' % test)
-    test.add_address(addr={'line1': 'asdf', 'line2': 'qwerty', 'country': 'yuiop'})
-    test.add_exist_dates('1923', '2010')
-    print('XML:\n%s' % test)
-    el = test.element.find('control/sources/source/objectBinWrap')
+    el = None
+    #el = test.element.find('control/sources/source/objectBinWrap')
     if el is not None:
         print('Decoded base64 test:\n%s' % base64.decodestring(el.text))
+    return str(test)    
+if __name__ == '__main__':
+    print(testSchema())
