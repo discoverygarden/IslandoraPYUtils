@@ -8,6 +8,7 @@ This file is meant to help with file manipulations/alterations.
 from pyPdf import PdfFileWriter, PdfFileReader
 import logging, os
 from . import xmlib
+from .misc import force_extract_integer_from_string
 etree = xmlib.import_etree()
 
 def appendPDFwithPDF(outFile,toAppend):
@@ -104,7 +105,7 @@ but not realy it just checks the extension right now.
             return True
     return False
 
-def breakTEIOnPages(file_path, output_directory):
+def breakTEIOnPages(file_path, output_directory, force_numeric_page_numbers = False):
     '''
 This function will break a tei file into tei snipits for each page
 This may not work with tei files not from Hamilton
@@ -114,9 +115,9 @@ It explodes on non expanded pb tags. it will likely break on expanded ones
 @param string file_path
 @param string output_directory
 @todo
-  make sure to get the last page
+  make pages rely on the @n of <pb> quashing non-numeric characters
 @todo
-  start not repeating the DNR list
+  make the script handle non-numeric pageination
 '''
     if os.path.isfile(file_path) and (file_path.endswith('.xml') or file_path.endswith('.tei') or file_path.endswith('.TEI') or file_path.endswith('.XML')):
         
@@ -126,7 +127,7 @@ It explodes on non expanded pb tags. it will likely break on expanded ones
         page_element_tracker = list()
         first_page_sentinal = True
         root_text_sentinal = 0 #to be considered true only if ==1
-        page_number = 0
+        page_number = False
         pb_parent = etree.Element
         DoNotRepeat_list = list()
         #go through file until eof
@@ -150,7 +151,7 @@ It explodes on non expanded pb tags. it will likely break on expanded ones
                 elif root_text_sentinal == 0:
                     root_text_sentinal+=1
                     
-                '''on a page break open iterate through everything on on the element stack 
+                '''on a page break open iterate through everything on the element stack 
                    grab the textual content posting it to the current page's elements
                    then print it to file
                 '''
@@ -164,6 +165,7 @@ It explodes on non expanded pb tags. it will likely break on expanded ones
                             page_element.text = element.text
                         
                     DoNotRepeat_list = list()#clear so we aren't appending each pb
+                    
                     #create the next page parser
                     root_element_sentinal = True
                     for element in page_element_tracker:
@@ -183,15 +185,17 @@ It explodes on non expanded pb tags. it will likely break on expanded ones
                     
                     
                     #print to file, but don't print the 'first page' it's metadata
-                    if page_number > 0:
+                    if page_number is not False:
                         output_path = os.path.join(output_directory,  os.path.basename(file_path)[:-4] + '_page_' + str(page_number) + '.xml')
                         current_page.write(output_path, encoding = "UTF-8")
                     
                     #switch to new page
-                    page_number += 1
+                    page_number = force_extract_integer_from_string(elem.attrib['n'])
+                    print(page_number)
                     current_page = next_page
                     page_element_tracker = DoNotRepeat_list
                     DoNotRepeat_list = list(element_tracker)
+                
                 else:#push tag into new page
                     #construct element
                     page_elem = etree.Element(elem.tag)
