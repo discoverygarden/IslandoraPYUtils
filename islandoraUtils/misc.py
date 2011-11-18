@@ -7,6 +7,7 @@ that doesn't have a place anywhere else in the package
 
 import os
 import hashlib
+import re
 
 def getMimeType(ext):
     '''
@@ -114,7 +115,25 @@ def hash_file(file_name, hash_type='SHA-1', chunks=2**20):
     else:
         raise ValueError('File %s does not exist!' % file_name)
 
+def force_extract_integer_from_string(string_to_cast):
+    '''
+    This is a simple function that will quash non-numeric characters in a string and return an integer.
+    The integer will be made up of all numerals in the string.
+    @param string_to_cast
+      The string to quash to an int
+    @return string_cast_to_int
+      The integer value of the quashed string
+    '''
+    interum_string = re.sub('[^0-9]', '', string_to_cast)#match non-numeric, replaces with nothing
+    string_cast_to_int = int(interum_string)
+    return string_cast_to_int
         
 if __name__ == '__main__':
-    print(hash_file('/mnt/fjm_obj/dump/Fotos/949_0227818_53.jpg', 'SHA-1'))
+    '''
+    @todo: 
+      refine the 'tests'
+    '''
+    #print(hash_file('/mnt/fjm_obj/dump/Fotos/949_0227818_53.jpg', 'SHA-1'))
+    print(force_extract_integer_from_string('l33t'))
+    
     pass
