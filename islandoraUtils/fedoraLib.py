@@ -22,7 +22,7 @@ from islandoraUtils.misc import hash_file
 def mangle_dsid(dsid):
     '''
     A very aptly named function that will take any string and make it conform [via hack and slash]
-    to Fedora's Datastream ID naming requirements 
+    to Fedora's Datastream ID naming requirements
 
     @author: Jonathan Green
 
@@ -75,7 +75,7 @@ def get_datastream_as_file(obj, dsid, extension = ''):
     
 def update_datastream(obj, dsid, filename, label='', mimeType='', controlGroup='M', tries=3, checksumType=None, checksum=None):
     '''
-    This function uses curl to add a datastream to Fedora because 
+    This function uses curl to add a datastream to Fedora because
     of a bug [we need confirmation that this is the bug Alexander referenced in Federa Microservices' code]
     in the pyfcrepo library, that creates unnecessary failures with closed sockets.
     The bug could be related to the use of httplib.
@@ -99,10 +99,10 @@ def update_datastream(obj, dsid, filename, label='', mimeType='', controlGroup='
     conn = obj.client.api.connection
     
     info_dict = {
-        'url': conn.url, 
+        'url': conn.url,
         'username': conn.username, 'password': conn.password,
-        'pid': obj.pid, 'dsid': dsid, 
-        'label': quote(label), 'mimetype': mimeType, 'controlgroup': controlGroup, 
+        'pid': obj.pid, 'dsid': dsid,
+        'label': quote(label), 'mimetype': mimeType, 'controlgroup': controlGroup,
         'filename': filename,
         'tries': tries,
         'checksumType': checksumType,
@@ -114,7 +114,7 @@ def update_datastream(obj, dsid, filename, label='', mimeType='', controlGroup='
     #FIXME:  This is duplicated here and in misc.hash_file
     #The checksum/hashing algorithms supported by Fedora (mapped to the names that Python's hashlib uses)
     hashes = {
-        'MD5': 'md5', 
+        'MD5': 'md5',
         'SHA-1': 'sha1',
         'SHA-256': 'sha256',
         'SHA-384': 'sha384',
@@ -137,10 +137,14 @@ def update_datastream(obj, dsid, filename, label='', mimeType='', controlGroup='
     # Using curl due to an incompatibility with the pyfcrepo library.
     #Go figure...  You'd think that instead of [..., '-F', 'file=@%(filename)s', ...], you should be using [..., '--data-binary', '@%(filename)s', ...], but the latter here fails to upload text correctly...
     #Strictly, 'update' (modify) should use HTTP PUT, while add should use HTTP POST...  There doesn't really seem to be a difference, though...
-    commands = ['curl', '-i', '-H', '-XPOST', url, '-f', '-F', 
-        'file=@%(filename)s' % info_dict, '-u', '%(username)s:%(password)s' % info_dict]
-    
-    
+    commands = ['curl', '-i', '-H', '-f', '-u', '%(username)s:%(password)s' % info_dict]
+    if info_dict['controlgroup'] in ['R', 'E']:
+        url += '&dsLocation=%(filename)s' % info_dict
+    else:
+        commands.extend(['-F', 'file=@%(filename)s' % info_dict])
+
+    commands.extend(['-XPOST', url])
+
     while info_dict['tries'] > 0:
         info_dict['tries'] = info_dict['tries'] - 1
         logger.debug("Updating/Adding datastream %(dsid)s to %(pid)s with mimetype %(mimetype)s from file %(filename)s" % info_dict)
@@ -156,20 +160,20 @@ def update_datastream(obj, dsid, filename, label='', mimeType='', controlGroup='
 def update_hashed_datastream_without_dup(obj, dsid, filename, **params):
     '''
         @author Adam Vessey
-        NOTE:  This function essentially wraps update_datastream, and as such takes an 
+        NOTE:  This function essentially wraps update_datastream, and as such takes an
             identical set of parameters
             
         Get the DS profile
-        if 404'd due to DS, then 
-            update; 
-        else if there is an algorithm in the profile, then 
+        if 404'd due to DS, then
+            update;
+        else if there is an algorithm in the profile, then
             use it to hash;
                 if the calculated hash is not the same as that from the profile, update
-            else, 
+            else,
                 use the provided checksumType to hash and update
     '''
-    
-    if params['checksumType'] and params['checksumType'] != 'DISABLED': #If we do really want to hash, 
+
+    if params['checksumType'] and params['checksumType'] != 'DISABLED': #If we do really want to hash,
         if params['checksumType'] == obj[dsid].checksumType: #And we want to use the same algorithm as is already in use
             #Figure out the checksum for the given file (if it isn't given)
             if not params['checksum']:
@@ -191,11 +195,11 @@ def update_hashed_datastream_without_dup(obj, dsid, filename, **params):
         pass
         
     return update_datastream(obj=obj, dsid=dsid, filename=filename, **params)
-    
+
 if __name__ == '__main__':
     import fcrepo
     connection = fcrepo.connection.Connection('http://localhost:8080/fedora', username='fedoraAdmin', password='fedoraAdmin', persistent=False)
     client = fcrepo.client.FedoraClient(connection)
     #print(client.getDatastreamProfile('atm:1250', 'DC'))
     #print(client.getDatastreamProfile('atm:1075', 'DC'))
-    
+
