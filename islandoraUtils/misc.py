@@ -17,7 +17,7 @@ def getMimeType(extension):
 
     @param extension
       The file extension to find the mimetype from
-    
+
     @return mimeType
       The mimetype that was associated to the file extension
     @todo
@@ -46,46 +46,162 @@ def getMimeType(extension):
     if ext.find('.')==0:#using find to avoid catching the doesn't exist exception from index
         ext = ext[1:]
 
-    # this list is a subset of the list from wikipedia located here:
-    # http://en.wikipedia.org/wiki/Internet_media_type
+    # this is the list of mime types defined in MimeClass.inc in islandora (commit f608652cf6421c2952100b451fe2d699cb1d8b63)
     mimes = {
-        # combo types
+        # openoffice:
+        'odb' : 'application/vnd.oasis.opendocument.database',
+        'odc' : 'application/vnd.oasis.opendocument.chart',
+        'odf' : 'application/vnd.oasis.opendocument.formula',
+        'odg' : 'application/vnd.oasis.opendocument.graphics',
+        'odi' : 'application/vnd.oasis.opendocument.image',
+        'odm' : 'application/vnd.oasis.opendocument.text-master',
+        'odp' : 'application/vnd.oasis.opendocument.presentation',
+        'ods' : 'application/vnd.oasis.opendocument.spreadsheet',
+        'odt' : 'application/vnd.oasis.opendocument.text',
+        'otg' : 'application/vnd.oasis.opendocument.graphics-template',
+        'oth' : 'application/vnd.oasis.opendocument.text-web',
+        'otp' : 'application/vnd.oasis.opendocument.presentation-template',
+        'ots' : 'application/vnd.oasis.opendocument.spreadsheet-template',
+        'ott' : 'application/vnd.oasis.opendocument.text-template',
+        # staroffice:
+        'stc' : 'application/vnd.sun.xml.calc.template',
+        'std' : 'application/vnd.sun.xml.draw.template',
+        'sti' : 'application/vnd.sun.xml.impress.template',
+        'stw' : 'application/vnd.sun.xml.writer.template',
+        'sxc' : 'application/vnd.sun.xml.calc',
+        'sxd' : 'application/vnd.sun.xml.draw',
+        'sxg' : 'application/vnd.sun.xml.writer.global',
+        'sxi' : 'application/vnd.sun.xml.impress',
+        'sxm' : 'application/vnd.sun.xml.math',
+        'sxw' : 'application/vnd.sun.xml.writer',
+        # k-office:
+        'kil' : 'application/x-killustrator',
+        'kpt' : 'application/x-kpresenter',
+        'kpr' : 'application/x-kpresenter',
+        'ksp' : 'application/x-kspread',
+        'kwt' : 'application/x-kword',
+        'kwd' : 'application/x-kword',
+        # ms office 97:
+        'doc' : 'application/msword',
+        'xls' : 'application/vnd.ms-excel',
+        'ppt' : 'application/vnd.ms-powerpoint',
+        # office2007:
+        'docx' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'docm' : 'application/vnd.ms-word.document.macroEnabled.12',
+        'dotx' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.template',
+        'dotm' : 'application/vnd.ms-word.template.macroEnabled.12',
+        'xlsx' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'xlsm' : 'application/vnd.ms-excel.sheet.macroEnabled.12',
+        'xltx' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.template',
+        'xltm' : 'application/vnd.ms-excel.template.macroEnabled.12',
+        'xlsb' : 'application/vnd.ms-excel.sheet.binary.macroEnabled.12',
+        'xlam' : 'application/vnd.ms-excel.addin.macroEnabled.12',
+        'pptx' : 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        'pptm' : 'application/vnd.ms-powerpoint.presentation.macroEnabled.12',
+        'ppsx' : 'application/vnd.openxmlformats-officedocument.presentationml.slideshow',
+        'ppsm' : 'application/vnd.ms-powerpoint.slideshow.macroEnabled.12',
+        'potx' : 'application/vnd.openxmlformats-officedocument.presentationml.template',
+        'potm' : 'application/vnd.ms-powerpoint.template.macroEnabled.12',
+        'ppam' : 'application/vnd.ms-powerpoint.addin.macroEnabled.12',
+        'sldx' : 'application/vnd.openxmlformats-officedocument.presentationml.slide',
+        'sldm' : 'application/vnd.ms-powerpoint.slide.macroEnabled.12',
+        # wordperfect (who cares?):
+        'wpd' : 'application/wordperfect',
+        # common and generic containers:
         'pdf' : 'application/pdf',
+        'eps' : 'application/postscript',
+        'ps' : 'application/postscript',
+        'rtf' : 'text/rtf',
+        'rtx' : 'text/richtext',
+        'latex' : 'application/x-latex',
+        'tex' : 'application/x-tex',
+        'texi' : 'application/x-texinfo',
+        'texinfo' : 'application/x-texinfo',
+        # *ml:
+        'css' : 'text/css',
+        'htm' : 'text/html',
+        'html' : 'text/html',
+        'wbxml' : 'application/vnd.wap.wbxml',
+        'xht' : 'application/xhtml+xml',
+        'xhtml' : 'application/xhtml+xml',
+        'xsl' : 'text/xml',
+        'xml' : 'text/xml',
+        'csv' : 'text/csv',
+        'tsv' : 'text/tab-separated-values',
+        'txt' : 'text/plain',
+        # images:
+        "bmp" : "image/bmp",
+        "gif" : "image/gif",
+        "ief" : "image/ief",
+        "jpeg" : "image/jpeg",
+        "jpe" : "image/jpeg",
+        "jpg" : "image/jpeg",
+        "jp2" : "image/jp2",
+        "png" : "image/png",
+        "tiff" : "image/tiff",
+        "tif" : "image/tif",
+        "djvu" : "image/vnd.djvu",
+        "djv" : "image/vnd.djvu",
+        "wbmp" : "image/vnd.wap.wbmp",
+        "ras" : "image/x-cmu-raster",
+        "pnm" : "image/x-portable-anymap",
+        "pbm" : "image/x-portable-bitmap",
+        "pgm" : "image/x-portable-graymap",
+        "ppm" : "image/x-portable-pixmap",
+        "rgb" : "image/x-rgb",
+        "xbm" : "image/x-xbitmap",
+        "xpm" : "image/x-xpixmap",
+        "xwd" : "image/x-windowdump",
+        # videos:
+        "mpeg" : "video/mpeg",
+        "mpe" : "video/mpeg",
+        "mpg" : "video/mpeg",
+        "m4v" : "video/mp4",
+        "mp4" : "video/mp4",
+        "ogv" : "video/ogg",
+        "qt" : "video/quicktime",
+        "mov" : "video/quicktime",
+        "mxu" : "video/vnd.mpegurl",
+        "avi" : "video/x-msvideo",
+        "movie" : "video/x-sgi-movie",
+        "flv" : "video/x-flv",
+        "swf" : "application/x-shockwave-flash",
+        # audio:
+        "mp3" : "audio/mpeg",
+        "mp4a" : "audio/mp4",
+        "m4a" : "audio/mp4",
+        "oga" : "audio/ogg",
+        "ogg" : "audio/ogg",
+        "flac" : "audio/x-flac",
+        "wav" : "audio/vnd.wave",
+        # compressed formats: (note: http:#svn.cleancode.org/svn/email/trunk/mime.types)
+        "tgz" : "application/x-gzip",
+        "gz" : "application/x-gzip",
+        "tar" : "application/x-tar",
+        "gtar" : "application/x-gtar",
+        "zip" : "application/x-zip",
+        # others:
+        'bin' : 'application/octet-stream',
+    }
+
+    # these are some additional mimetypes not covered that are required for various projects
+    mimes.update({
+        # combo types
         'dvi' : 'application/x-dvi',
         'rar' : 'application/x-rar-compressed',
-        'tar' : 'applicaiton/x-tar',
         'rm'  : 'audio/x-pn-realaudio', # this one can do audio/video/images
         # text types
-        'txt' : 'text/plain',
         'ocr' : 'text/plain',
         'mods': 'text/xml',
-        'xml' : 'text/xml',
         'exif': 'text/xml',
-        'html': 'text/html',
-        'css' : 'text/css',
-        'csv' : 'text/csv',
         # image types
-        'jpg' : 'image/jpeg',
-        'jpeg': 'image/jpeg',
-        'jp2' : 'image/jp2',
-        'png' : 'image/png',
-        'gif' : 'image/gif',
-        'tif' : 'image/tiff',
-        'tiff': 'image/tiff',
         'nef' : 'image/x-nikon-net',
         'dng' : 'image/x-adobe-dng',
         'tn'  : 'image/jpeg', # used for fedora thumbnails
-        # audio types
-        'mp3' : 'audio/mpeg',
-        'ogg' : 'audio/ogg',
         # video types
-        'mp4' : 'video/mp4',
         '3gp' : 'video/3gpp',
-        'mov' : 'video/quicktime',
-        'avi' : 'video/x-msvideo',
         'wmv' : 'video/x-ms-wmv',
-        'flv' : 'video/x-flv'
-        }
+    })
 
     if ext in mimes:
         return mimes[ext]
@@ -103,17 +219,17 @@ def __chunk(file_name, size):
 def hash_file(file_name, hash_type='SHA-1', chunks=2**20):
     '''
         Hashes a file at the given path with the given algorithm, and returns the hash.
-        
+
         @author Adam Vessey
-        
+
         @param file_name A string containing the path to the relevant file
-        @param hash_type A hashing algorithm, currently restricted to those 
-            available in Fedora 3.4.2 {MD5,SHA-{1,256,38{4,5},512}} 
+        @param hash_type A hashing algorithm, currently restricted to those
+            available in Fedora 3.4.2 {MD5,SHA-{1,256,38{4,5},512}}
             NOTE:  385 is made to point to 384
         @param chunks The number of hash blocks to read at a time
-        
+
         @return A string containing the hex digest of the file.
-        
+
         @todo:  Remove commented debug code.
     '''
     #FIXME:  This is duplicated here and in fedoraLib.update_datastream
