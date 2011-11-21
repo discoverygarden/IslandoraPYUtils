@@ -15,13 +15,20 @@ def getMimeType(extension):
     This is not fool proof, some extensions have multiple mimetypes possible.  I return what was useful for me.
     It is also limited to a small set of mimetypes.
 
-    @param extension: The file extension to find the mimetype from
-    @return mimeType: The mimetype that was associated to the file extension
-
-    TODO
+    @param extension
+      The file extension to find the mimetype from
+    
+    @return mimeType
+      The mimetype that was associated to the file extension
+    @todo
       add more mimeTypes
-    @note We could instead use the python mimetypes module
-    @see http://docs.python.org/library/mimetypes.html
+
+    @todo
+      Match Islandora's functionality
+    @note
+      We could instead use the python mimetypes module
+    @see
+      http://docs.python.org/library/mimetypes.html
     '''
 
     # use mimetypes module instead

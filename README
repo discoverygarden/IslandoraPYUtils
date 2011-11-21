@@ -2,7 +2,7 @@
 
 @dependencies[if necessary for your application]: Kakadu, ABBYY CLI, ImageMagick, Python 2.7(? seems to work with 2.6), Lame, FFmpeg, SWFTools, pyPDF, lxml, exiftool(perl)
 
-@todo sub package modules together that are similar in nature
+This code is under constant development, and does not support backwards compatibility for these reasons it is suggested that all projects using it use git's submodule functionality (pointing to the current commit at the time) to handle versioning.
 
 This is a general python library module that is meant to assist in Islandora development.
 It contains document manipulations, conversions, OCR using ABBYY, fedora helper code and xml helper code.
