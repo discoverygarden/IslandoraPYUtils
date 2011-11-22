@@ -148,7 +148,7 @@ class fedora_relationship_element():
             pred_obj = rels_predicate(self.nsalias,predicate)
         elif isinstance(predicate,list):
             pred_obj = rels_predicate(predicate[0], predicate[1])
-            if prediacte[0] not in self.ns:
+            if predicate[0] not in self.ns:
                 raise KeyError
         elif isinstance(predicate,rels_predicate):
             pred_obj = predicate
