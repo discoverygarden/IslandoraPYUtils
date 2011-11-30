@@ -53,9 +53,9 @@ def mangle_dsid(dsid):
 def get_datastream_as_file(obj, dsid, extension = ''):
     '''
     Download the indicated datastream (probably for processing)
-    
+
     Taken out of Fedora Microservices
-    
+
     @author Alexander O'Neil
 
     '''
@@ -72,7 +72,7 @@ def get_datastream_as_file(obj, dsid, extension = ''):
             if not success:
                 tries = tries - 1
     return d, 'content.'+extension
-    
+
 def update_datastream(obj, dsid, filename, label='', mimeType='', controlGroup='M', tries=3, checksumType=None, checksum=None):
     '''
     This function uses curl to add a datastream to Fedora because
@@ -94,10 +94,10 @@ def update_datastream(obj, dsid, filename, label='', mimeType='', controlGroup='
     @return the status of the curl subprocess call
     '''
     logger = logging.getLogger('islandoraUtils.fedoraLib.update_datastream')
-    
+
     #Get the connection from the object.
     conn = obj.client.api.connection
-    
+
     info_dict = {
         'url': conn.url,
         'username': conn.username, 'password': conn.password,
@@ -108,9 +108,9 @@ def update_datastream(obj, dsid, filename, label='', mimeType='', controlGroup='
         'checksumType': checksumType,
         'checksum': checksum
     }
-    
+
     url = '%(url)s/objects/%(pid)s/datastreams/%(dsid)s?dsLabel=%(label)s&mimeType=%(mimetype)s&controlGroup=%(controlgroup)s' % info_dict
-    
+
     #FIXME:  This is duplicated here and in misc.hash_file
     #The checksum/hashing algorithms supported by Fedora (mapped to the names that Python's hashlib uses)
     hashes = {
@@ -121,7 +121,7 @@ def update_datastream(obj, dsid, filename, label='', mimeType='', controlGroup='
         'SHA-385': 'sha384', #Seems to be an error in the Fedora documentation (SHA-385 doesn't actually exist)?  Let's try to account for it.
         'SHA-512': 'sha512'
     }
-    
+
     #Wanna do checksumming?
     if checksumType in hashes:
         #Let's figure it out ourselves!
@@ -131,7 +131,7 @@ def update_datastream(obj, dsid, filename, label='', mimeType='', controlGroup='
         else:
             #We trust the user to provide the proper checksum (don't think that Fedora does, though)
             pass
-                
+
         url += '&checksumType=%(checksumType)s&checksum=%(checksum)s' % info_dict
 
     # Using curl due to an incompatibility with the pyfcrepo library.
@@ -162,7 +162,7 @@ def update_hashed_datastream_without_dup(obj, dsid, filename, **params):
         @author Adam Vessey
         NOTE:  This function essentially wraps update_datastream, and as such takes an
             identical set of parameters
-            
+
         Get the DS profile
         if 404'd due to DS, then
             update;
@@ -178,8 +178,8 @@ def update_hashed_datastream_without_dup(obj, dsid, filename, **params):
             #Figure out the checksum for the given file (if it isn't given)
             if not params['checksum']:
                 params['checksum'] = hash_file(filename, params['checksumType'])
-            
-            
+
+
             #And compare the checksums.
             if params['checksum'] == obj[dsid].checksum:
                 #If it's the same, we don't actually need to add the new version.
@@ -193,7 +193,7 @@ def update_hashed_datastream_without_dup(obj, dsid, filename, **params):
     else:
         #No algorithm specified:  Nothing to compare, so update (fall through)
         pass
-        
+
     return update_datastream(obj=obj, dsid=dsid, filename=filename, **params)
 
 if __name__ == '__main__':
