@@ -6,3 +6,6 @@ This code is under constant development, and does not support backwards compatib
 
 This is a general python library module that is meant to assist in Islandora development.
 It contains document manipulations, conversions, OCR using ABBYY, fedora helper code and xml helper code.
+
+@todo: I'd like to add a generic fedora/solr/logging config class, it's code I replicate on many projects. -will I'm looking for an oportunity to do this
+@todo: I also think we should adopt a single named logger for all IslandoraPYUtils. -will I'm looking for an oportunity to do this
