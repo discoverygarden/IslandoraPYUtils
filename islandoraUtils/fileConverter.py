@@ -269,7 +269,7 @@ def tif_to_jpg(inPath,outPath, imageMagicOpts,*extraArgs):
         if imageMagicOpts=='default':
             imageMagicCall=["convert", filePathIn, '-compress', 'JPEG', '-quality', '50%', filePathOut]
         elif imageMagicOpts=='TN':
-            imageMagicCall=["convert", filePathIn, '-compress', 'JPEG', "-thumbnail", "85x110!", "-gravity", "center", "-extent", "85x110", filePathOut]
+            imageMagicCall=["convert", filePathIn, '-compress', 'JPEG', "-thumbnail", "85x110", "-gravity", "center", "-extent", "85x110", filePathOut]
         else:
             imageMagicCall=["convert",filePathIn]
             imageMagicCall.extend(imageMagicOpts)
@@ -519,7 +519,7 @@ This function will use ImageMagick to convert tifs to jpgs
         if imageMagicOpts=='default':
             imageMagicCall=["convert", filePathIn, '-compress', 'JPEG', '-quality', '50%', filePathOut]
         elif imageMagicOpts=='TN':
-            imageMagicCall=["convert", filePathIn, '-compress', 'JPEG', "-thumbnail", "85x110!", "-gravity", "center", "-extent", "85x110", filePathOut]
+            imageMagicCall=["convert", filePathIn, '-compress', 'JPEG', "-thumbnail", "85x110", "-gravity", "center", "-extent", "85x110", filePathOut]
         else:
             imageMagicCall=["convert",filePathIn]
             imageMagicCall.extend(imageMagicOpts)
