@@ -25,8 +25,6 @@ TODO: Seems like generalizing file selection based on a path and extension(s) co
 TODO: provide override options for various input checks
 '''
 import logging, subprocess, os, xmlib
-from lxml import etree
-
 
 def tif_to_jp2(inPath,outPath,kakaduOpts=None,imageMagicOpts=None,*extraArgs):
     '''
@@ -281,6 +279,55 @@ def tif_to_jpg(inPath,outPath, imageMagicOpts,*extraArgs):
             logging.warning('JPG creation failed (convert return code:%d for file input %s).' % ( r, filePathIn))
         if r == 0:
             logging.info('File converted: %s'% (filePathOut))
+    return True
+
+def tif_to_pdf(inPath,outPath,tiff2pdfOpts,*extraArgs):
+    '''
+    This function will use the shell's tiff2pdf to convert tiff files to pdf
+    @param: inPath: source file
+    @param: outPath: destination file or dir
+    @param tiff2pdfOpts: options to be applied to the conversion, can be 'default'
+    
+    @return bool: true if successful [completion not conversion] false if not
+    '''
+    #error checking
+    if not checkStd(inPath,outPath,extraArgs,tiff2pdfOpts):
+        return False
+    if tiff2pdfOpts == 'TN':
+        logging.error('This function tif_to_pdf does not support the \'TN\' keyword')
+        return False
+
+    #determine the output directory for the tempfile and for if there are multiple output files due to a directory batch
+    #put directory not created error handle here'''
+    if os.path.isdir(outPath): #outPath is a directory
+        outDirectory = outPath
+    else:#is a file path
+        outDirectory, fileNameOut = os.path.split(outPath)
+    #create list of files to be converted
+    inDirectory, fileListStr = os.path.split(inPath)
+    fileList = [fileListStr]
+
+    for fileName in fileList:
+
+        #if fileNameOut was not in outPath make one up
+        if os.path.isdir(outPath):
+            fileNameOut = "%s.pdf" % os.path.splitext(fileName)[0]
+        filePathIn = os.path.join(inDirectory, fileName)
+        filePathOut = os.path.join(outDirectory, fileNameOut)
+
+        #create tiff2pdf call
+        if tiff2pdfOpts=='default':
+            tiff2pdfCall=["tiff2pdf", filePathIn, '-o', filePathOut]
+        else:
+            tiff2pdfCall=["tiff2pdf", filePathIn, '-o', filePathOut]
+            tiff2pdfCall.extend(tiff2pdfOpts)
+        #make the system call
+        r = subprocess.call(tiff2pdfCall)
+
+        if r == 0:
+            logging.info('File converted: %s'% (filePathOut))
+        else:
+            logging.warning('PDF creation failed (tiff2pdf return code:%d for file input %s).' % ( r, filePathIn))
     return True
 
 
