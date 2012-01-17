@@ -174,7 +174,7 @@ def update_hashed_datastream_without_dup(obj, dsid, filename, **params):
     '''
 
     if params['checksumType'] and params['checksumType'] != 'DISABLED': #If we do really want to hash,
-        if params['checksumType'] == obj[dsid].checksumType: #And we want to use the same algorithm as is already in use
+        if dsid in obj and params['checksumType'] == obj[dsid].checksumType: #And we want to use the same algorithm as is already in use
             #Figure out the checksum for the given file (if it isn't given)
             if not params['checksum']:
                 params['checksum'] = hash_file(filename, params['checksumType'])
