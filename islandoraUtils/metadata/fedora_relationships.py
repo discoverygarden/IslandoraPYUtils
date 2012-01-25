@@ -258,6 +258,33 @@ class fedora_relationship(fedora_relationship_element):
         self.dsid = reldsid
         self.obj = obj
 
+    def update(self):
+        if self.modified:
+            if self.dsid not in self.obj:
+                self.obj.addDataStream(self.dsid, self.toString(), label=u"Fedora Object-to-Object Relationship Metadata")
+            else:
+                self.obj[self.dsid].setContent(self.toString())
+
+class rels_int(fedora_relationship):
+    """Class to update a fedora RELS-INT datastream."""
+
+    def __init__(self, obj, namespaces = None, default_namespace = None):
+        """Constructor for rels_int object.
+
+        Arguements:
+          obj -- The fcrepo object to modify/create rels_int for.
+          namespaces -- Namespaces to be added to the rels_int.
+              [] - list containing ['alias','uri']
+              [rels_namespace, ...] - list of rels_namespace objects.
+              [[],[],...[]] - list of ['alias','uri']
+              rels_namespace - rels_namespace object containing namespace and alias.
+          default_namespace -- String containing the alias of the default namespace.
+          If no namespace is passed in then this is assumed:
+          info:fedora/fedora-system:def/relations-external#
+
+        """
+        fedora_relationship.__init__(self, obj, 'RELS-INT', namespaces, default_namespace)
+
     def _updateObject(self, object):
         """Private method to overload object. Turns everything into a rels_object"""
         if object == None:
@@ -287,33 +314,6 @@ class fedora_relationship(fedora_relationship_element):
         else:
             raise TypeError
         return obj
-
-    def update(self):
-        if self.modified:
-            if self.dsid not in self.obj:
-                self.obj.addDataStream(self.dsid, self.toString(), label=u"Fedora Object-to-Object Relationship Metadata")
-            else:
-                self.obj[self.dsid].setContent(self.toString())
-
-class rels_int(fedora_relationship):
-    """Class to update a fedora RELS-INT datastream."""
-
-    def __init__(self, obj, namespaces = None, default_namespace = None):
-        """Constructor for rels_int object.
-
-        Arguements:
-          obj -- The fcrepo object to modify/create rels_int for.
-          namespaces -- Namespaces to be added to the rels_int.
-              [] - list containing ['alias','uri']
-              [rels_namespace, ...] - list of rels_namespace objects.
-              [[],[],...[]] - list of ['alias','uri']
-              rels_namespace - rels_namespace object containing namespace and alias.
-          default_namespace -- String containing the alias of the default namespace.
-          If no namespace is passed in then this is assumed:
-          info:fedora/fedora-system:def/relations-external#
-
-        """
-        fedora_relationship.__init__(self, obj, 'RELS-INT', namespaces, default_namespace)
 
     def _updateSubject(self, subject):
         """Private method to add pid/dsid to the passed in dsid."""
@@ -421,6 +421,33 @@ class rels_ext(fedora_relationship):
 
         """
         fedora_relationship.__init__(self, obj, 'RELS-EXT', namespaces, default_namespace)
+
+    def _updateObject(self, object):
+        """Private method to overload object. Turns everything into a rels_object"""
+        if object == None:
+            obj = None
+        elif isinstance(object,basestring):
+            obj = rels_object('%s'%(object), rels_object.DSID)
+        elif isinstance(object,rels_object):
+            if object.type not in rels_object.TYPES:
+                raise TypeError
+            else:
+                obj = copy.copy(object)
+        elif isinstance(object, list):
+            reltype = object[1].lower()
+            if reltype == 'dsid':
+                obj = rels_object(object[0], rels_object.DSID)
+            elif reltype == 'pid':
+                obj = rels_object(object[0], rels_object.PID)
+            elif reltype == 'literal':
+                obj = rels_object(object[0], rels_object.LITERAL)
+            else:
+                raise KeyError
+        elif isinstance(object,fcrepo.object.FedoraObject):
+            obj = rels_object(object.pid, rels_object.PID)
+        else:
+            raise TypeError
+        return obj
 
     def addRelationship(self, predicate, object):
         """Add new relationship to rels_ext XML.
