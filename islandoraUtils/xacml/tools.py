@@ -120,8 +120,8 @@ class XacmlRule:
             self._rule['users'] |= set(rule['users'])
             self._rule['roles'] |= set(rule['roles'])
             self._rule['methods'] = list(rule['methods'])
-            self._removeValue('users', 'fedoraAdmin')
-            self._removeValue('roles', 'administrator')
+            self._setValue('users', 'fedoraAdmin')
+            self._setValue('roles', 'administrator')
 
         self.xacml = xacml
 
@@ -193,9 +193,6 @@ class XacmlRule:
 
     '''
     Return the $rule datastructure associated with this object. This can be parsed by XacmlWriter.
-    While the above functions only give the users and roles explicitly added to this object, this
-    returns the datastructure containing all users and role. It makes sure that the fedoraAdmin user
-    and administrator role are always added so they we don't lock administrators out of objects.
    
     @return
       array containing the datastructure.
@@ -205,16 +202,8 @@ class XacmlRule:
 
         rule['ruleid'] = self._rule['ruleid']
         rule['effect'] = self._rule['effect']
-
-        # make sure fedora admin can see everything
-        self.addUser('fedoraAdmin');
         rule['users'] = list(self._rule['users'])
-        self.removeUser('fedoraAdmin');
-
-        # make sure admin user can see everything
-        self.addRole('administrator')
         rule['roles'] = list(self._rule['roles'])
-        self.removeRole('administrator')
 
         # copy methods
         rule['methods'] = list(self._rule['methods'])
