@@ -21,7 +21,7 @@ setup(
       license = "GPL",
       packages=find_packages(),
       package_dir={"islandoraUtils" : "islandoraUtils"},
-      package_data={"islandoraUtils" : ["__resources/*.xslt"]},
+      package_data={"islandoraUtils" : ["__resources/*"]},
       long_description=read('README'),
       install_requires=['setuptools','lxml']
       )

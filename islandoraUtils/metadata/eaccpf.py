@@ -4,17 +4,25 @@ import datetime
 from StringIO import StringIO
 import base64
 
-from .. import xmlib
+from islandoraUtils import xmlib
 etree = xmlib.import_etree()
                     
 class EACCPF(object):
     '''
     A python library to deal with (a tiny subset) of EAC-CPF 
     See http://eac.staatsbibliothek-berlin.de/eac-cpf-schema.html
+    
+    TODO:  Ensure ordering of elements, for validation purposes...
     '''
+    NSMAP = {
+        'xsi': 'http://www.w3.org/2001/XMLSchema-instance',
+        None: 'urn:isbn:1-931666-33-4', #default namespace
+        'xlink': 'http://www.w3.org/1999/xlink'
+    }
+    
     def __init__(self, id, element=None, xml=None, agency=('DGI', 'DiscoveryGarden Inc.'), language=('eng', 'English'), script=('Latn', 'Latin'), loggerName='islandoraUtils.metadata.eaccpf'):
         '''
-        "/EAC-CPF" will be appended to the ID to create a "recordId"
+        "--EAC-CPF" will be appended to the ID to create a "recordId"
         "language" is that used for maintenance, not contents
         '''
         self.logger = logging.getLogger(loggerName)
@@ -28,10 +36,12 @@ class EACCPF(object):
         else:
             #Build a fairly bare eac-cpf schema for a base.
             root = etree.Element('eac-cpf', 
-                {'{http://www.w3.org/2001/XMLSchema-instance}schemaLocation': "http://eac.staatsbibliothek.de/schema/cpf.xsd"}, 
-                {'xsi': "http://www.w3.org/2001/XMLSchema-instance"})
+                attrib={'{http://www.w3.org/2001/XMLSchema-instance}schemaLocation': 'urn:isbn:1-931666-33-4 http://eac.staatsbibliothek-berlin.de/schema/cpf.xsd'}, 
+                nsmap=self.NSMAP)
             control = etree.SubElement(root, 'control')
-            etree.SubElement(control, 'recordId').text = '%(id)s/EAC-CPF' % {'id': id}
+            etree.SubElement(control, 'recordId').text = '%(id)s--EAC-CPF' % {'id': id}
+            etree.SubElement(control, 'maintenanceStatus').text = 'new'
+            agent = etree.SubElement(control, 'maintenanceAgency')
             
             #FIXME...  The unpacking use could probably be a little clearer...  Anyway.
             lang = etree.SubElement(control, 'languageDeclaration')
@@ -40,12 +50,13 @@ class EACCPF(object):
             a, b = script
             etree.SubElement(lang, 'script', {'scriptCode': a}).text = b
             
-            agent = etree.SubElement(control, 'maintenanceAgency')
             etree.SubElement(control, 'maintenanceHistory')
             etree.SubElement(control, 'sources')
             
             #Deliciously awesome tuple unpacking!
-            etree.SubElement(agent, 'agencyCode').text, etree.SubElement(agent, 'agencyName').text = agency
+            a, b = agency
+            #etree.SubElement(agent, 'agencyCode').text = a #Needs to be in a defined set to validate
+            etree.SubElement(agent, 'agencyName').text = b
             
             etree.SubElement(root, 'cpfDescription')
             
@@ -68,7 +79,7 @@ class EACCPF(object):
         '''Get the XML as a string'''
         return etree.tostring(self.element, pretty_print=True, encoding="utf8")
             
-    def add_maintenance_event(self, type="modified", time="now", agent_type="human", agent="Me"):
+    def add_maintenance_event(self, type="derived", time="now", agent_type="human", agent="Me"):
         '''
         If 'time' is not provided, or is 'now', utcnow will be used.
         If 'time' is an instance of datetime, it will be used directly
@@ -130,7 +141,7 @@ class EACCPF(object):
     
     #FIXME:  Should probably verify that 'role' is in the agreed upon vocab?
     #TODO:  Checking whether or not a the entry to add already exists would probably be a good idea.
-    def add_name_entry(self, role='primary', name={'forename': 'first', 'middle': 'middle', 'surname': 'last'}):
+    def add_name_entry(self, role='primary', name={'forename': 'first', 'middle': 'middle', 'surname': 'last'}, entityType='person'):
         '''
         * "name" should be a dictionary whose keys will be used as the 
             "localType" attribute in nameEntry/part, with the text set 
@@ -141,6 +152,10 @@ class EACCPF(object):
         id = self.element.find('cpfDescription/identity')
         if id is None:
             id = etree.SubElement(self.element.find('cpfDescription'), 'identity')
+            
+        et = id.find('entityType')
+        if et is None:
+            et = etree.SubElement(id, 'entityType').text = entityType
             
         if role is 'primary':
             for old_primary in id.findall('nameEntry[@localType="primary"]'):
@@ -173,11 +188,11 @@ class EACCPF(object):
         Adds a date of birth and/or death to the description.
         '''
         if birth:
-            self.__get_subelement('cpfDescription/description/existDates/dateRange/fromDate').set('standardDate', birth)
+            self.__get_subelement('cpfDescription/description/existDates/dateRange/fromDate').set('standardDate', unicode(birth))
         if death:
-            self.__get_subelement('cpfDescription/description/existDates/dateRange/toDate').set('standardDate', death)
+            self.__get_subelement('cpfDescription/description/existDates/dateRange/toDate').set('standardDate', unicode(death))
     
-    def add_bio(self, bio=None, role='primary'):
+    def add_bio(self, bio=None, wipe=True):
         '''
         bio should be sequence of XML elements (which includes an element 
         with children!--hopefully with the set of elements permitted by 
@@ -188,21 +203,10 @@ class EACCPF(object):
         TODO:  Might need to create copies of elements when they are 
         passed in, due to how lxml works...  Dunno.
         '''
-        desc = self.element.find('cpfDescription/description')
-        if desc == None:
-            desc = etree.SubElement(self.element.find('cpfDescription'), 'description')
-            self.logger.debug('Creating description under cpfDescription')
-        else:
-            self.logger.debug('Found cpfDescription/description')
-        
-        if role == 'primary':
-            for biog in desc.findall('biogHist[@localType="primary"]'):
-                biog.set('localType', 'alt')
-                
-        #TODO (minor): It might be a good idea at some point to look at avoiding adding data which already exists...  So as not to have multiple name or bio entries with the same content... Anyway.  Seems like it could get annoying to account for...  Maybe instead of adding subelements, create an element and append it later?
         try:
-            biogHist = etree.SubElement(desc, 'biogHist')
-            biogHist.set('localType', role)
+            biogHist = self.__get_subelement('cpfDescription/description/biogHist')
+            if wipe:
+                biogHist.clear()
             biogHist.extend(bio)
             self.logger.debug('Added bio subelements via extend')
         except TypeError:
@@ -212,7 +216,30 @@ class EACCPF(object):
             except (etree.XMLSyntaxError, ValueError):
                 etree.SubElement(biogHist, 'p').text = bio
                 self.logger.debug('Added bio as text of a <p> tag')
-        
+                
+    def add_chron_list(self, item_list):
+        chronList = self.__get_subelement('cpfDescription/description/biogHist/chronList')
+        for item in item_list:
+            chronItem = etree.SubElement(chronList, 'chronItem')
+            self.__add_elements(chronItem, item)
+    
+    def __add_elements(self, element, item):
+        for tag, value in item.items():
+            if tag == 'dateRange':
+                dr = etree.SubElement(element, tag)
+                for tg, val in value.items():
+                    el = etree.SubElement(dr, tg)
+                    el.text = unicode(val)
+                    el.set('standardDate', unicode(val))  
+            elif tag == 'date':
+                el = etree.SubElement(element, tag)
+                el.text = unicode(value)
+                el.set('standardDate', unicode(value))
+            elif tag in ['descriptiveNote']:
+                etree.SubElement(etree.SubElement(element, tag), 'p').text = value
+            else:
+                etree.SubElement(element, tag).text = value
+    
     def __add_address(self, element, role, addr=None):
         '''
         "Private" function, used to actually add the address.  Takes an element, as the address can be added
@@ -259,6 +286,15 @@ class EACCPF(object):
             node = etree.SubElement(self.element.find('cpfDescription'), 'description')
         
         self.__add_address(node, role, addr)
+        
+    def add_relation(self, type, url=None, elements=None):
+        relations = self.__get_subelement('cpfDescription/relations')
+        rel_el = etree.SubElement(relations, type)
+        
+        if url:
+            rel_el.set('{%(xlink)s}href' % self.NSMAP, url)
+        if elements:
+            self.__add_elements(rel_el, elements)
 
       
 def testSchema():
@@ -270,24 +306,57 @@ to simplify the structure because of the dynamic importing of etree
     test = EACCPF('test')
     test.add_maintenance_event()
     test.add_XML_source('Blargh', '<Honk/>')
-    test.add_maintenance_event(type='modified', agent="Him")
+    test.add_maintenance_event(type='revised', agent="Him")
     test.add_XML_source('Bob', etree.Element('Loblaw'))
-    test.add_maintenance_event(type='modified', agent="They", agent_type="machine")
+    test.add_maintenance_event(type='revised', agent="They", agent_type="machine")
     #with open('./FileHandler.py') as aFile:
     #    test.add_bin_source('Try a file object', aFile)
+    test.add_name_entry()
+    test.add_name_entry(name={'a': 'asdf', 'b': '2', 'c': '3'})
+    test.add_exist_dates('1923', '2010')
+    test.add_address(addr={'line1': 'here', 'line2': 'there', 'country': 'Everywhere'})
+    test.add_address(addr={'line1': 'asdf', 'line2': 'qwerty', 'country': 'yuiop'})
     test.add_bio('this is not xml!')
     b_tmp = etree.Element('bio')
     etree.SubElement(b_tmp, 'p').text = 'Ceci est de XML'
-    test.add_bio(b_tmp)
+    #test.add_bio(b_tmp)
     test.add_bio("<bio><p>C'est de la XML fausse!</p><asdf><p>other</p></asdf></bio>")
-    test.add_name_entry()
-    test.add_name_entry(name={'a': 'asdf', 'b': '2', 'c': '3'})
     test.add_bin_source('Some text and stuff...', '<>></\'e2345^&lt;!')
-    test.add_address(addr={'line1': 'here', 'line2': 'there', 'country': 'Everywhere'})
-    print('XML:\n%s' % test)
-    test.add_address(addr={'line1': 'asdf', 'line2': 'qwerty', 'country': 'yuiop'})
-    test.add_exist_dates('1923', '2010')
-    print('XML:\n%s' % test)
-    el = test.element.find('control/sources/source/objectBinWrap')
+    
+    cl = [{
+            'date': 2011,
+            'event': 'Achieved PhD'
+        },{
+            'dateRange': {
+                'fromDate': 2001,
+                'toDate': 2011
+            },
+            'event': '10 years'
+        },{
+            'dateRange': {
+                'fromDate': 1999
+            },
+            'event': 'Since 1999'
+        },{
+            'dateRange': {
+                'toDate': 2030
+            },
+            'event': 'Until 2030'
+        }
+    ]
+        
+    test.add_chron_list(cl)
+    
+    test.add_relation('resourceRelation', url="http://www.example.org/blah.asdf", elements={'relationEntry': 'Academic webpage', 'descriptiveNote': 'Blah blah blah.'})
+    test.add_relation('cpfRelation', elements={'dateRange': {'fromDate': 1999, 'toDate': 2005}, 'descriptiveNote': 'Was a member and stuff...'})
+    el = None
+    #el = test.element.find('control/sources/source/objectBinWrap')
     if el is not None:
         print('Decoded base64 test:\n%s' % base64.decodestring(el.text))
+    return test    
+if __name__ == '__main__':
+    test = testSchema()
+    # = etree.ElementTree(test.element).xmlschema(etree.parse(source='http://eac.staatsbibliothek-berlin.de/schema/cpf.xsd'))
+    print(test)
+    #print(validator(test.element))
+    #print(validator.error_log)

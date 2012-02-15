@@ -4,7 +4,7 @@ Created on Apr 5, 2011
 @author: William Panting
 @dependencies: Kakadu, ImageMagick, ABBYY CLI, Lame, SWFTools, FFmpeg
 
-This is a Library that will make file conversions and manipulations like OCR using Python easier. 
+This is a Library that will make file conversions and manipulations like OCR using Python easier.
 Primarily it will use Kakadu and ABBYY
 but it will fall back on ImageMagick if Kakadu fails and for some conversions Kakadu does not support.
 
@@ -21,10 +21,10 @@ TODO: explore better conversion options
 TODO: explore more backup solutions
 FIXME: Some poor assumptions are made regarding paths... There exist other types of files besides 'files'and 'directories' (block/char devices, sym-links (which may cause weird evaluations?), etc...)
 TODO: Seems like generalizing file selection based on a path and extension(s) could be rather useful
+      or automatically determine file type by magic number (resulting in things like tif_to_jpg -> any_to_jpg)
+TODO: provide override options for various input checks
 '''
 import logging, subprocess, os, xmlib
-from lxml import etree
-
 
 def tif_to_jp2(inPath,outPath,kakaduOpts=None,imageMagicOpts=None,*extraArgs):
     '''
@@ -33,18 +33,18 @@ def tif_to_jp2(inPath,outPath,kakaduOpts=None,imageMagicOpts=None,*extraArgs):
     @param inPath: source file or dir
     @param outPath: destination file or dir
     @param kakaduOpts: a list of options or a string 'default'
-    @param imageMagicOpts: a list of options or a string 'default'  
+    @param imageMagicOpts: a list of options or a string 'default'
 
     @return bool: true if successful [completion not conversion] false if not
     '''
-    
+
     #error checking, does not take TN
     if checkStd(inPath,outPath,extraArgs,kakaduOpts,imageMagicOpts)==False:
         return False
     if kakaduOpts=='TN' or imageMagicOpts=='TN':
         logging.error('This function tif_to_jp2 does not accept the \'TN\' keyword')
         return False
-    
+
     #determine the output directory for the tempfile and for if there are multiple output files due to a directory batch
     #put directory not created error handle here'''
     if os.path.isdir(outPath)==False: #outPath is a file path
@@ -65,10 +65,10 @@ def tif_to_jp2(inPath,outPath,kakaduOpts=None,imageMagicOpts=None,*extraArgs):
             #remove non tiff entries
             if path[(pathLength-4):pathLength]!='.tif' and path[(pathLength-5):pathLength]!='.tiff' :
                 fileList.remove(path)
-    
-    
+
+
     for fileName in fileList:
-        
+
         #if fileNameOut was not in outPath make one up
         if os.path.isdir(outPath)==True:
             fileNameOut=fileName[0:fileName.rindex('.')]+'.jp2'
@@ -78,27 +78,27 @@ def tif_to_jp2(inPath,outPath,kakaduOpts=None,imageMagicOpts=None,*extraArgs):
         r = subprocess.call(["convert", filePathIn, '+compress', tmpFilePath])
         if r != 0:
             logging.warning('JP2 creation failed (convert return code:%d for file input %s).' % ( r, filePathIn))
-            
-            
+
+
         #prep Kakadu call
         if kakaduOpts!='default':
             kakaduCall=("kdu_compress", "-i", tmpFilePath,"-o", filePathOut)
             kakaduCall.extend(kakaduOpts)
-            
+
         else:
             kakaduCall=["kdu_compress", "-i", tmpFilePath,\
           "-o", filePathOut,\
           "-rate", "0.5", "Clayers=1", "Clevels=7",\
           "Cprecincts={256,256},{256,256},{256,256},{128,128},{128,128},{64,64},{64,64},{32,32},{16,16}",\
-          "Corder=RPCL", "ORGgen_plt=yes", "ORGtparts=R", "Cblk={32,32}", "Cuse_sop=yes"]      
+          "Corder=RPCL", "ORGgen_plt=yes", "ORGtparts=R", "Cblk={32,32}", "Cuse_sop=yes"]
         #make Kakadu call
         r = subprocess.call(kakaduCall)
-    
-       
+
+
         #if Kakadu fails [happens on certain color pellets] use less powerful ImageMagicK on original file
         if r != 0:
             logging.warning('JP2 creation failed. Trying alternative (kdu_compress return code:%d).' % (r) )
-           
+
             #prep image magic call
             if imageMagicOpts!='default':
                 imageMagicCall=("convert", filePathIn)
@@ -106,18 +106,18 @@ def tif_to_jp2(inPath,outPath,kakaduOpts=None,imageMagicOpts=None,*extraArgs):
                 imageMagicCall.append(filePathOut)
             else:
                 imageMagicCall=["convert", filePathIn, '-compress', 'JPEG2000', '-quality', '50%', filePathOut]
-            #make image magic call  
+            #make image magic call
             r = subprocess.call(imageMagicCall)
             if r != 0:
                 logging.warning('JP2 creation failed (convert return code:%d for file input %s).' % ( r, filePathIn))
-    
+
         if r == 0:
             logging.info('File converted: %s'% (filePathOut))
-        
+
         #kill the temp file if it exists
         if os.path.exists(tmpFilePath):
             os.remove(tmpFilePath)
-        
+
     return True
 
 
@@ -132,7 +132,7 @@ def tif_OCR(inPath,outPath,fileTypeOpts,inputOpts=None,*extraArgs):
 
     @return bool: true if successful [completion not conversion] false if not
 
-    TODO: make default output options for all output file types 
+    TODO: make default output options for all output file types
     '''
         #error checking, does not take TN
     if not checkPaths(inPath,outPath):
@@ -144,7 +144,7 @@ def tif_OCR(inPath,outPath,fileTypeOpts,inputOpts=None,*extraArgs):
     if not isinstance(fileTypeOpts, dict) and fileTypeOpts != 'default':
         logging.error('The fileTypeOpts must be a dictionary or the keyword \'default\'.' )
         return False
-      
+
     #prevents the script from attempting to write multiple output files to one output file path
     if os.path.isdir(inPath) and not os.path.isdir(outPath):
         logging.error('If the input path is a directory, so must be the output path.')
@@ -152,7 +152,7 @@ def tif_OCR(inPath,outPath,fileTypeOpts,inputOpts=None,*extraArgs):
     if len(fileTypeOpts)>1 and fileTypeOpts!='default' and os.path.isdir(outPath)!=True:
         logging.error('If there is to be more than one output file then the output path must be a directory.')
         return False
-        
+
     #determine the output directory if there are multiple output files due to a directory batch
     #put directory not created error handling here'''
     if not os.path.isdir(outPath):
@@ -160,7 +160,7 @@ def tif_OCR(inPath,outPath,fileTypeOpts,inputOpts=None,*extraArgs):
         fileList=(fileNameOut)
     else:#is a driectory
         outDirectory=outPath
-    
+
     #create list of files to be converted
     if not os.path.isdir(inPath):
         inDirectory, fileListStr=os.path.split(inPath)
@@ -173,18 +173,18 @@ def tif_OCR(inPath,outPath,fileTypeOpts,inputOpts=None,*extraArgs):
             #remove non tiff entries
             if path[(pathLength-4):pathLength]!='.tif' and path[(pathLength-5):pathLength]!='.tiff' :
                 fileList.remove(path)
-        
+
     for fileName in fileList:
         #some useful vars
         absPathFileIn=os.path.join(inDirectory,fileName)
         absPathFileOutNoExt=os.path.join(outDirectory,fileName[0:fileName.rindex('.')])
-        
+
         #reset the ABBYY call
         ABBYY_Call=['CLI']
         #input opts and input file
         if inputOpts!='default' and inputOpts!=None:
             ABBYY_Call.extend(inputOpts)
-        ABBYY_Call.extend(('-if',absPathFileIn))     
+        ABBYY_Call.extend(('-if',absPathFileIn))
 
         outputs = {
             'PDF': ('.pdf', ('-pem','ImageOnText','-pfq','75')),
@@ -211,7 +211,7 @@ def tif_OCR(inPath,outPath,fileTypeOpts,inputOpts=None,*extraArgs):
                 ABBYY_Call.extend(defaultOutPutOpts)
             #append output file for this round
             ABBYY_Call.extend(('-of',absPathFileOutNoExt+extension))
-        
+
         #make ABBYYcall
         r = subprocess.call(ABBYY_Call)
         if r != 0:
@@ -233,7 +233,7 @@ def tif_to_jpg(inPath,outPath, imageMagicOpts,*extraArgs):
     #error checking
     if checkStd(inPath,outPath,extraArgs,imageMagicOpts)==False:
         return False
-    
+
     #determine the output directory for the tempfile and for if there are multiple output files due to a directory batch
     #put directory not created error handle here'''
     if os.path.isdir(outPath)==False: #outPath is a file path
@@ -253,32 +253,81 @@ def tif_to_jpg(inPath,outPath, imageMagicOpts,*extraArgs):
             #remove non tiff entries
             if path[(pathLength-4):pathLength]!='.tif' and path[(pathLength-5):pathLength]!='.tiff' :
                 fileList.remove(path)
-    
-    
+
+
     for fileName in fileList:
-        
+
         #if fileNameOut was not in outPath make one up
         if os.path.isdir(outPath)==True:
             fileNameOut=fileName[0:fileName.rindex('.')]+'.jpg'
         filePathIn=os.path.join(inDirectory,fileName)
         filePathOut=os.path.join(outDirectory,fileNameOut)
-        
+
         #create image magick call
         if imageMagicOpts=='default':
             imageMagicCall=["convert", filePathIn, '-compress', 'JPEG', '-quality', '50%', filePathOut]
         elif imageMagicOpts=='TN':
-            imageMagicCall=["convert", filePathIn, '-compress', 'JPEG', "-thumbnail", "85x110!", "-gravity", "center", "-extent", "85x110", filePathOut]
+            imageMagicCall=["convert", filePathIn, '-compress', 'JPEG', "-thumbnail", "85x110", "-gravity", "center", "-extent", "85x110", filePathOut]
         else:
             imageMagicCall=["convert",filePathIn]
             imageMagicCall.extend(imageMagicOpts)
             imageMagicCall.append(filePathOut)
-        
-        #make image magic call  
+
+        #make image magic call
         r = subprocess.call(imageMagicCall)
         if r != 0:
             logging.warning('JPG creation failed (convert return code:%d for file input %s).' % ( r, filePathIn))
         if r == 0:
             logging.info('File converted: %s'% (filePathOut))
+    return True
+
+def tif_to_pdf(inPath,outPath,tiff2pdfOpts,*extraArgs):
+    '''
+    This function will use the shell's tiff2pdf to convert tiff files to pdf
+    @param: inPath: source file
+    @param: outPath: destination file or dir
+    @param tiff2pdfOpts: options to be applied to the conversion, can be 'default'
+    
+    @return bool: true if successful [completion not conversion] false if not
+    '''
+    #error checking
+    if not checkStd(inPath,outPath,extraArgs,tiff2pdfOpts):
+        return False
+    if tiff2pdfOpts == 'TN':
+        logging.error('This function tif_to_pdf does not support the \'TN\' keyword')
+        return False
+
+    #determine the output directory for the tempfile and for if there are multiple output files due to a directory batch
+    #put directory not created error handle here'''
+    if os.path.isdir(outPath): #outPath is a directory
+        outDirectory = outPath
+    else:#is a file path
+        outDirectory, fileNameOut = os.path.split(outPath)
+    #create list of files to be converted
+    inDirectory, fileListStr = os.path.split(inPath)
+    fileList = [fileListStr]
+
+    for fileName in fileList:
+
+        #if fileNameOut was not in outPath make one up
+        if os.path.isdir(outPath):
+            fileNameOut = "%s.pdf" % os.path.splitext(fileName)[0]
+        filePathIn = os.path.join(inDirectory, fileName)
+        filePathOut = os.path.join(outDirectory, fileNameOut)
+
+        #create tiff2pdf call
+        if tiff2pdfOpts=='default':
+            tiff2pdfCall=["tiff2pdf", filePathIn, '-o', filePathOut]
+        else:
+            tiff2pdfCall=["tiff2pdf", filePathIn, '-o', filePathOut]
+            tiff2pdfCall.extend(tiff2pdfOpts)
+        #make the system call
+        r = subprocess.call(tiff2pdfCall)
+
+        if r == 0:
+            logging.info('File converted: %s'% (filePathOut))
+        else:
+            logging.warning('PDF creation failed (tiff2pdf return code:%d for file input %s).' % ( r, filePathIn))
     return True
 
 
@@ -297,7 +346,7 @@ def pdf_to_swf(inPath,outPath,swfToolsOpts,*extraArgs):
     if swfToolsOpts=='TN':
         logging.error('This function pdf_to_swf does not accept the \'TN\' keyword')
         return False
-    
+
     #determine the output directory for the tempfile and for if there are multiple output files due to a directory batch
     #put directory not created error handle here'''
     if os.path.isdir(outPath)==False: #outPath is a file path
@@ -317,30 +366,30 @@ def pdf_to_swf(inPath,outPath,swfToolsOpts,*extraArgs):
             #remove non pdf entries
             if path[(pathLength-4):pathLength]!='.pdf':
                 fileList.remove(path)
-    
-    
+
+
     for fileName in fileList:
-        
+
         #if fileNameOut was not in outPath make one up
         if os.path.isdir(outPath)==True:
             fileNameOut=fileName[0:fileName.rindex('.')]+'.pdf'
         filePathIn=os.path.join(inDirectory,fileName)
         filePathOut=os.path.join(outDirectory,fileNameOut)
-        
+
         #create image magick call
         if swfToolsOpts=='default':
             swfToolsCall=["pdf2swf", filePathIn, '-o', filePathOut,'-T 9', '-f', '-t', '-s', 'storeallcharacters', '-G']
         else:
             swfToolsCall=["pdf2swf",filePathIn,'-o', filePathOut]
             swfToolsCall.extend(swfToolsOpts)
-        #make the system call  
+        #make the system call
         r = subprocess.call(swfToolsCall)
         #move to bitmap because swftools fails on very large files otherwise
         if swfToolsOpts=='default' and r!=0:
             logging.warning('PDF creation failed (SWFTools return code:%d for file input %s: Trying alternative.).' % ( r, filePathIn))
             swfToolsCall=["pdf2swf", filePathIn, '-o', filePathOut,'-T 9', '-f', '-t', '-s', 'storeallcharacters', '-G', '-s', 'poly2bitmap']
             r=subprocess.call(swfToolsCall)
-        
+
         if r != 0:
             logging.warning('PDF creation failed (SWFTools return code:%d for file input %s).' % ( r, filePathIn))
         if r == 0:
@@ -363,7 +412,7 @@ This function will use FFmpeg to turn a wav file into an ogg file
     if FFmpegOpts=='TN':
         logging.error('This function wav_to_ogg does not accept the \'TN\' keyword')
         return False
-    
+
     #determine the output directory for the tempfile and for if there are multiple output files due to a directory batch
     #put directory not created error handle here'''
     if os.path.isdir(outPath)==False: #outPath is a file path
@@ -383,16 +432,16 @@ This function will use FFmpeg to turn a wav file into an ogg file
             #remove non applicable file entries
             if path[(pathLength-4):pathLength]!='.wav':
                 fileList.remove(path)
-    
-    
+
+
     for fileName in fileList:
-        
+
         #if fileNameOut was not in outPath make one up
         if os.path.isdir(outPath)==True:
             fileNameOut=fileName[0:fileName.rindex('.')]+'.ogg'
         filePathIn=os.path.join(inDirectory,fileName)
         filePathOut=os.path.join(outDirectory,fileNameOut)
-        
+
         #create the system call
         if FFmpegOpts=='default':
             FFmpegCall=['ffmpeg', '-i', filePathIn, '-acodec', 'libvorbis', '-ab', '48k', filePathOut]
@@ -400,8 +449,8 @@ This function will use FFmpeg to turn a wav file into an ogg file
             FFmpegCall=['ffmpeg', '-i', filePathIn]
             FFmpegCall.extend(FFmpegOpts)
             FFmpegCall.append(filePathOut)
-        
-        #make the system call  
+
+        #make the system call
         r = subprocess.call(FFmpegCall)
         if r != 0:
             logging.warning('ogg creation failed (FFmpeg return code:%d for file input %s).' % ( r, filePathIn))
@@ -425,7 +474,7 @@ This function uses the lame tool to make wav files into mp3 files
     if lameOpts=='TN':
         logging.error('This function wav_to_mp3 does not accept the \'TN\' keyword')
         return False
-    
+
     #determine the output directory for the tempfile and for if there are multiple output files due to a directory batch
     #put directory not created error handle here'''
     if os.path.isdir(outPath)==False: #outPath is a file path
@@ -445,15 +494,15 @@ This function uses the lame tool to make wav files into mp3 files
             #remove non applicable file entries
             if path[(pathLength-4):pathLength]!='.wav':
                 fileList.remove(path)
-    
+
     for fileName in fileList:
-        
+
         #if fileNameOut was not in outPath make one up
         if os.path.isdir(outPath)==True:
             fileNameOut=fileName[0:fileName.rindex('.')]+'.mp3'
         filePathIn=os.path.join(inDirectory,fileName)
         filePathOut=os.path.join(outDirectory,fileNameOut)
-        
+
         #create the system call
         if lameOpts=='default':
             lameCall=['lame', '-mm', '--cbr', '-b48', filePathIn, filePathOut]
@@ -461,8 +510,8 @@ This function uses the lame tool to make wav files into mp3 files
             lameCall=['lame']
             lameCall.extend(lameOpts)
             lameCall.extend([filePathIn, filePathOut])
-        
-        #make the system call  
+
+        #make the system call
         r = subprocess.call(lameCall)
         if r != 0:
             logging.warning('mp3 creation failed (lame return code:%d for file input %s).' % ( r, filePathIn))
@@ -483,7 +532,7 @@ This function will use ImageMagick to convert tifs to jpgs
     #error checking
     if checkStd(inPath,outPath,extraArgs,imageMagicOpts)==False:
         return False
-    
+
     #determine the output directory for the tempfile and for if there are multiple output files due to a directory batch
     #put directory not created error handle here'''
     if os.path.isdir(outPath)==False: #outPath is a file path
@@ -503,27 +552,27 @@ This function will use ImageMagick to convert tifs to jpgs
             #remove non tiff entries
             if path[(pathLength-4):pathLength]!='.tif' and path[(pathLength-5):pathLength]!='.tiff' :
                 fileList.remove(path)
-    
-    
+
+
     for fileName in fileList:
-        
+
         #if fileNameOut was not in outPath make one up
         if os.path.isdir(outPath)==True:
             fileNameOut=fileName[0:fileName.rindex('.')]+'.jpg'
         filePathIn=os.path.join(inDirectory,fileName)
         filePathOut=os.path.join(outDirectory,fileNameOut)
-        
+
         #create image magick call
         if imageMagicOpts=='default':
             imageMagicCall=["convert", filePathIn, '-compress', 'JPEG', '-quality', '50%', filePathOut]
         elif imageMagicOpts=='TN':
-            imageMagicCall=["convert", filePathIn, '-compress', 'JPEG', "-thumbnail", "85x110!", "-gravity", "center", "-extent", "85x110", filePathOut]
+            imageMagicCall=["convert", filePathIn, '-compress', 'JPEG', "-thumbnail", "85x110", "-gravity", "center", "-extent", "85x110", filePathOut]
         else:
             imageMagicCall=["convert",filePathIn]
             imageMagicCall.extend(imageMagicOpts)
             imageMagicCall.append(filePathOut)
-        
-        #make image magic call  
+
+        #make image magic call
         r = subprocess.call(imageMagicCall)
         if r != 0:
             logging.warning('JPG creation failed (convert return code:%d for file input %s).' % ( r, filePathIn))
@@ -572,18 +621,18 @@ def exif_to_xml(inPath, outPath, *extraArgs):
                 if path.rfind(ext)==-1 or path.rfind(ext)!=(pathLength-len(ext)):
                     fileList.remove(path)
                     print("removing path: "+path)
-    
+
     for fileName in fileList:
-        
+
         #if fileNameOut was not in outPath make one up
         if os.path.isdir(outPath)==True:
             fileNameOut=fileName[0:fileName.rindex('.')]+'.xml'
         filePathIn=os.path.join(inDirectory,fileName)
         filePathOut=os.path.join(outDirectory,fileNameOut)
-        
+
         #create exiftool call
         exiftoolCall=['exiftool','-X',filePathIn]
-        
+
         #make exiftool call  (using the Popen constructor because we need to do further work with the obj)
         r = subprocess.Popen(exiftoolCall,stdout=subprocess.PIPE)
         #grab exiftool output
@@ -591,13 +640,13 @@ def exif_to_xml(inPath, outPath, *extraArgs):
         #put exiftool output in the file
         rFile=open(filePathOut,'w')
         rFile.write(exif_value)
-        
+
         if r.poll() != 0:
             logging.warning('EXIF XML creation failed (convert return code:%d for file input %s).' % ( r, filePathIn))
         if r.poll() == 0:
             logging.info('File converted: %s'% (filePathOut))
-    
-    
+
+
     return True
 
 def mods_to_solr(inPath, outPath, *extraArgs):
@@ -615,7 +664,7 @@ This function will take a MODS xml file and transform it into a SOLR xml file.
     #set up the translator
     xslt_root = etree.parse(os.path.join(os.path.dirname(__file__), '__resources/mods_to_solr.xslt'))
     transform = etree.XSLT(xslt_root)
-    
+
     #determine the output directory for the tempfile and for if there are multiple output files due to a directory batch
     #put directory not created error handle here'''
     if not os.path.isdir(outPath): #outPath is a file path
@@ -636,7 +685,7 @@ This function will take a MODS xml file and transform it into a SOLR xml file.
             elif not xmlib.rootHasNamespace(os.path.join(inPath,path), 'http://www.loc.gov/mods/v3'):
                 fileList.remove(path)
             #remove files that are not xml that have the mods namespace
-    
+
     for fileName in fileList:
         #if fileNameOut was not in outPath make one up
         if os.path.isdir(outPath):
@@ -652,10 +701,10 @@ This function will take a MODS xml file and transform it into a SOLR xml file.
         #write solr file
         solrOut=open (filePathOut,'w')
         solrOut.write(str(transform_result))
-    
-    
-    return True   
-    
+
+
+    return True
+
 '''
 collection of helper functions used by the API functions
 '''
@@ -674,7 +723,7 @@ Does some standardized error checking on the input and output path arguments
     if os.path.lexists(pathIn)==False:
         logging.error('The indicated input path is not valid: '+pathIn)
         return False
-    
+
     if os.path.isdir(pathOut):
         return True
     elif os.path.isfile(pathOut):
@@ -683,12 +732,12 @@ Does some standardized error checking on the input and output path arguments
     elif os.path.lexists(os.path.dirname(pathOut))!=True:
         logging.error('The output path is invalid: '+pathOut)
         return False
-        
+
     #make sure that if the input path is a directory that the output path is also a directory
     if os.path.isdir(pathIn)==True and os.path.isdir(pathOut)==False:
         logging.error('If the input path is a directory then so must be the output directory')
         return False
-    
+
     return True
 
 
