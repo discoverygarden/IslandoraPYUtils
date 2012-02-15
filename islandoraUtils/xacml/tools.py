@@ -200,6 +200,10 @@ class XacmlRule:
     def getRuleArray(self):
         rule = {}
 
+        # make frigging sure that these are included
+        self.addUser('fedoraAdmin');
+        self.addRole('administrator')
+
         rule['ruleid'] = self._rule['ruleid']
         rule['effect'] = self._rule['effect']
         rule['users'] = list(self._rule['users'])
