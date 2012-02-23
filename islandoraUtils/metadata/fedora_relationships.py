@@ -518,6 +518,7 @@ class fedora_helper():
         else:
             xmlstring = None
 
+        self.xmlstring = xmlstring
         self.dsid = reldsid
         self.obj = obj
 
