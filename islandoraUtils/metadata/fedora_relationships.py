@@ -32,17 +32,18 @@ class rels_predicate:
     def __repr__(self):
         return self.predicate
 
-class fedora_relationship_element():
+class fedora_relationship():
     r"""Top level class in the class hierarchy.
-    This class is easy to test because it doesn't contain any reference to fcrepo.
+    The top level classes are easy to test, since they are independant of fedora.
 
     Looks like this:
-         fedora_relationship_element
-                     |
             fedora_relationship
                      ^
                     / \
-            rels_int   rels_ext
+     rels_int_string   rels_ext_string
+            |                |
+         rels_int         rels_ext
+
     """
     rdf_namespace = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#'
     rdf = '{%s}' % rdf_namespace
@@ -110,8 +111,8 @@ class fedora_relationship_element():
         # state variable to know if the tree has been modified
         self.modified = False
 
-    def toString(self):
-        return '%s' % self
+    def toString(self, pretty_print = True):
+        return etree.tostring(self.root, pretty_print=pretty_print)
 
     def __str__(self):
         return etree.tostring(self.root, pretty_print=True)
@@ -121,10 +122,17 @@ class fedora_relationship_element():
 
         # becasue we start using xpath here, and xpath namespacing is a little different
         # we have to change to using alias:tag instead of {uri}tag
-        if subject == None:
-            description_xpath = 'rdf:Description'
+
+        # because of the damn stupid inconsistency in the data between description
+        # and Description, we need to figure out what we are dealing with.
+        description = self.root.find(self.rdf+'description')
+        if(description is not None):
+            description_xpath = 'rdf:description'
         else:
-            description_xpath = 'rdf:Description[@rdf:about="info:fedora/'+subject+'"]'
+            description_xpath = 'rdf:Description'
+
+        if subject != None:
+            description_xpath += '[@rdf:about="info:fedora/'+subject+'"]'
 
         if predicate_object == None:
             predicate_xpath = '/*'
@@ -162,6 +170,10 @@ class fedora_relationship_element():
 
     def _addRelationship(self, subject, predicate):
         description = self.root.find(self.rdf+'Description[@'+self.rdf+'about="info:fedora/'+subject+'"]')
+
+        # add a check for lower case description
+        if description == None:
+            description = self.root.find(self.rdf+'description[@'+self.rdf+'about="info:fedora/'+subject+'"]')
 
         if description == None:
             description = etree.SubElement(self.root, self.rdf+'Description')
@@ -243,32 +255,10 @@ class fedora_relationship_element():
                 grandparent = parent.getparent()
                 grandparent.remove(parent)
 
-class fedora_relationship(fedora_relationship_element):
-    """This class adds fcrepo functionality to fedora_relationship_element."""
-    def __init__(self, obj, reldsid, namespaces=None, default_namespace=None):
-
-        if reldsid in obj:
-            xmlstring = obj[reldsid].getContent().read()
-        else:
-            xmlstring = None
-
-
-        fedora_relationship_element.__init__(self, namespaces, default_namespace, xml=xmlstring)
-
-        self.dsid = reldsid
-        self.obj = obj
-
-    def update(self):
-        if self.modified:
-            if self.dsid not in self.obj:
-                self.obj.addDataStream(self.dsid, self.toString(), label=u"Fedora Object-to-Object Relationship Metadata")
-            else:
-                self.obj[self.dsid].setContent(self.toString())
-
-class rels_int(fedora_relationship):
+class rels_int_string(fedora_relationship):
     """Class to update a fedora RELS-INT datastream."""
 
-    def __init__(self, obj, namespaces = None, default_namespace = None):
+    def __init__(self, pid, namespaces = None, default_namespace = None, xml = None):
         """Constructor for rels_int object.
 
         Arguements:
@@ -283,26 +273,27 @@ class rels_int(fedora_relationship):
           info:fedora/fedora-system:def/relations-external#
 
         """
-        fedora_relationship.__init__(self, obj, 'RELS-INT', namespaces, default_namespace)
+        self.pid = pid
+        fedora_relationship.__init__(self, namespaces, default_namespace, xml)
 
     def _updateObject(self, object):
         """Private method to overload object. Turns everything into a rels_object"""
         if object == None:
             obj = None
         elif isinstance(object,basestring):
-            obj = rels_object('%s/%s'%(self.obj.pid,object), rels_object.DSID)
+            obj = rels_object('%s/%s'%(self.pid,object), rels_object.DSID)
         elif isinstance(object,rels_object):
             if object.type not in rels_object.TYPES:
                 raise TypeError
             if object.type == rels_object.DSID:
                 obj = copy.copy(object)
-                obj.data = '%s/%s'%(self.obj.pid, object.data)
+                obj.data = '%s/%s'%(self.pid, object.data)
             elif object.type == rels_object.LITERAL or object.type == rels_object.PID:
                 obj = copy.copy(object)
         elif isinstance(object, list):
             reltype = object[1].lower()
             if reltype == 'dsid':
-                obj = rels_object('%s/%s'%(self.obj.pid, object[0]), rels_object.DSID)
+                obj = rels_object('%s/%s'%(self.pid, object[0]), rels_object.DSID)
             elif reltype == 'pid':
                 obj = rels_object(object[0], rels_object.PID)
             elif reltype == 'literal':
@@ -318,7 +309,7 @@ class rels_int(fedora_relationship):
     def _updateSubject(self, subject):
         """Private method to add pid/dsid to the passed in dsid."""
         if(subject):
-            subject = '%s/%s' % (self.obj.pid, subject)
+            subject = '%s/%s' % (self.pid, subject)
         return subject
 
     def addRelationship(self, subject, predicate, object):
@@ -397,15 +388,11 @@ class rels_int(fedora_relationship):
         sub = self._updateSubject(subject)
         return fedora_relationship.purgeRelationships(self, sub, predicate, obj)
 
-    def update(self):
-        """Save the updated rels_int XML to the fedora object."""
-        return fedora_relationship.update(self)
 
-
-class rels_ext(fedora_relationship):
+class rels_ext_string(fedora_relationship):
     """Class to update a fedora RELS-EXT datastream."""
 
-    def __init__(self, obj, namespaces = None, default_namespace = None):
+    def __init__(self, pid, namespaces = None, default_namespace = None, xml = None):
         """Constructor for rels_ext object.
 
         Arguements:
@@ -420,7 +407,8 @@ class rels_ext(fedora_relationship):
           info:fedora/fedora-system:def/relations-external#
 
         """
-        fedora_relationship.__init__(self, obj, 'RELS-EXT', namespaces, default_namespace)
+        self.pid = pid
+        fedora_relationship.__init__(self, namespaces, default_namespace, xml)
 
     def _updateObject(self, object):
         """Private method to overload object. Turns everything into a rels_object"""
@@ -465,7 +453,7 @@ class rels_ext(fedora_relationship):
 
         """
         obj = self._updateObject(object)
-        return fedora_relationship.addRelationship(self, self.obj.pid, predicate, obj)
+        return fedora_relationship.addRelationship(self, self.pid, predicate, obj)
 
     def getRelationships(self, predicate=None, object=None):
         """Query relationships contained in rels_ext XML.
@@ -493,7 +481,7 @@ class rels_ext(fedora_relationship):
 
         """
         obj = self._updateObject(object)
-        return fedora_relationship.getRelationships(self, self.obj.pid, predicate, obj)
+        return fedora_relationship.getRelationships(self, self.pid, predicate, obj)
 
     def purgeRelationships(self, predicate=None, object=None):
         """Purge relationships from the rels_ext XML.
@@ -519,27 +507,230 @@ class rels_ext(fedora_relationship):
 
         """
         obj = self._updateObject(object)
-        return fedora_relationship.purgeRelationships(self, self.obj.pid, predicate, obj)
+        return fedora_relationship.purgeRelationships(self, self.pid, predicate, obj)
+
+class fedora_helper():
+    """This class adds fcrepo functionality to fedora_relationship_element."""
+    def __init__(self, obj, reldsid):
+
+        if reldsid in obj:
+            xmlstring = obj[reldsid].getContent().read()
+        else:
+            xmlstring = None
+
+        self.dsid = reldsid
+        self.obj = obj
+
+    def update(self):
+        if self.modified:
+            if self.dsid not in self.obj:
+                self.obj.addDataStream(self.dsid, self.toString(), label=u"Fedora Object-to-Object Relationship Metadata")
+            else:
+                self.obj[self.dsid].setContent(self.toString())
+
+class rels_int(rels_int_string, fedora_helper):
+    """Class to update a fedora RELS-INT datastream."""
+
+    def __init__(self, obj, namespaces = None, default_namespace = None):
+        """Constructor for rels_int object.
+
+        Arguements:
+          obj -- The fcrepo object to modify/create rels_int for.
+          namespaces -- Namespaces to be added to the rels_int.
+              [] - list containing ['alias','uri']
+              [rels_namespace, ...] - list of rels_namespace objects.
+              [[],[],...[]] - list of ['alias','uri']
+              rels_namespace - rels_namespace object containing namespace and alias.
+          default_namespace -- String containing the alias of the default namespace.
+          If no namespace is passed in then this is assumed:
+          info:fedora/fedora-system:def/relations-external#
+
+        """
+        fedora_helper.__init__(self, obj, 'RELS-INT')
+        rels_int_string.__init__(self, obj.pid, namespaces, default_namespace, self.xmlstring)
+
+    def addRelationship(self, subject, predicate, object):
+        """Add new relationship to rels_int XML.
+
+        Arguements:
+          subject -- String containing the DSID of the subject.
+          predicate -- The predicate.
+              String - The predicate string. The default namespace is assumed.
+              rels_predicate - object with namespace alias and predicate set.
+              list - ['alias','predicate']
+          object -- The object.
+              string - String containing a DSID.
+              rels_object - Rels object.
+              list - ['string','type'] where: type is in ['dsid', 'pid', 'literal']
+
+        """
+        return rels_int_string.addRelationship(self, subject, predicate, object)
+
+    def getRelationships(self, subject=None, predicate=None, object=None):
+        """Query relationships contained in rels_int XML.
+
+        This function uses xpath to do a query to find all the objects that match
+        the passed in arguements. Passing None acts as a wildcard.
+
+        Arguements:
+          subject -- String containing the DSID of the subject.
+          predicate -- The predicate to search for.
+              This is an overloaded method:
+              None - Any predicate.
+              String - The predicate string. The default namespace is assumed.
+              rels_predicate - object with namespace alias and predicate set.
+              list - ['alias','predicate']
+          object -- The object to search for.
+              None - Any object.
+              string - String containing a DSID.
+              rels_object - Rels object.
+              list - ['string','type'] where: type is in ['dsid', 'pid', 'literal']
+
+        Returns:
+          List of lists of the form:
+          [[subject1,predicate1,object1],[subject2,predicate2,object2]]
+          The predicates and objects returned are of rels_predicate and rels_object
+
+        """
+        return rels_int_string.getRelationships(self, subject, predicate, object)
+
+    def purgeRelationships(self, subject=None, predicate=None, object=None):
+        """Purge relationships from the rels_int XML.
+
+        This function uses xpath to do a query to remove all the objects that match
+        the passed in arguements. Passing None acts as a wildcard.
+
+        WARNING: Because None is a wildcard, passing no arguements will
+                 DELETE THE ENTIRE CONTENTS of the rels_int.
+
+        Arguements:
+          subject -- String containing the DSID.
+          predicate -- The predicate to remove.
+              None - Any predicate.
+              String - The predicate string. The default namespace is assumed.
+              rels_predicate - object with namespace alias and predicate set.
+              list - ['alias','predicate']
+          object -- The object to remove.
+              None - Any object.
+              string - String containing a DSID.
+              rels_object - Rels object.
+              list - ['string','type'] where: type is in ['dsid', 'pid', 'literal']
+
+        """
+        return rels_int_string.purgeRelationships(self, subject, predicate, object)
 
     def update(self):
         """Save the updated rels_ext XML to the fedora object."""
-        return fedora_relationship.update(self)
+        return fedora_helper.update(self)
 
+class rels_ext(rels_ext_string, fedora_helper):
+    """Class to update a fedora RELS-EXT datastream."""
+
+    def __init__(self, obj, namespaces = None, default_namespace = None):
+        """Constructor for rels_ext object.
+
+        Arguements:
+          obj -- The fcrepo object to modify/create rels_ext for.
+          namespaces -- Namespaces to be added to the rels_ext.
+              [] - list containing ['alias','uri']
+              [rels_namespace, ...] - list of rels_namespace objects.
+              [[],[],...[]] - list of ['alias','uri']
+              rels_namespace - rels_namespace object containing namespace and alias.
+          default_namespace -- String containing the alias of the default namespace.
+          If no namespace is passed in then this is assumed:
+          info:fedora/fedora-system:def/relations-external#
+
+        """
+        fedora_helper.__init__(self, obj, 'RELS-EXT')
+        rels_ext_string.__init__(self, obj.pid, namespaces, default_namespace, self.xmlstring)
+
+    def addRelationship(self, predicate, object):
+        """Add new relationship to rels_ext XML.
+
+        Arguements:
+          predicate -- The predicate.
+              This is an overloaded method:
+              String - The predicate string. The default namespace is assumed.
+              rels_predicate - object with namespace alias and predicate set.
+              list - ['alias','predicate']
+          object -- The object.
+              string - String containing a PID.
+              rels_object - Rels object.
+              list - ['string','type'] where: type is in ['dsid', 'pid', 'literal']
+
+        """
+        return rels_ext_string.addRelationship(self, predicate, object)
+
+    def getRelationships(self, predicate=None, object=None):
+        """Query relationships contained in rels_ext XML.
+
+        This function uses xpath to do a query to find all the objects that match
+        the passed in arguements. Passing None acts as a wildcard.
+
+        Arguements:
+          predicate -- The predicate to search for.
+              This is an overloaded method:
+              None - Any predicate.
+              String - The predicate string. The default namespace is assumed.
+              rels_predicate - object with namespace alias and predicate set.
+              list - ['alias','predicate']
+          object -- The object to search for.
+              None - Any object.
+              string - String containing a PID.
+              rels_object - Rels object.
+              list - ['string','type'] where: type is in ['dsid', 'pid', 'literal']
+
+        Returns:
+          List of lists of the form:
+          [[subject1,predicate1,object1],[subject2,predicate2,object2]]
+          The predicates and objects returned are of rels_predicate and rels_object
+
+        """
+        return rels_ext_string.getRelationships(self, predicate, object)
+
+    def purgeRelationships(self, predicate=None, object=None):
+        """Purge relationships from the rels_ext XML.
+
+        This function uses xpath to do a query to remove all the objects that match
+        the passed in arguements. Passing None acts as a wildcard.
+
+        WARNING: Because None is a wildcard, passing no arguements will
+                 DELETE THE ENTIRE CONTENTS of the rels_ext.
+
+        Arguements:
+          predicate -- The predicate to remove.
+              This is an overloaded method:
+              None - Any predicate.
+              String - The predicate string. The default namespace is assumed.
+              rels_predicate - object with namespace alias and predicate set.
+              list - ['alias','predicate']
+          object -- The object to remove.
+              None - Any object.
+              string - String containing a PID.
+              rels_object - Rels object.
+              list - ['string','type'] where: type is in ['dsid', 'pid', 'literal']
+
+        """
+        return rels_ext_string.purgeRelationships(self, predicate, object)
+
+    def update(self):
+        """Save the updated rels_ext XML to the fedora object."""
+        return fedora_helper.update(self)
 
 # do some basic testing of the functionality
 if __name__ == '__main__':
 
-    relationship = fedora_relationship_element([rels_namespace('coal','http://www.coalliance.org/ontologies/relsint'), rels_namespace('jon','http://jebus/trainstation')])
+    relationship = fedora_relationship([rels_namespace('coal','http://www.coalliance.org/ontologies/relsint'), rels_namespace('jon','http://jebus/trainstation')])
     print relationship.toString()
     relationship.addRelationship('coccc:2040', rels_predicate('jon','feezle'), rels_object('JON',rels_object.LITERAL))
     print relationship.toString()
 
-    relationship = fedora_relationship_element(rels_namespace('coal','http://www.coalliance.org/ontologies/relsint'), 'coal')
+    relationship = fedora_relationship(rels_namespace('coal','http://www.coalliance.org/ontologies/relsint'), 'coal')
     print relationship.toString()
     relationship.addRelationship('coccc:2040', 'HasAwesomeness', rels_object('JON',rels_object.LITERAL))
     print relationship.toString()
 
-    relationship = fedora_relationship_element()
+    relationship = fedora_relationship()
     print relationship.toString()
     relationship.addRelationship('coccc:2040', 'HasAwesomeness', rels_object('JON',rels_object.LITERAL))
     print relationship.toString()
