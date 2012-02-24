@@ -30,6 +30,24 @@ class TestRelsExtBigD(unittest.TestCase):
     def tearDown(self):
         self.relsext = None
 
+    def test_add_pid(self):
+        xmlStr = """
+<rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:islandora="http://islandora.ca/ontology/relsext#" xmlns:fedora="info:fedora/fedora-system:def/relations-external#" xmlns:fedora-model="info:fedora/fedora-system:def/model#" xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">
+    <rdf:Description rdf:about="info:fedora/cogru:1332">
+        <fedora:isMemberOfCollection rdf:resource="info:fedora/cogru:1130"></fedora:isMemberOfCollection>
+        <fedora-model:hasModel xmlns="info:fedora/fedora-system:def/model#" rdf:resource="info:fedora/cogru:cogruETD"></fedora-model:hasModel>
+        <islandora:test rdf:resource="info:fedora/cogru:1337"/>
+    </rdf:Description>
+</rdf:RDF>
+        """
+
+        self.relsext.addRelationship('test', 'cogru:1337')
+        expected_string = XmlHelper.mangle(xmlStr)
+        result_string = XmlHelper.mangle(self.relsext.toString())
+
+        self.assertEqual(expected_string, result_string, 'generated xml does not match')
+
+
     def test_add_literal(self):
         xmlStr = """
 <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:islandora="http://islandora.ca/ontology/relsext#" xmlns:fedora="info:fedora/fedora-system:def/relations-external#" xmlns:fedora-model="info:fedora/fedora-system:def/model#" xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">
