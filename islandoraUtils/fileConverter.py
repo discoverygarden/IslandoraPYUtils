@@ -287,7 +287,7 @@ def tif_to_pdf(inPath,outPath,tiff2pdfOpts,*extraArgs):
     @param: inPath: source file
     @param: outPath: destination file or dir
     @param tiff2pdfOpts: options to be applied to the conversion, can be 'default'
-    
+
     @return bool: true if successful [completion not conversion] false if not
     '''
     #error checking
@@ -317,10 +317,11 @@ def tif_to_pdf(inPath,outPath,tiff2pdfOpts,*extraArgs):
 
         #create tiff2pdf call
         if tiff2pdfOpts=='default':
-            tiff2pdfCall=["tiff2pdf", filePathIn, '-o', filePathOut]
+            tiff2pdfCall=["convert", filePathIn, '-resize', '1024x1024^', '-quality', '50', filePathOut]
         else:
-            tiff2pdfCall=["tiff2pdf", filePathIn, '-o', filePathOut]
+            tiff2pdfCall=["convert", filePathIn]
             tiff2pdfCall.extend(tiff2pdfOpts)
+            tiff2pdfCall.append(filePathOut);
         #make the system call
         r = subprocess.call(tiff2pdfCall)
 
@@ -788,4 +789,3 @@ Wrapper function that calls all standard error checking
         if checkOpts(optSet)==False:
             return False
     return True
-
