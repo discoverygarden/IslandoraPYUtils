@@ -202,17 +202,25 @@ def create_swf(obj, dsid, swfid):
     #recieve PDF create a SWF for use with flexpaper
     directory, file = get_datastream_as_file(obj, dsid, "pdf")
     
-    r = subprocess.call(['pdf2swf', directory+'/'+file, '-o', directory+'/'+swfid,\
-         '-T 9', '-f', '-t', '-s', 'storeallcharacters', '-G'])
-    if r != 0:
+    pdf2swf = subprocess.Popen(['pdf2swf', directory+'/'+file, '-o', directory+'/'+swfid,\
+         '-T 9', '-f', '-t', '-s', 'storeallcharacters', '-G'], stdout=subprocess.PIPE)
+    out, err = pdf2swf.communicate()
+    if pdf2swf.returncode != 0:
         logger.warning('PID:%s DSID:%s SWF creation failed. Trying alternative.' % (obj.pid, dsid))
-        r = subprocess.call(['pdf2swf', directory+'/'+file, '-o', directory+'/'+swfid,\
-             '-T 9', '-f', '-t', '-s', 'storeallcharacters', '-G', '-s', 'poly2bitmap'])
-        if r != 0:
-            logger.warning('PID:%s DSID:%s SWF creation failed (pdf2swf return code:%d).' % (obj.pid, dsid, r))
+        pdf2swf = subprocess.Popen(['pdf2swf', directory+'/'+file, '-o', directory+'/'+swfid,\
+             '-T 9', '-f', '-t', '-s', 'storeallcharacters', '-G', '-s', 'poly2bitmap'], stdout=subprocess.PIPE)
+        out, err = pdf2swf.communicate()
 
-    if r == 0:
+    # catch the case where PDF2SWF fails to create the file, but returns 
+    if pdf2swf.returncode == 0 and os.path.isfile(directory + '/' + swfid):
         update_datastream(obj, swfid, directory+'/'+swfid, label='pdf to swf', mimeType='application/x-shockwave-flash')
+        r = 0
+    elif not os.path.isfile(directory + '/' + swfid):
+        logger.warning('PID:%s DSID:%s SWF creation failed (pdf2swf returned: "%s").' % (obj.pid, dsid, out))
+        r = 1
+    else:
+        logger.warning('PID:%s DSID:%s SWF creation failed (pdf2swf return code:%d).' % (obj.pid, dsid, pdf2swf.returncode))
+        r = pdf2swf.returncode
 
     rmtree(directory, ignore_errors=True)
     return r
