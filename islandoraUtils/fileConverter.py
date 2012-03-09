@@ -317,7 +317,7 @@ def tif_to_pdf(inPath,outPath,tiff2pdfOpts,*extraArgs):
 
         #create tiff2pdf call
         if tiff2pdfOpts=='default':
-            tiff2pdfCall=["convert", filePathIn, '-resize', '1024x1024^', '-quality', '50', filePathOut]
+            tiff2pdfCall=["convert", filePathIn, '-resize', '1024x1024^', '-compress', 'jpeg', '-quality', '50', filePathOut]
         else:
             tiff2pdfCall=["convert", filePathIn]
             tiff2pdfCall.extend(tiff2pdfOpts)
