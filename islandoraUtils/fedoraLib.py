@@ -2,6 +2,9 @@
 Created on Apr 20, 2011
 
 @author: William Panting
+
+@TODO: add a function to create an object at a designated pid if it does not exist, and purge/recreate it if it does
+
 '''
 import tempfile
 import string

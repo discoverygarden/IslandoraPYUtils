@@ -13,12 +13,9 @@ Please make sure that the output directory already exists.
 Note that the extra args variables are here to facilitate debugging if there are ever version issues.
 
 TODO: add video support
-TODO: add open office word doc conversions
 TODO: make recursive option
 TODO: explore handling output directory creation
 TODO: explore more input file type checking
-TODO: explore better conversion options
-TODO: explore more backup solutions
 FIXME: Some poor assumptions are made regarding paths... There exist other types of files besides 'files'and 'directories' (block/char devices, sym-links (which may cause weird evaluations?), etc...)
 TODO: Seems like generalizing file selection based on a path and extension(s) could be rather useful
       or automatically determine file type by magic number (resulting in things like tif_to_jpg -> any_to_jpg)
@@ -207,8 +204,6 @@ def tif_OCR(inPath,outPath,fileTypeOpts,inputOpts=None,*extraArgs):
             ABBYY_Call.extend(('-f',outputType))
             if outputOpts!='default':
                 ABBYY_Call.extend(fileTypeOpts[outputType])
-            else:
-                ABBYY_Call.extend(defaultOutPutOpts)
             #append output file for this round
             ABBYY_Call.extend(('-of',absPathFileOutNoExt+extension))
 
