@@ -18,6 +18,10 @@ password: islandora
 url:http://localhost:8080/solr
 [Drupal]
 url:http://localhost/drupal
+[logging]
+directory:./
+[miscellaneous]
+ingest_name:name_of_ingest
 
     '''
     @property
@@ -30,6 +34,7 @@ url:http://localhost/drupal
     def __init__(self, configuration_file_path):
         '''
         Constructor
+        @param configuration_file_path: the path to the configuration file 
         '''
         #get config
         self.configuration_parser = ConfigParser.SafeConfigParser()

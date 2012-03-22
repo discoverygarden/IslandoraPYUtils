@@ -2,7 +2,7 @@
 Created on 2012-03-19
 
 @author: William Panting
-@TODO: build object/tests
+@TODO: properties configuration and logger, also accept in constructor
 '''
 
 class ingester(object):
@@ -11,8 +11,12 @@ class ingester(object):
     '''
 
 
-    def __init__(self):
+    def __init__(self, configuration_file_path):
         '''
         Constructor
         '''
+        self.Islandora_configuration =
+        self.Islandora_logger =
         
+        self.configuration =
+        self.logger =
