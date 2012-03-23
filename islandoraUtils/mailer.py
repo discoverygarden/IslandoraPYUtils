@@ -2,7 +2,8 @@
 Created on Oct. 12 2011
 
 @author: Jason MacWilliams, William Panting
-@TODO: make these take the 
+@TODO: make the mail program parameterizable
+@TODO: refactor to use property decorators
 """
 
 import subprocess
