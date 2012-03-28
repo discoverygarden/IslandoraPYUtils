@@ -10,10 +10,12 @@ import logging, time, os
 class Islandora_logger(object):
     '''
     classdocs
-    @param log_level
+    @param log_level:
         Can overwrite the log_level from the configuration file
-    @param logger_name
+    @param logger_name:
         Can overwrite the logger(config file) to use
+    @param Islandora_configuration_object:
+        The configuration object to base construction of the logger on
     '''
     def __init__(self, Islandora_configuration_object, log_level=None, logger_name=None):
         '''

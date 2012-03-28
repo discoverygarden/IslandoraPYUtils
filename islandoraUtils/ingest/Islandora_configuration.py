@@ -20,8 +20,13 @@ url:http://localhost:8080/solr
 url:http://localhost/drupal
 [logging]
 directory:./
+[alerts]
+medium:mailx
+emails:willy@domain.ca wonka@notadomian.com
 [miscellaneous]
 ingest_name:name_of_ingest
+[cron]
+when_last_ran:timestamp_here
 
     '''
     @property

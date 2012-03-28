@@ -8,29 +8,28 @@ Created on Oct. 12 2011
 
 import subprocess
 
-def send_mail(addrs, subject, message):
-    print("Sending email (%s) to addresses: %s" % (subject, addrs))
-    subprocess.Popen('echo "%s" | mailx -s "%s" %s' % (message, subject, addrs), shell=True, executable="/bin/bash")
+def send_mail(addresses, subject, message):
+    subprocess.Popen('echo "%s" | mailx -s "%s" %s' % (message, subject, addresses), shell=True, executable="/bin/bash")
 
     # XXX: we might want to attach the logfile or something else here. In that case the order of
     # the print statement and the sendmail should be reversed so the print statement doesn't appear
     # in the log
 
 class mailer:
-    def __init__(self, subject="", addrs=[]):
-        if type(addrs) != list:
+    def __init__(self, subject="", addresses=[]):
+        if type(addresses) != list:
             return
         self.subject = subject
-        self.addrs = addrs
+        self.addresses = addresses
         self.message = ""
 
-    def add_address(self, addr):
-        if type(addr) == str and not addr in self.addrs:
-            self.addrs.append(addr)
+    def add_address(self, address):
+        if type(address) == str and not address in self.addresses:
+            self.addresses.append(address)
 
-    def remove_address(self, addr):
-        if type(addr) == str and addr in self.addrs:
-            self.addrs.remove(addr)
+    def remove_address(self, address):
+        if type(address) == str and address in self.addresses:
+            self.addresses.remove(address)
 
     def set_subject(self, subject):
         self.subject = subject
@@ -45,6 +44,6 @@ class mailer:
         self.message = self.message + string
 
     def send(self):
-        if self.subject and self.addrs:
-            send_mail(" ".join(self.addrs), self.subject, self.message)
+        if self.subject and self.addresses:
+            send_mail(" ".join(self.addresses), self.subject, self.message)
         print("Email report sent")
