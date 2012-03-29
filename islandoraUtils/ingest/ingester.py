@@ -16,7 +16,7 @@ class ingester(object):
     '''
 
 
-    def __init__(self, configuration_file_path, is_a_cron=False):
+    def __init__(self, configuration_file_path, is_a_cron=False, Islandora_configuration_object=None, Islandora_logger_object=None, Islandora_alerter_object=None, Islandora_cron_batch_object=None):
         '''
         Get all the objects that are likely to be used for an ingest
         @param configuration_file_path: where the configuration for the ingest can be found
@@ -24,16 +24,32 @@ class ingester(object):
         '''
         
         #configuration and logger have intermediate objects
-        my_Islandora_configuration = Islandora_configuration(configuration_file_path)
-        my_Islandora_logger = Islandora_logger(my_Islandora_configuration)
+        if not Islandora_configuration_object:
+            my_Islandora_configuration = Islandora_configuration(configuration_file_path)
+        else:
+            my_Islandora_configuration = Islandora_configuration_object
         
-        self._configuration = my_Islandora_configuration.configuration_dictionary
-        self._logger = my_Islandora_logger.logger
+        if not Islandora_logger_object:
+            my_Islandora_logger = Islandora_logger(my_Islandora_configuration)
+        else:
+            my_Islandora_logger = Islandora_logger_object
         
-        self._alerter = Islandora_alerter(my_Islandora_configuration)
+        #set the class properties
+        if not Islandora_alerter_object:
+            self._alerter = Islandora_alerter(my_Islandora_configuration)
+        else:
+            self._alerter = Islandora_alerter_object
         
         if is_a_cron:
-            self._cron_batch = Islandora_cron_batch(my_Islandora_configuration)
+            if not Islandora_cron_batch_object:
+                self._cron_batch = Islandora_cron_batch(my_Islandora_configuration)
+            else:
+                self._cron_batch = Islandora_cron_batch_object
+            
+        
+        self._configuration = my_Islandora_configuration.configuration_dictionary
+        
+        self._logger = my_Islandora_logger.logger
             
 
     @property
@@ -56,3 +72,18 @@ class ingester(object):
         The dictionary version of the ingest's configuration.
         '''
         return self._cron_batch
+    
+    def ingest_object(self, pid=None, archival_datastream_path=None, metadata_file_path=None, collection=None, content_model=None):
+        '''
+        This function will ingest an object with a single metadata and archival datastream with a specified set of relationships
+        it will use our best practices for logging and assume the use of microservices for derivatives and their RELS-INT management
+        it will overwrite a pre-existing object if one exists
+        @TODO: look at taking in a relationship object
+        @param pid: The pid of the object to create or update. If non is supplied then getNextPid is used
+        @param archival_datastream:
+        @param metadata_file_path:
+        @param collection:
+        @param content_model:
+        
+        @return pid: The pid of the object created or updated.
+        '''

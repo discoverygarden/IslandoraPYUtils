@@ -7,7 +7,8 @@ Created on 2012-03-16
 
 class Islandora_cron_batch(object):
     '''
-    classdocs
+    This class is meant to hold some helper code for handling 
+    cron managed time sync something to Fedora ingests
     '''
 
 
@@ -26,6 +27,7 @@ class Islandora_cron_batch(object):
         
     def does_file_require_action(self):
         '''
+        Returns true if one of is_file_new or is_file_modified would return true
         '''
     
     def is_file_new(self):
@@ -38,6 +40,7 @@ class Islandora_cron_batch(object):
         
     def find_files_requiring_action(self, list_of_files):
         '''
+        Will return a list of the files in a supplied list that require action as defined in self.does_file_require_action
         '''
     
     def find_new_files(self, list_of_files):
@@ -48,7 +51,7 @@ class Islandora_cron_batch(object):
         '''
         '''
         
-    def find_timestamps_requiring_aciton(self, list_of_files):
+    def find_timestamps_requiring_aciton(self, list_of_timestamps):
         '''
         '''
         

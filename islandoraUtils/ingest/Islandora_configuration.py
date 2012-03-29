@@ -19,12 +19,13 @@ url:http://localhost:8080/solr
 [Drupal]
 url:http://localhost/drupal
 [logging]
-directory:./
+directory:./logs
 [alerts]
 medium:mailx
 emails:willy@domain.ca wonka@notadomian.com
 [miscellaneous]
 ingest_name:name_of_ingest
+temporary_directory:./tmp
 [cron]
 when_last_ran:timestamp_here
 
@@ -45,7 +46,7 @@ when_last_ran:timestamp_here
         self.configuration_parser = ConfigParser.SafeConfigParser()
         self.configuration_parser.read(configuration_file_path)
         self._configuration_dictionary = {}
-        #loop throught he configuration file sections and dump the config to a dictionary
+        #loop through he configuration file sections and dump the config to a dictionary
         self.sections = self.configuration_parser.sections()
         for section in self.sections:
             self._configuration_dictionary[section] = {}
