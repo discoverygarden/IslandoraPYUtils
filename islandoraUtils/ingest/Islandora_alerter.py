@@ -25,11 +25,11 @@ class Islandora_alerter(object):
             logger.info('Using the mailx alerter')
             self._alerter = mailx_alerter(Islandora_configuration_object, logger)
         
-        def send_message(self, message=None, subject=None):
-            '''
-            calls the send message on the implementation object
-            '''
-            self._alerter.send_mesage(message, subject)
+    def send_message(self, message=None, subject=None):
+        '''
+        calls the send message on the implementation object
+        '''
+        self._alerter.send_message(message, subject)
             
 class mailx_alerter(object):
     '''
@@ -52,18 +52,20 @@ class mailx_alerter(object):
         else:
             self._mailer = emailer
         
-    def send_mesage(self, message=None, subject=None):
+    def send_message(self, message=None, subject=None):
         '''
         This method will send an email using mailx
         @param subject: the subject of the message to send
         @param message: the body of the message to send
         '''
-        if not subject:#use the default subject if it is not passed in
-            subject = self._subject
-            
+        if subject:#use the default subject if it is not passed in
+            self._mailer.set_subject(subject)
+        
         #clear and set the message
         self._mailer.clear_message()
         self._mailer.add_string(message)
         
         self._logger.info("Sending email (%s) to addresses: %s" % (subject, self._recievers))
         self._mailer.send()
+        
+        self._mailer.set_subject(self._subject)#reset subject for next message

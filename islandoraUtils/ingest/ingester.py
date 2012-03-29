@@ -6,15 +6,18 @@ Created on 2012-03-19
 @TODO: look into default PID namespace
 @TODO: a function for creating/deleting the tmp dir
 '''
+from fcrepo.connection import Connection, FedoraConnectionException
+from fcrepo.client import FedoraClient
 
 from islandoraUtils.ingest.Islandora_configuration import Islandora_configuration
 from islandoraUtils.ingest.Islandora_logger import Islandora_logger
 from islandoraUtils.ingest.Islandora_cron_batch import Islandora_cron_batch
 from islandoraUtils.ingest.Islandora_alerter import Islandora_alerter
+from islandoraUtils.metadata import fedora_relationships
 
 class ingester(object):
     '''
-    classdocs
+    This is the kingpin.  This object should handle creating all the other basic ingest helpers.
     '''
 
 
@@ -52,8 +55,21 @@ class ingester(object):
             else:
                 self._cron_batch = Islandora_cron_batch_object
             
-        
-            
+        #Fedora connection through fcrepo
+        self._fcrepo_connection = Connection(self._configuration['Fedora']['url'],
+                        username=self._configuration['Fedora']['username'],
+                         password=self._configuration['Fedora']['password'])
+        try:
+            self._Fedora_client = FedoraClient(self._fcrepo_connection)
+        except FedoraConnectionException:
+            self._logger.error('Error connecting to Fedora')
+
+    @property
+    def alerter(self):
+        '''
+        Returns the alerter that this object creates
+        '''
+        return self._alerter           
 
     @property
     def logger(self):
@@ -72,11 +88,11 @@ class ingester(object):
     @property
     def cron_batch(self):
         '''
-        The dictionary version of the ingest's configuration.
+        returns the batch job.
         '''
         return self._cron_batch
     
-    def ingest_object(self, PID=None, archival_datastream_path=None, metadata_file_path=None, collection=None, content_model=None):
+    def ingest_object(self, PID=None, object_label=None, archival_datastream_path=None, metadata_file_path=None, collection=None, content_model=None):
         '''
         This function will ingest an object with a single metadata and archival datastream with a specified set of relationships
         it will use our best practices for logging and assume the use of microservices for derivatives and their RELS-INT management
@@ -89,4 +105,16 @@ class ingester(object):
         @param content_model: The PID of the content_model so the RELS-EXT can be created
         
         @return PID: The PID of the object created or updated.
+        '''
+        '''
+        fedora_model_namespace = fedora_relationships.rels_namespace('fedora-model','info:fedora/fedora-system:def/model#')
+        Fedroa_object = self._Fedora_client.createObject(PID, label = object_label)
+        
+        #don't use add datastreams using  add_datastream from islandoraUtils.fedoraLib.py  it hurts fcrepo caching re J Green     
+        
+        #add relationships
+                objRelsExt = fedora_relationships.rels_ext(Fedora_object, fedora_model_namespace)
+                objRelsExt.addRelationship('isMemberOf', collection)
+                objRelsExt.addRelationship(fedora_relationships.rels_predicate('fedora-model','hasModel'), content_model)
+                objRelsExt.update()
         '''

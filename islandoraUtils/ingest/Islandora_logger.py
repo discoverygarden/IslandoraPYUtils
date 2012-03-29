@@ -13,11 +13,11 @@ class Islandora_logger(object):
     @param log_level:
         Can overwrite the log_level from the configuration file
     @param logger_name:
-        Can overwrite the logger(config file) to use
+        Can overwrite the logger(config file) to use, defaults to root because fcrepo uses the root logger
     @param Islandora_configuration_object:
         The configuration object to base construction of the logger on
     '''
-    def __init__(self, Islandora_configuration_object, log_level=None, logger_name=None):
+    def __init__(self, Islandora_configuration_object, log_level=None, logger_name='root'):
         '''
         Constructor
         @param Islandora_configuration: The object needed to get the information necessary for logging
@@ -61,6 +61,8 @@ class Islandora_logger(object):
         self._logger.setLevel(log_level)
         file_handler = logging.FileHandler(self._log_file)
         self._logger.addHandler(file_handler)
+        
+        self._logger.info('Starting logging session.')
         
     @property
     def logger(self):
