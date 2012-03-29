@@ -23,8 +23,14 @@ class Islandora_alerter(object):
         '''
         if Islandora_configuration_object.configuration_dictionary['alerts']['medium']=='mailx':
             logger.info('Using the mailx alerter')
-            return mailx_alerter(Islandora_configuration_object, logger)
+            self._alerter = mailx_alerter(Islandora_configuration_object, logger)
         
+        def send_message(self, message=None, subject=None):
+            '''
+            calls the send message on the implementation object
+            '''
+            self._alerter.send_mesage(message, subject)
+            
 class mailx_alerter(object):
     '''
         This class is an alerter that operates through the mailx program

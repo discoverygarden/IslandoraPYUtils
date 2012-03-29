@@ -24,11 +24,18 @@ class Islandora_logger(object):
         '''
         #self.Islandora_configuration_object = Islandora_configuration_object
         self.configuration = Islandora_configuration_object.configuration_dictionary
-        self._logFile = os.path.join(self.configuration['logging']['directory'], self.configuration['miscellaneous']['ingest_name'] + '_' + time.strftime('%y_%m_%d') + '.log')
+        self._log_file = os.path.join(self.configuration['logging']['directory'], self.configuration['miscellaneous']['ingest_name'] + '_' + time.strftime('%y_%m_%d') + '.log')
         
+        #create the log file if it does not exist
+        if not os.path.exists(self.configuration['logging']['directory']):
+            os.mkdir(self.configuration['logging']['directory'])
+        if not os.path.exists(self._log_file):
+            log_file_handle = open(self._log_file, 'w')
+            log_file_handle.close()
+            
         #set log level if a logger is supplied do not set the log_level if it has not already been set
         if log_level or logger_name:
-          pass  
+            pass  
         elif 'level' in self.configuration['logging']:
             log_level = self.configuration['logging']['level']
         else:
@@ -52,7 +59,7 @@ class Islandora_logger(object):
         
         #configure logger
         self._logger.setLevel(log_level)
-        file_handler = logging.FileHandler(self._logFile)
+        file_handler = logging.FileHandler(self._log_file)
         self._logger.addHandler(file_handler)
         
     @property

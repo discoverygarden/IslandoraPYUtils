@@ -3,6 +3,8 @@ Created on 2012-03-19
 
 @author: William Panting
 @TODO: properties configuration and logger, also accept overrides for all objects used in constructor
+@TODO: look into default PID namespace
+@TODO: a function for creating/deleting the tmp dir
 '''
 
 from islandoraUtils.ingest.Islandora_configuration import Islandora_configuration
@@ -34,9 +36,13 @@ class ingester(object):
         else:
             my_Islandora_logger = Islandora_logger_object
         
+        self._configuration = my_Islandora_configuration.configuration_dictionary
+        
+        self._logger = my_Islandora_logger.logger
+        
         #set the class properties
         if not Islandora_alerter_object:
-            self._alerter = Islandora_alerter(my_Islandora_configuration)
+            self._alerter = Islandora_alerter(my_Islandora_configuration, self._logger)
         else:
             self._alerter = Islandora_alerter_object
         
@@ -47,9 +53,6 @@ class ingester(object):
                 self._cron_batch = Islandora_cron_batch_object
             
         
-        self._configuration = my_Islandora_configuration.configuration_dictionary
-        
-        self._logger = my_Islandora_logger.logger
             
 
     @property
@@ -73,17 +76,17 @@ class ingester(object):
         '''
         return self._cron_batch
     
-    def ingest_object(self, pid=None, archival_datastream_path=None, metadata_file_path=None, collection=None, content_model=None):
+    def ingest_object(self, PID=None, archival_datastream_path=None, metadata_file_path=None, collection=None, content_model=None):
         '''
         This function will ingest an object with a single metadata and archival datastream with a specified set of relationships
         it will use our best practices for logging and assume the use of microservices for derivatives and their RELS-INT management
         it will overwrite a pre-existing object if one exists
         @TODO: look at taking in a relationship object
-        @param pid: The pid of the object to create or update. If non is supplied then getNextPid is used
-        @param archival_datastream:
-        @param metadata_file_path:
-        @param collection:
-        @param content_model:
+        @param PID: The PID of the object to create or update. If non is supplied then getNextPID is used
+        @param archival_datastream: an image, audio, whatever file path will be a managed datastream
+        @param metadata_file_path: will be inline xml
+        @param collection: the PID of the collection so RELS-EXT can be created
+        @param content_model: The PID of the content_model so the RELS-EXT can be created
         
-        @return pid: The pid of the object created or updated.
+        @return PID: The PID of the object created or updated.
         '''
