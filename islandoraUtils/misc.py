@@ -9,6 +9,16 @@ import os
 import hashlib
 import re
 
+def get_mime_type_from_path(path):
+    '''
+    yes I am this lazy
+    @author William Panting
+    @param path: the path to extract the mimetype of
+    @return: the mimetype of the file pointed to by the path
+    '''
+    extension = get_extension_from_path(path)
+    return getMimeType(extension)
+
 def getMimeType(extension):
     '''
     This function will get the mimetype of the provided file extension
@@ -273,6 +283,28 @@ def force_extract_integer_from_string(string_to_cast):
     interum_string = re.sub('[^0-9]', '', string_to_cast)#match non-numeric, replaces with nothing
     string_cast_to_int = int(interum_string)
     return string_cast_to_int
+
+def path_to_datastream_ID(path):
+    '''
+    Will take in a path and return a contrived datastream ID which is the capitalized version of the extension
+    @author: William Panting
+    @param path:
+    @return datastream_ID:
+    '''
+    extension = get_extension_from_path(path)
+    datastream_ID = extension[1:].upper()#don't include the period
+    
+    return datastream_ID
+
+def get_extension_from_path(path):
+    '''
+    When all you need is an extension this will let you not have an unused variable in your code
+    @author: William Panting
+    @param path: 
+    @return extension: the extension of the file pointed to by the path
+    '''
+    root, extension = os.path.splitext(path)
+    return extension
 
 if __name__ == '__main__':
     '''

@@ -26,6 +26,7 @@ emails:willy@domain.ca wonka@notadomian.com
 [miscellaneous]
 ingest_name:name_of_ingest
 temporary_directory:./tmp
+default_fedora_pid_namespace:packers_plus
 [cron]
 when_last_ran:timestamp_here
 
