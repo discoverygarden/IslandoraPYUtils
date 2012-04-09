@@ -133,6 +133,7 @@ class ingester(object):
         it will overwrite a pre-existing object if one exists
         this function can be extended later, the initial write is for an atomistic content model with 'sensible' defaults
         mimetypes are detected using islandoraUtils for compatibility with Islandora
+        currently only control groups x and m are supported
         @TODO: look at taking in a relationship object
         @TODO: add a parameter for datastreams=[] that is a list of dictionaries mimicking the dictionary in archival_datastream and metadata_datastream
         @param PID: The PID of the object to create or update. If non is supplied then getNextPID is used
@@ -142,8 +143,6 @@ class ingester(object):
         @param collection: the PID of the collection so RELS-EXT can be created
         @param content_model: The PID of the content_model so the RELS-EXT can be created
         @return PID: The PID of the object created or updated.
-        
-        default labels: 'Canonical Metadata' 'Primary Datastream'
         '''
         Fedora_object = None  
         #normalize parameters to a list of dictionaries of what datastreams to ingest
@@ -151,13 +150,15 @@ class ingester(object):
             archival_datastream_dict = {'source_file':archival_datastream,
                                         'label':os.path.basename(archival_datastream),
                                         'mime_type':get_mime_type_from_path(archival_datastream),
-                                        'datastream_ID':path_to_datastream_ID(archival_datastream)}
+                                        'ID':path_to_datastream_ID(archival_datastream),
+                                        'control_group':'M'}
             datastreams.append(archival_datastream_dict)
         if isinstance(metadata_datastream, str):
             metadata_datastream_dict = {'source_file':metadata_datastream,
                                         'label':os.path.basename(metadata_datastream),
                                         'mime_type':get_mime_type_from_path(metadata_datastream),
-                                        'datastream_ID':path_to_datastream_ID(metadata_datastream)}
+                                        'ID':path_to_datastream_ID(metadata_datastream),
+                                        'control_group':'X'}
             datastreams.append(metadata_datastream_dict)
             
         #encode in unicode because that's what fcrepo needs
@@ -181,56 +182,58 @@ class ingester(object):
                     self._logger.error(PID + ' was not created successfully.')
                 
         #loop through datastreams adding them to inline or managed based on mimetype
-        if datastreams:
-            pass
-        #add the appropriate relations to the object
-        '''
-        # adding an inline xml stream
-        try:
-            book_object.addDataStream(u'MODS', unicode(mods_contents), label = u'MODS',
-            mimeType = u'text/xml', controlGroup = u'X',
-            logMessage = u'Added basic mods meta data.')
-            logging.info('Added MODS datastream to:' + book_pid)
-        except FedoraConnectionException:
-            logging.error('Error in adding MODS datastream to:' + book_pid + '\n')
-        
-        # adding a binary stream
-        book_name = mods_file[:mods_file.find('_')]
-            pdf_file = book_name + '.pdf'
-            pdf_file_path = os.path.join(source_directory, 'images-pdf', pdf_file)
-            pdf_file_handle = open(pdf_file_path, 'rb')
+        #@TODO: pull out the update 'M' into a function 
+        for datastream in datastreams:
+            #create the datastrem if it does not exist
+            if datastream['ID'] not in Fedora_object:
+                try:
+                    if datastream['control_group'] == 'X':
+                        datastream_file_handle = open(datastream['source_file'])
+                        datastream_contents = datastream_file_handle.read()
+                        Fedora_object.addDataStream(unicode(datastream['ID']), unicode(datastream_contents), label = unicode(datastream['label']),
+                                                  mimeType = unicode(datastream['mime_type']), controlGroup = u'X',
+                                                  logMessage = unicode('Added ' + datastream['ID'] + ' datastream to:' + PID +' via IslandoraPYUtils'))
+                    elif datastream['control_group'] == 'M':#do a dummy create (an artifact of fcrepo)
+                        datastream_file_handle = open(datastream['source_file'], 'rb')
+                        Fedora_object.addDataStream(unicode(datastream['ID']), u'I am an artifact, ignore me.', label = unicode(datastream['label']),
+                                                  mimeType = unicode(datastream['mime_type']), controlGroup = u'M',
+                                                  logMessage = unicode('Added ' + datastream['ID'] + ' datastream to:' + PID +' via IslandoraPYUtils'))
+                        
+                        Fedora_object_datastream = Fedora_object[datastream['ID']]
+                        Fedora_object_datastream.setContent(datastream_file_handle)
+                    self._logger.info('Added ' + datastream['ID'] + ' datastream to:' + PID)
+                except FedoraConnectionException:
+                    self._logger.error('Error in adding ' + datastream['ID'] + ' datastream to:' + PID)
+            #set the datastream if it is managed datastream
+            else:
+                try:
+                    if datastream['control_group'] == 'X':
+                        datastream_file_handle = open(datastream['source_file'])
+                        Fedora_object_datastream = Fedora_object[datastream['ID']]
+                        datastream_contents = datastream_file_handle.read()
+                        Fedora_object_datastream.setContent(datastream_contents)
+                    elif datastream['control_group'] == 'M':
+                        datastream_file_handle = open(datastream['source_file'], 'rb')
+                        Fedora_object_datastream = Fedora_object[datastream['ID']]
+                        Fedora_object_datastream.setContent(datastream_file_handle)
+                    self._logger.info('Updated ' + datastream['ID'] + ' datastream in:' + PID)
+                except FedoraConnectionException:
+                    self._logger.error('Error in updating ' + datastream['ID'] + ' datastream in:' + PID)
+            datastream_file_handle.close()
             
-            try:
-                book_object.addDataStream(u'PDF', u'aTmpStr', label=u'PDF',
-                mimeType = u'application/pdf', controlGroup = u'M',
-                logMessage = u'Added PDF datastream.')
-                datastream = book_object['PDF']
-                datastream.setContent(pdf_file_handle)
-                logging.info('Added PDF datastream to:' + book_pid)
-            except FedoraConnectionException:
-                logging.error('Error in adding PDF datastream to:' + book_pid + '\n')
-            pdf_file_handle.close()
-            
-            '''
         #write relationships to the object
-        objRelsExt = fedora_relationships.rels_ext(Fedora_object, self._Fedora_model_namespace)
-        should_update_RELS_EXT = False
-        
-        for collection in collections:
-            #remove relationship if it exists
-            if objRelsExt.getRelationships(predicate='isMemberOfCollection'):
-                objRelsExt.purgeRelationships(predicate='isMemberOfCollection')
+        if collections or content_models:
+            objRelsExt = fedora_relationships.rels_ext(Fedora_object, self._Fedora_model_namespace)
+            for collection in collections:
+                #remove relationship if it exists
+                if objRelsExt.getRelationships(predicate='isMemberOfCollection'):
+                    objRelsExt.purgeRelationships(predicate='isMemberOfCollection')
+                
+                objRelsExt.addRelationship('isMemberOfCollection', unicode(collection))
             
-            objRelsExt.addRelationship('isMemberOfCollection', unicode(collection))
-            should_update_RELS_EXT = True
-        
-        for content_model in content_models:
-            if objRelsExt.getRelationships(predicate=fedora_relationships.rels_predicate('fedora-model','hasModel')):
-                objRelsExt.purgeRelationships(predicate=fedora_relationships.rels_predicate('fedora-model','hasModel'))
-            
-            objRelsExt.addRelationship(fedora_relationships.rels_predicate('fedora-model','hasModel'), unicode(content_model))
-            should_update_RELS_EXT = True
-            
-        if should_update_RELS_EXT: 
+            for content_model in content_models:
+                if objRelsExt.getRelationships(predicate=fedora_relationships.rels_predicate('fedora-model','hasModel')):
+                    objRelsExt.purgeRelationships(predicate=fedora_relationships.rels_predicate('fedora-model','hasModel'))
+                
+                objRelsExt.addRelationship(fedora_relationships.rels_predicate('fedora-model','hasModel'), unicode(content_model))
             objRelsExt.update()
-        
