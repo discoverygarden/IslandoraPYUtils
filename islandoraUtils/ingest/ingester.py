@@ -25,7 +25,7 @@ class ingester(object):
     '''
 
 
-    def __init__(self, configuration_file_path, default_Fedora_namespace=None, is_a_cron=False, Islandora_configuration_object=None, Islandora_logger_object=None, Islandora_alerter_object=None, Islandora_cron_batch_object=None):
+    def __init__(self, configuration_file_path, is_a_cron=False, default_Fedora_namespace=None, Islandora_configuration_object=None, Islandora_logger_object=None, Islandora_alerter_object=None, Islandora_cron_batch_object=None):
         '''
         Get all the objects that are likely to be used for an ingest
         @param configuration_file_path: where the configuration for the ingest can be found
@@ -135,7 +135,6 @@ class ingester(object):
         mimetypes are detected using islandoraUtils for compatibility with Islandora
         currently only control groups x and m are supported
         @TODO: look at taking in a relationship object
-        @TODO: add a parameter for datastreams=[] that is a list of dictionaries mimicking the dictionary in archival_datastream and metadata_datastream
         @param PID: The PID of the object to create or update. If non is supplied then getNextPID is used
         @param archival_datastream: an image, audio, whatever file path will be a managed datastream
         [{'path':'./objectstuff'}]

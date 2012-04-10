@@ -31,12 +31,6 @@ default_fedora_pid_namespace:packers_plus
 when_last_ran:timestamp_here
 
     '''
-    @property
-    def configuration_dictionary(self):
-        '''
-        The dictionary version of my configuration.
-        '''
-        return self._configuration_dictionary
 
     def __init__(self, configuration_file_path):
         '''
@@ -44,16 +38,36 @@ when_last_ran:timestamp_here
         @param configuration_file_path: the path to the configuration file 
         '''
         #get config
-        self.configuration_parser = ConfigParser.SafeConfigParser()
-        self.configuration_parser.read(configuration_file_path)
+        self._configuration_parser = ConfigParser.SafeConfigParser()
+        self._configuration_parser.read(configuration_file_path)
         self._configuration_dictionary = {}
+        self._configuration_file_path = configuration_file_path
         #loop through he configuration file sections and dump the config to a dictionary
-        self.sections = self.configuration_parser.sections()
+        self.sections = self._configuration_parser.sections()
         for section in self.sections:
             self._configuration_dictionary[section] = {}
-            options = self.configuration_parser.options(section)
+            options = self._configuration_parser.options(section)
             for option in options:
-                self._configuration_dictionary[section][option] = self.configuration_parser.get(section, option)
+                self._configuration_dictionary[section][option] = self._configuration_parser.get(section, option)
 
-if __name__ == '__main__':
-    pass
+    @property
+    def configuration_parser(self):
+        '''
+        This will return the configuration parser object that self is using
+        '''
+        return self._configuration_parser
+    
+    @property
+    def configuration_file_write_handle(self):
+        '''
+        This will return a file handle pointing to the file used to set the configuration.
+        '''
+        file_handle = open(self._configuration_file_path, 'w')
+        return file_handle
+    
+    @property
+    def configuration_dictionary(self):
+        '''
+        The dictionary version of my configuration.
+        '''
+        return self._configuration_dictionary
