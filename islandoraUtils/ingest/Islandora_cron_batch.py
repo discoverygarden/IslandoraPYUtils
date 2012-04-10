@@ -11,10 +11,10 @@ class Islandora_cron_batch(object):
     '''
     This class is meant to hold some helper code for handling 
     cron managed time sync something to Fedora ingests
-    checking if things are created or 'new' is not supported because it is not cross-platform: birth dates are not on unix systems
+    checking if things are created or 'new' is not supported because it is not cross-platform
     '''
 
-    def __init__(self, Islandora_configuration_object=None, when_last_ran=None):
+    def __init__(self, Islandora_configuration_object=None, when_last_ran=0):
         '''
         @param Islandora_configuration_object: let the object figure out it's own state
         @param when_last_ran: this will override what the object can read from a configuration object
@@ -24,16 +24,8 @@ class Islandora_cron_batch(object):
             self._Islandora_configuration_object = Islandora_configuration_object
             configuration = Islandora_configuration_object.configuration_dictionary
             if 'cron' in configuration:
-                if 'when_last_ran' in configuration:
-                    self._when_last_ran = configuration['cron']['when_last_ran']
-        '''
-        if self._when_last_ran:
-            pass    
-        elif when_last_ran:
-            self._when_last_ran = when_last_ran
-        else:
-            self._when_last_ran = None
-        '''
+                if 'when_last_ran' in configuration['cron']:
+                    self._when_last_ran = float(configuration['cron']['when_last_ran'])#needs to be a number for comparisons
         self._when_last_ran = getattr(self, '_when_last_ran', when_last_ran)
         self._write_last_cron()
             
