@@ -28,7 +28,7 @@ def create_thumbnail(obj, dsid, tnid):
 
     # We receive a file and create a jpg thumbnail
     directory, file = get_datastream_as_file(obj, dsid, "tmp")
-    
+
     # fine out what mimetype the input file is
     try:
         mime = obj[dsid].mimeType
@@ -40,7 +40,7 @@ def create_thumbnail(obj, dsid, tnid):
     tnfile = os.path.join(directory, tnid)
 
     # make the thumbnail based on the mimetype of the input
-    # right now we assume everything but video/mp4 can be handled 
+    # right now we assume everything but video/mp4 can be handled
     if mime == 'video/mp4':
         r = subprocess.call(['ffmpeg', '-itsoffset', '-4', '-i', infile, '-vcodec', 'mjpeg',\
              '-vframes', '1', '-an', '-f', 'rawvideo', tmpfile])
@@ -51,12 +51,12 @@ def create_thumbnail(obj, dsid, tnid):
         # Make a thumbnail with convert
         r = subprocess.call(['convert', '%s[0]' % infile, '-thumbnail', \
              '%sx%s' % tn_size, '-colorspace', 'rgb', 'jpg:%s'%tnfile])
-   
+
     if r == 0:
         update_datastream(obj, tnid, directory+'/'+tnid, label='thumbnail', mimeType='image/jpeg')
     else :
         logger.warning('PID:%s DSID:%s Thumbnail creation failed (return code:%d).' % (obj.pid, dsid, r))
-       
+
     logger.debug(directory)
     logger.debug(file)
     logger.debug(tnid)
@@ -68,7 +68,7 @@ def create_thumbnail(obj, dsid, tnid):
 def create_jp2(obj, dsid, jp2id):
     logger = logging.getLogger('islandoraUtils.DSConverter.create_jp2')
     # We receive a TIFF and create a Lossless JPEG 2000 file from it.
-    directory, file = get_datastream_as_file(obj, dsid, 'tiff') 
+    directory, file = get_datastream_as_file(obj, dsid, 'tiff')
     r = subprocess.call(["convert", directory+'/'+file, '+compress', '-colorspace', 'RGB', directory+'/uncompressed.tiff'])
     if r != 0:
         logger.warning('PID:%s DSID:%s JP2 creation failed (convert return code:%d).' % (obj.pid, dsid, r))
@@ -89,7 +89,7 @@ def create_jp2(obj, dsid, jp2id):
 
 def create_mp4(obj, dsid, mp4id):
     logger = logging.getLogger('islandoraUtils.DSConverter.create_mp4')
-    directory, file = get_datastream_as_file(obj, dsid, 'video') 
+    directory, file = get_datastream_as_file(obj, dsid, 'video')
 
     infile = os.path.join(directory, file)
     avifile = os.path.join(directory, 'output.avi')
@@ -98,7 +98,7 @@ def create_mp4(obj, dsid, mp4id):
     rawfile = os.path.join(directory, 'output_audio.raw')
     aacfile = os.path.join(directory, 'output_audio.aac')
 
-    # mp4box is stupid as a bag of hammers. if you do not check if there is a audio stream it will 
+    # mp4box is stupid as a bag of hammers. if you do not check if there is a audio stream it will
     # fill the filesystem by creating a file full of junk. It also will just assume the frame rate
     # is 25fps no matter what it is, so we need to get that
     p = subprocess.Popen(['mediainfo', infile], stdout=subprocess.PIPE)
@@ -121,7 +121,7 @@ def create_mp4(obj, dsid, mp4id):
     if r != 0:
         logger.error('PID:%s DSID:%s MP4 creation (mencoder) failed.' % (obj.pid, dsid))
         return r
-    
+
     if(audio):
         subprocess.call(['MP4Box', '-aviraw', 'audio', avifile])
         # again MP4Box contains vacuous space instead of logic, so we have to rename this file
@@ -149,7 +149,7 @@ def create_mp4(obj, dsid, mp4id):
 def create_mp3(obj, dsid, mp3id, args = None):
 
     logger = logging.getLogger('islandoraUtils.DSConverter.create_mp3')
-    
+
     #mimetype throws keyerror if it doesn't exist
     try:
         mime = obj[dsid].mimeType
@@ -163,7 +163,7 @@ def create_mp3(obj, dsid, mp3id, args = None):
 
     # We recieve a WAV file. Create a MP3
     directory, file = get_datastream_as_file(obj, dsid, ext)
-    
+
     # I think we need more sensible defaults for web streaming
     if args == None:
         args = ['-mj', '-v', '-V6', '-B224', '--strictly-enforce-ISO']
@@ -187,7 +187,7 @@ def create_ogg(obj, dsid, oggid):
     logger = logging.getLogger('islandoraUtils.DSConverter.create_ogg')
     #recieve a wav file create a OGG
     directory, file = get_datastream_as_file(obj, dsid, "wav")
-    
+
     # Make OGG with ffmpeg
     r = subprocess.call(['ffmpeg', '-i', directory+'/'+file, '-acodec', 'libvorbis', '-ab', '96k', directory+'/'+oggid])
     if r == 0:
@@ -197,31 +197,37 @@ def create_ogg(obj, dsid, oggid):
     rmtree(directory, ignore_errors=True)
     return r
 
-def create_swf(obj, dsid, swfid):
+
+def create_swf(obj, dsid, swfid, args = None):
     logger = logging.getLogger('islandoraUtils.DSConverter.create_swf')
-    #recieve PDF create a SWF for use with flexpaper
-    directory, file = get_datastream_as_file(obj, dsid, "pdf")
-    
-    pdf2swf = subprocess.Popen(['pdf2swf', directory+'/'+file, '-o', directory+'/'+swfid,\
-         '-T 9', '-f', '-t', '-s', 'storeallcharacters', '-G'], stdout=subprocess.PIPE)
-    out, err = pdf2swf.communicate()
-    if pdf2swf.returncode != 0:
-        logger.warning('PID:%s DSID:%s SWF creation failed. Trying alternative.' % (obj.pid, dsid))
-        pdf2swf = subprocess.Popen(['pdf2swf', directory+'/'+file, '-o', directory+'/'+swfid,\
-             '-T 9', '-f', '-t', '-s', 'storeallcharacters', '-G', '-s', 'poly2bitmap'], stdout=subprocess.PIPE)
+    directory, file = get_datastream_as_file(obj, dsid, "pdf") #recieve PDF create a SWF for use with flexpaper
+    program = ['pdf2swf', directory+'/'+file, '-o', directory+'/'+swfid]
+    if args = None:
+        default_args = ['-T 9', '-f', '-t', '-s', 'storeallcharacters', '-G']
+        pdf2swf = subprocess.Popen(program + default_args, stdout=subprocess.PIPE)
         out, err = pdf2swf.communicate()
-
-    # catch the case where PDF2SWF fails to create the file, but returns 
-    if pdf2swf.returncode == 0 and os.path.isfile(directory + '/' + swfid):
-        update_datastream(obj, swfid, directory+'/'+swfid, label='pdf to swf', mimeType='application/x-shockwave-flash')
-        r = 0
-    elif not os.path.isfile(directory + '/' + swfid):
-        logger.warning('PID:%s DSID:%s SWF creation failed (pdf2swf returned: "%s").' % (obj.pid, dsid, out))
-        r = 1
+        # try with additional arguments
+        if pdf2swf.returncode != 0:
+            logger.warning('PID:%s DSID:%s SWF creation failed. Trying alternative.' % (obj.pid, dsid))
+            extra_args = ['-s', 'poly2bitmap']
+            pdf2swf = subprocess.Popen(program + default_args + extra_args, stdout=subprocess.PIPE)
+            out, err = pdf2swf.communicate()
+        # catch the case where PDF2SWF fails to create the file, but returns
+        if pdf2swf.returncode == 0 and os.path.isfile(directory + '/' + swfid):
+            update_datastream(obj, swfid, directory+'/'+swfid, label='pdf to swf', mimeType='application/x-shockwave-flash')
+            r = 0
+        elif not os.path.isfile(directory + '/' + swfid):
+            logger.warning('PID:%s DSID:%s SWF creation failed (pdf2swf returned: "%s").' % (obj.pid, dsid, out))
+            r = 1
+        else:
+            logger.warning('PID:%s DSID:%s SWF creation failed (pdf2swf return code:%d).' % (obj.pid, dsid, pdf2swf.returncode))
+            r = pdf2swf.returncode
     else:
-        logger.warning('PID:%s DSID:%s SWF creation failed (pdf2swf return code:%d).' % (obj.pid, dsid, pdf2swf.returncode))
-        r = pdf2swf.returncode
-
+        r = subprocess.call(progarm + args)
+        if r != 0:
+            logger.warning('PID:%s DSID:%s SWF creation failed (pdf 2swf return code:%d).' % (obj.pid, dsid, r))
+        if r == 0:
+            update_datastream(obj, swfid, directory+'/'+swfid, label='pdf to swf', mimeType='application/x-shockwave-flash')
     rmtree(directory, ignore_errors=True)
     return r
 
@@ -229,7 +235,7 @@ def create_pdf(obj, dsid, pdfid):
     logger = logging.getLogger('islandoraUtils.DSConverter.create_pdf')
     #recieve document and create a PDF with libreoffice if possible
     directory, file = get_datastream_as_file(obj, dsid, "document")
-    
+
     subprocess.call(['soffice', '--headless', '-convert-to', 'pdf', '-outdir', directory, directory+'/'+file])
     newfile = file.split('.',1)[0]
     newfile += '.pdf'
@@ -262,7 +268,7 @@ def marcxml_to_mods(obj, dsid, dsidOut='MODS'):
       logger.debug('Wrote transformed DS to disk')
 
     r = update_datastream(obj, dsidOut, temp.name, label='MODS (translated from MARCXML)', mimeType="text/xml")
-    
+
     rmtree(directory, ignore_errors=True)
     return r
 
