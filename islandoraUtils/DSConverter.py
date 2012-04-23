@@ -232,7 +232,7 @@ def create_swf(obj, dsid, swfid, args = None):
     return r
 
 def create_pdf(obj, dsid, pdfid):
-    logger = logging.getLogger('islandoraUtils.DSConverter.create_pdf')
+    logger = logging.getLogger('islandoraUtils.DSConverter.create_pdf' )
     #recieve document and create a PDF with libreoffice if possible
     directory, file = get_datastream_as_file(obj, dsid, "document")
 
@@ -283,4 +283,18 @@ def check_dates(obj, dsid, derivativeid):
         return True
     else:
         return False
+
+def create_fits(obj, dsid, args = []):
+    logger = logging.getLogger('islandoraUtils.DSConverter.create_fits' )
+    directory, file = get_datastream_as_file(obj, dsid, "document")
+    in_file = directory + '/' + file
+    out_file = directory + '/FITS.xml'
+    program = ['fits', '-i', in_file, '-o', out_file]
+    r = subprocess.call(program + args)
+    if r != 0:
+        logger.warning('PID:%s DSID:%s FITS creation failed (fits return code:%d).' % (obj.pid, dsid, r))
+    if r == 0:
+        update_datastream(obj, 'FITS', out_file, label='FITS Generated Image Metadata', mimeType='text/xml')
+    rmtree(directory, ignore_errors=True)
+    return r
 
