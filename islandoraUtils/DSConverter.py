@@ -284,7 +284,7 @@ def check_dates(obj, dsid, derivativeid):
     else:
         return False
 
-def create_fits(obj, dsid, args = []):
+def create_fits(obj, dsid, derivativeid = 'FITS', args = []):
     logger = logging.getLogger('islandoraUtils.DSConverter.create_fits' )
     directory, file = get_datastream_as_file(obj, dsid, "document")
     in_file = directory + '/' + file
@@ -294,7 +294,7 @@ def create_fits(obj, dsid, args = []):
     if r != 0:
         logger.warning('PID:%s DSID:%s FITS creation failed (fits return code:%d).' % (obj.pid, dsid, r))
     if r == 0:
-        update_datastream(obj, 'FITS', out_file, label='FITS Generated Image Metadata', mimeType='text/xml')
+        update_datastream(obj, derivativeid, out_file, label='FITS Generated Image Metadata', mimeType='text/xml')
     rmtree(directory, ignore_errors=True)
     return r
 
