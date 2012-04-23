@@ -202,7 +202,7 @@ def create_swf(obj, dsid, swfid, args = None):
     logger = logging.getLogger('islandoraUtils.DSConverter.create_swf')
     directory, file = get_datastream_as_file(obj, dsid, "pdf") #recieve PDF create a SWF for use with flexpaper
     program = ['pdf2swf', directory+'/'+file, '-o', directory+'/'+swfid]
-    if args = None:
+    if args == None:
         default_args = ['-T 9', '-f', '-t', '-s', 'storeallcharacters', '-G']
         pdf2swf = subprocess.Popen(program + default_args, stdout=subprocess.PIPE)
         out, err = pdf2swf.communicate()
