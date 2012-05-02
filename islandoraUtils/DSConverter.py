@@ -24,6 +24,10 @@ tn_postfix = '-tn.jpg'
 tn_size = (150, 200)
 
 def create_thumbnail(obj, dsid, tnid):
+    '''
+    @param string object
+        an fcrepo object
+    '''
     logger = logging.getLogger('islandoraUtils.DSConverter.create_thumbnail')
 
     # We receive a file and create a jpg thumbnail
@@ -66,6 +70,10 @@ def create_thumbnail(obj, dsid, tnid):
     return r
 
 def create_jp2(obj, dsid, jp2id):
+    '''
+    @param string object
+        an fcrepo object
+    '''
     logger = logging.getLogger('islandoraUtils.DSConverter.create_jp2')
     # We receive a TIFF and create a Lossless JPEG 2000 file from it.
     directory, file = get_datastream_as_file(obj, dsid, 'tiff') 
@@ -88,6 +96,10 @@ def create_jp2(obj, dsid, jp2id):
     return r
 
 def create_mp4(obj, dsid, mp4id):
+    '''
+    @param string object
+        an fcrepo object
+    '''
     logger = logging.getLogger('islandoraUtils.DSConverter.create_mp4')
     directory, file = get_datastream_as_file(obj, dsid, 'video') 
 
@@ -147,6 +159,10 @@ def create_mp4(obj, dsid, mp4id):
     return r
 
 def create_mp3(obj, dsid, mp3id, args = None):
+    '''
+    @param string object
+        an fcrepo object
+    '''
 
     logger = logging.getLogger('islandoraUtils.DSConverter.create_mp3')
     
@@ -184,6 +200,10 @@ def create_mp3(obj, dsid, mp3id, args = None):
     return r
 
 def create_ogg(obj, dsid, oggid):
+    '''
+    @param string object
+        an fcrepo object
+    '''
     logger = logging.getLogger('islandoraUtils.DSConverter.create_ogg')
     #recieve a wav file create a OGG
     directory, file = get_datastream_as_file(obj, dsid, "wav")
@@ -198,6 +218,10 @@ def create_ogg(obj, dsid, oggid):
     return r
 
 def create_swf(obj, dsid, swfid):
+    '''
+    @param string object
+        an fcrepo object
+    '''
     logger = logging.getLogger('islandoraUtils.DSConverter.create_swf')
     #recieve PDF create a SWF for use with flexpaper
     directory, file = get_datastream_as_file(obj, dsid, "pdf")
@@ -226,6 +250,10 @@ def create_swf(obj, dsid, swfid):
     return r
 
 def create_pdf(obj, dsid, pdfid):
+    '''
+    @param string object
+        an fcrepo object
+    '''
     logger = logging.getLogger('islandoraUtils.DSConverter.create_pdf')
     #recieve document and create a PDF with libreoffice if possible
     directory, file = get_datastream_as_file(obj, dsid, "document")
@@ -247,6 +275,10 @@ def create_pdf(obj, dsid, pdfid):
     return value
 
 def marcxml_to_mods(obj, dsid, dsidOut='MODS'):
+    '''
+    @param string object
+        an fcrepo object
+    '''
     logger = logging.getLogger('islandoraUtils.DSConverter.marcxml_to_mods')
     directory, file = get_datastream_as_file(obj, dsid, 'MARCXML')
     logger.debug('Got datastream')
@@ -267,6 +299,10 @@ def marcxml_to_mods(obj, dsid, dsidOut='MODS'):
     return r
 
 def check_dates(obj, dsid, derivativeid):
+    '''
+    @param string object
+        an fcrepo object
+    '''
     try:
         date = datetime.strptime( obj[dsid].createdDate, '%Y-%m-%dT%H:%M:%S.%fZ' )
         derdate = datetime.strptime( obj[derivativeid].createdDate, '%Y-%m-%dT%H:%M:%S.%fZ' )

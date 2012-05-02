@@ -126,7 +126,7 @@ class ingester(object):
         '''
         return self._default_Fedora_namespace
     
-    def ingest_object(self, PID=None, object_label=None, archival_datastream=None, metadata_datastream=None, datastreams=[], collections=[], content_models=[]):
+    def ingest_object(self, PID = None, object_label = None, archival_datastream = None, metadata_datastream = None, datastreams = [], collections = [], content_models = []):
         '''
         This function will ingest an object with a single metadata and archival datastream with a specified set of relationships
         it will use our best practices for logging and assume the use of microservices for derivatives and their RELS-INT management
@@ -165,6 +165,7 @@ class ingester(object):
         
         #set up the Fedora object PID
         if not PID:
+            #PID is a list
             PID = self._Fedora_client.getNextPID(self._default_Fedora_namespace)
             Fedora_object = self._Fedora_client.createObject(PID, label = object_label)
             
@@ -236,3 +237,4 @@ class ingester(object):
                 
                 objRelsExt.addRelationship(fedora_relationships.rels_predicate('fedora-model','hasModel'), unicode(content_model))
             objRelsExt.update()
+        return(PID)
