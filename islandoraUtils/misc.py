@@ -192,6 +192,7 @@ def getMimeType(extension):
         "zip" : "application/x-zip",
         # others:
         'bin' : 'application/octet-stream',
+        'json' : 'application/json',
     }
 
     # these are some additional mimetypes not covered that are required for various projects

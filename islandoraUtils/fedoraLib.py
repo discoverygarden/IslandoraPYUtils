@@ -149,7 +149,6 @@ def update_datastream(obj, dsid, filename, label='', mimeType='', controlGroup='
             return False
 
     commands.extend(['-XPOST', url])
-
     while info_dict['tries'] > 0:
         info_dict['tries'] = info_dict['tries'] - 1
         logger.debug("Updating/Adding datastream %(dsid)s to %(pid)s with mimetype %(mimetype)s from file %(filename)s" % info_dict)

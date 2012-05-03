@@ -174,7 +174,6 @@ class ingester(object):
             try:
                 Fedora_object = self._Fedora_client.getObject(PID)
             except FedoraConnectionException, object_fetch_exception:
-                print(object_fetch_exception.httpcode)
                 if object_fetch_exception.httpcode in [404]:
                     self._logger.info(PID + ' missing, creating object.\n')
                     Fedora_object = self._Fedora_client.createObject(PID, label = object_label)
@@ -232,8 +231,8 @@ class ingester(object):
                 objRelsExt.addRelationship('isMemberOfCollection', unicode(collection))
             
             for content_model in content_models:
-                if objRelsExt.getRelationships(predicate=fedora_relationships.rels_predicate('fedora-model','hasModel')):
-                    objRelsExt.purgeRelationships(predicate=fedora_relationships.rels_predicate('fedora-model','hasModel'))
+                if objRelsExt.getRelationships(predicate = fedora_relationships.rels_predicate('fedora-model','hasModel')):
+                    objRelsExt.purgeRelationships(predicate = fedora_relationships.rels_predicate('fedora-model','hasModel'))
                 
                 objRelsExt.addRelationship(fedora_relationships.rels_predicate('fedora-model','hasModel'), unicode(content_model))
             objRelsExt.update()
