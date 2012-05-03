@@ -8,6 +8,7 @@ that doesn't have a place anywhere else in the package
 import os
 import hashlib
 import re
+import fnmatch
 
 def get_mime_type_from_path(path):
     '''
@@ -316,3 +317,12 @@ if __name__ == '__main__':
     print(force_extract_integer_from_string('l33t'))
 
     pass
+
+def locate(pattern, root=os.curdir):
+    '''Locate all files matching supplied filename pattern in and below
+    supplied root directory.
+    http://code.activestate.com/recipes/499305/
+    @todo: examine: This generator may be prohibitivly slow'''
+    for path, dirs, files in os.walk(os.path.abspath(root)):
+        for filename in fnmatch.filter(files, pattern):
+            yield os.path.join(path, filename)
