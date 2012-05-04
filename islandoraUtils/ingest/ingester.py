@@ -234,7 +234,7 @@ class ingester(object):
         '''
         PID = Fedora_object.pid
         if isinstance(datastream, str):
-            if not datastream_ID:
+            if datastream_ID == None:
                 datastream_ID = get_mime_type_from_path(datastream)
             datastream_dict = {'source_file':datastream,
                                         'label':os.path.basename(datastream),

@@ -1,6 +1,11 @@
 @author: William Panting
 
-@dependencies[if necessary for your application]: Kakadu, ABBYY CLI, ImageMagick, Python 2.6, Lame, FFmpeg, SWFTools, pyPDF, lxml, exiftool(perl), MailX
+@dependencies: Python 2.6,
+@dependencies[if necessary for your application]: Kakadu, ABBYY CLI, ImageMagick, Lame, FFmpeg, SWFTools, pyPDF, lxml, exiftool(perl), MailX, tesseract
 
 This is a general python library module that is meant to assist in Islandora development.
 It contains document manipulations, conversions, OCR using ABBYY, Fedora helper code, email, xml and ingest helper code.
+
+@todo:
+Pull in an iconography class: 
+http://commons.wikimedia.org/wiki/Crystal_Clear (LGPL)
