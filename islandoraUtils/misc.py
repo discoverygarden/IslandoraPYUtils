@@ -319,10 +319,23 @@ if __name__ == '__main__':
     pass
 
 def locate(pattern, root=os.curdir):
-    '''Locate all files matching supplied filename pattern in and below
+    '''
+    Locate all files matching supplied filename pattern in and below
     supplied root directory.
     http://code.activestate.com/recipes/499305/
-    @todo: examine: This generator may be prohibitivly slow'''
+    @todo: examine: This generator may be prohibitivly slow, after talking with Nigel 
+        I will write a more conventional func and compare execution time 
+        http://code.activestate.com/recipes/577027-find-file-in-subdirectory/
+        def findInSubdirectory(filename, subdirectory=''):
+            if subdirectory:
+                path = subdirectory
+            else:
+                path = os.getcwd()
+            for root, dirs, names in os.walk(path):
+                if filename in names:
+                    return os.path.join(root, filename)
+            raise 'File not found'
+    '''
     for path, dirs, files in os.walk(os.path.abspath(root)):
         for filename in fnmatch.filter(files, pattern):
             yield os.path.join(path, filename)

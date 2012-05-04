@@ -141,9 +141,11 @@ class ingester(object):
         @param metadata_file_path: will be inline xml
         @param collection: the PID of the collection so RELS-EXT can be created
         @param content_model: The PID of the content_model so the RELS-EXT can be created
-        @return PID: The PID of the object created or updated.
+        @return:
+            The PID of the object created or updated.
+        @todo: pull out datastream creation and use library function
         '''
-        Fedora_object = None  
+          
         #normalize parameters to a list of dictionaries of what datastreams to ingest
         if isinstance(archival_datastream, str):
             archival_datastream_dict = {'source_file':archival_datastream,
@@ -159,27 +161,9 @@ class ingester(object):
                                         'ID':path_to_datastream_ID(metadata_datastream),
                                         'control_group':'X'}
             datastreams.append(metadata_datastream_dict)
-            
-        #encode in unicode because that's what fcrepo needs
-        object_label = unicode(object_label)
         
-        #set up the Fedora object PID
-        if not PID:
-            #PID is a list
-            PID = self._Fedora_client.getNextPID(self._default_Fedora_namespace)
-            Fedora_object = self._Fedora_client.createObject(PID, label = object_label)
-            
-        #creating vs updating
-        if not Fedora_object:
-            try:
-                Fedora_object = self._Fedora_client.getObject(PID)
-            except FedoraConnectionException, object_fetch_exception:
-                if object_fetch_exception.httpcode in [404]:
-                    self._logger.info(PID + ' missing, creating object.\n')
-                    Fedora_object = self._Fedora_client.createObject(PID, label = object_label)
-                else:
-                    self._logger.error(PID + ' was not created successfully.')
-                
+        Fedora_object = self.get_Fedora_object(PID, object_label)
+        PID = Fedora_object.pid
         #loop through datastreams adding them to inline or managed based on mimetype
         #@TODO: pull out the update 'M' into a function 
         for datastream in datastreams:
@@ -237,3 +221,93 @@ class ingester(object):
                 objRelsExt.addRelationship(fedora_relationships.rels_predicate('fedora-model','hasModel'), unicode(content_model))
             objRelsExt.update()
         return(PID)
+    
+    def ingest_datastream (self, Fedora_object, datastream, datastream_ID = None):
+        '''
+        This function will wrap creating/modifying a datastream in Fedora
+        It's some dynamic kinda crazy:
+        @param mixed datstream:
+            string of source
+            dict defining datastream
+        @param string datastream_ID:
+            ignored if datstream is a dict.
+        '''
+        PID = Fedora_object.pid
+        if isinstance(datastream, str):
+            if not datastream_ID:
+                datastream_ID = get_mime_type_from_path(datastream)
+            datastream_dict = {'source_file':datastream,
+                                        'label':os.path.basename(datastream),
+                                        'mime_type':datastream_ID,
+                                        'ID':path_to_datastream_ID(datastream),
+                                        'control_group':'M'}
+            datastream = datastream_dict
+            
+        if datastream['ID'] not in Fedora_object:
+            try:
+                if datastream['control_group'] == 'X':
+                    datastream_file_handle = open(datastream['source_file'])
+                    datastream_contents = datastream_file_handle.read()
+                    Fedora_object.addDataStream(unicode(datastream['ID']), unicode(datastream_contents), label = unicode(datastream['label']),
+                                              mimeType = unicode(datastream['mime_type']), controlGroup = u'X',
+                                              logMessage = unicode('Added ' + datastream['ID'] + ' datastream to:' + PID +' via IslandoraPYUtils'))
+                elif datastream['control_group'] == 'M':#do a dummy create (an artifact of fcrepo)
+                    datastream_file_handle = open(datastream['source_file'], 'rb')
+                    Fedora_object.addDataStream(unicode(datastream['ID']), u'I am an artifact, ignore me.', label = unicode(datastream['label']),
+                                              mimeType = unicode(datastream['mime_type']), controlGroup = u'M',
+                                              logMessage = unicode('Added ' + datastream['ID'] + ' datastream to:' + PID +' via IslandoraPYUtils'))
+                    
+                    Fedora_object_datastream = Fedora_object[datastream['ID']]
+                    Fedora_object_datastream.setContent(datastream_file_handle)
+                self._logger.info('Added ' + datastream['ID'] + ' datastream to:' + PID)
+            except FedoraConnectionException:
+                self._logger.error('Error in adding ' + datastream['ID'] + ' datastream to:' + PID)
+        #set the datastream if it is managed datastream
+        else:
+            try:
+                if datastream['control_group'] == 'X':
+                    datastream_file_handle = open(datastream['source_file'])
+                    Fedora_object_datastream = Fedora_object[datastream['ID']]
+                    datastream_contents = datastream_file_handle.read()
+                    Fedora_object_datastream.setContent(datastream_contents)
+                elif datastream['control_group'] == 'M':
+                    datastream_file_handle = open(datastream['source_file'], 'rb')
+                    Fedora_object_datastream = Fedora_object[datastream['ID']]
+                    Fedora_object_datastream.setContent(datastream_file_handle)
+                self._logger.info('Updated ' + datastream['ID'] + ' datastream in:' + PID)
+            except FedoraConnectionException:
+                self._logger.error('Error in updating ' + datastream['ID'] + ' datastream in:' + PID)
+        datastream_file_handle.close()
+        pass
+    
+    def get_Fedora_object(self, PID = None, object_label = None):
+        '''
+        This function will get/create a Fedora object
+        @param string PID:
+            The Fedora PID of the object to create
+        @return
+            If PID is supplied will return the object from Fedora
+            If PID is not supplied will return a new object created in Fedora
+        @todo there looks like there is too fedora object declarations, refactor out the first one
+        '''
+        Fedora_object = None
+        if object_label != None:
+            #encode in unicode because that's what fcrepo needs
+            object_label = unicode(object_label)
+        #set up the Fedora object PID
+        if not PID:
+            #PID is a list
+            PID = self._Fedora_client.getNextPID(self._default_Fedora_namespace)
+            Fedora_object = self._Fedora_client.createObject(PID, label = object_label)
+            
+        #creating vs updating
+        if not Fedora_object:
+            try:
+                Fedora_object = self._Fedora_client.getObject(PID)
+            except FedoraConnectionException, object_fetch_exception:
+                if object_fetch_exception.httpcode in [404]:
+                    self._logger.info(PID + ' missing, creating object.\n')
+                    Fedora_object = self._Fedora_client.createObject(PID, label = object_label)
+                else:
+                    self._logger.error(PID + ' was not created successfully.')
+        return Fedora_object
