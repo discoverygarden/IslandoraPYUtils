@@ -152,19 +152,19 @@ class ingester(object):
         #normalize parameters to a list of dictionaries of what datastreams to ingest
         if isinstance(archival_datastream, str):
             archival_datastream_dict = {'source_file':archival_datastream,
-                                        'label':os.path.basename(archival_datastream),
+                                        'label':path_to_datastream_label(archival_datastream),
                                         'mime_type':get_mime_type_from_path(archival_datastream),
                                         'ID':path_to_datastream_ID(archival_datastream),
                                         'control_group':'M'}
             datastreams.append(archival_datastream_dict)
         if isinstance(metadata_datastream, str):
             metadata_datastream_dict = {'source_file':metadata_datastream,
-                                        'label':os.path.basename(metadata_datastream),
+                                        'label':path_to_datastream_label(metadata_datastream),
                                         'mime_type':get_mime_type_from_path(metadata_datastream),
                                         'ID':path_to_datastream_ID(metadata_datastream),
                                         'control_group':'X'}
             datastreams.append(metadata_datastream_dict)
-        
+            
         Fedora_object = self.get_Fedora_object(PID, object_label)
         PID = Fedora_object.pid
         #loop through datastreams adding them to inline or managed based on mimetype
