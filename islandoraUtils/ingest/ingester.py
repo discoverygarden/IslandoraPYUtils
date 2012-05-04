@@ -16,7 +16,7 @@ from islandoraUtils.ingest.Islandora_logger import Islandora_logger
 from islandoraUtils.ingest.Islandora_cron_batch import Islandora_cron_batch
 from islandoraUtils.ingest.Islandora_alerter import Islandora_alerter
 from islandoraUtils.metadata import fedora_relationships
-from islandoraUtils.misc import get_mime_type_from_path, path_to_datastream_ID
+from islandoraUtils.misc import get_mime_type_from_path, path_to_datastream_ID, path_to_datastream_label
 
 class ingester(object):
     '''
@@ -126,7 +126,7 @@ class ingester(object):
         '''
         return self._default_Fedora_namespace
     
-    def ingest_object(self, PID = None, object_label = None, archival_datastream = None, metadata_datastream = None, datastreams = [], collections = [], content_models = []):
+    def ingest_object(self, PID = None, object_label = None, archival_datastream = None, metadata_datastream = None, datastreams = None, collections = None, content_models = None):
         '''
         This function will ingest an object with a single metadata and archival datastream with a specified set of relationships
         it will use our best practices for logging and assume the use of microservices for derivatives and their RELS-INT management
@@ -145,7 +145,10 @@ class ingester(object):
             The PID of the object created or updated.
         @todo: pull out datastream creation and use library function
         '''
-          
+        # Set as empty lists (not in default args because of python would store state from call to call).
+        datastreams = []
+        collections = []
+        content_models = []
         #normalize parameters to a list of dictionaries of what datastreams to ingest
         if isinstance(archival_datastream, str):
             archival_datastream_dict = {'source_file':archival_datastream,
@@ -167,6 +170,8 @@ class ingester(object):
         #loop through datastreams adding them to inline or managed based on mimetype
         #@TODO: pull out the update 'M' into a function 
         for datastream in datastreams:
+            self.ingest_datastream(Fedora_object, datastream)
+            '''
             #create the datastrem if it does not exist
             if datastream['ID'] not in Fedora_object:
                 try:
@@ -203,7 +208,7 @@ class ingester(object):
                 except FedoraConnectionException:
                     self._logger.error('Error in updating ' + datastream['ID'] + ' datastream in:' + PID)
             datastream_file_handle.close()
-            
+            '''
         #write relationships to the object
         if collections or content_models:
             objRelsExt = fedora_relationships.rels_ext(Fedora_object, self._Fedora_model_namespace)
@@ -234,12 +239,12 @@ class ingester(object):
         '''
         PID = Fedora_object.pid
         if isinstance(datastream, str):
-            if datastream_ID == None:
-                datastream_ID = get_mime_type_from_path(datastream)
+            if not datastream_ID:
+                datastream_ID = path_to_datastream_ID(datastream)
             datastream_dict = {'source_file':datastream,
-                                        'label':os.path.basename(datastream),
-                                        'mime_type':datastream_ID,
-                                        'ID':path_to_datastream_ID(datastream),
+                                        'label':path_to_datastream_label(datastream),
+                                        'mime_type':get_mime_type_from_path(datastream),
+                                        'ID':datastream_ID,
                                         'control_group':'M'}
             datastream = datastream_dict
             

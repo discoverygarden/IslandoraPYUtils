@@ -298,6 +298,18 @@ def path_to_datastream_ID(path):
     
     return datastream_ID
 
+def path_to_datastream_label(path):
+    '''
+    Will take in a path and return a contrived datastream label which is the 
+    file name with no extension
+    @author: William Panting
+    @param path:
+    @return datastream_label:
+    '''
+    datastream_label = os.path.split(os.path.basename(path))[0]
+    
+    return datastream_label
+
 def get_extension_from_path(path):
     '''
     When all you need is an extension this will let you not have an unused variable in your code
@@ -307,16 +319,6 @@ def get_extension_from_path(path):
     '''
     root, extension = os.path.splitext(path)
     return extension
-
-if __name__ == '__main__':
-    '''
-    @todo:
-      refine the 'tests'
-    '''
-    #print(hash_file('/mnt/fjm_obj/dump/Fotos/949_0227818_53.jpg', 'SHA-1'))
-    print(force_extract_integer_from_string('l33t'))
-
-    pass
 
 def locate(pattern, root=os.curdir):
     '''
@@ -339,3 +341,13 @@ def locate(pattern, root=os.curdir):
     for path, dirs, files in os.walk(os.path.abspath(root)):
         for filename in fnmatch.filter(files, pattern):
             yield os.path.join(path, filename)
+            
+if __name__ == '__main__':
+    '''
+    @todo:
+      refine the 'tests'
+    '''
+    #print(hash_file('/mnt/fjm_obj/dump/Fotos/949_0227818_53.jpg', 'SHA-1'))
+    print(force_extract_integer_from_string('l33t'))
+
+    pass
