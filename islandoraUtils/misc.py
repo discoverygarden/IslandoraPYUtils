@@ -306,8 +306,7 @@ def path_to_datastream_label(path):
     @param path:
     @return datastream_label:
     '''
-    datastream_label = os.path.split(os.path.basename(path))[0]
-    
+    datastream_label = os.path.splitext(os.path.basename(path))[0]
     return datastream_label
 
 def get_extension_from_path(path):
@@ -317,7 +316,7 @@ def get_extension_from_path(path):
     @param path: 
     @return extension: the extension of the file pointed to by the path
     '''
-    root, extension = os.path.splitext(path)
+    extension = os.path.splitext(path)[1]
     return extension
 
 def locate(pattern, root=os.curdir):
