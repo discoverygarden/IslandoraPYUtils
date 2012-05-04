@@ -298,7 +298,7 @@ def path_to_datastream_ID(path):
     
     return datastream_ID
 
-def path_to_datastream_label(path):
+def path_to_label(path):
     '''
     Will take in a path and return a contrived datastream label which is the 
     file name with no extension

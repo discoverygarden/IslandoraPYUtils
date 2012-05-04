@@ -16,7 +16,7 @@ from islandoraUtils.ingest.Islandora_logger import Islandora_logger
 from islandoraUtils.ingest.Islandora_cron_batch import Islandora_cron_batch
 from islandoraUtils.ingest.Islandora_alerter import Islandora_alerter
 from islandoraUtils.metadata import fedora_relationships
-from islandoraUtils.misc import get_mime_type_from_path, path_to_datastream_ID, path_to_datastream_label
+from islandoraUtils.misc import get_mime_type_from_path, path_to_datastream_ID, path_to_label
 
 class ingester(object):
     '''
@@ -146,69 +146,38 @@ class ingester(object):
         @todo: pull out datastream creation and use library function
         '''
         # Set as empty lists (not in default args because of python would store state from call to call).
-        datastreams = []
-        collections = []
-        content_models = []
+        if not datastreams:
+            datastreams = []
+        if not collections:
+            collections = []
+        if not content_models:
+            content_models = []
+        #if datastream label not supplied build it based on archival ds path
+        if not object_label:
+            object_label = path_to_label(archival_datastream)
+            
         #normalize parameters to a list of dictionaries of what datastreams to ingest
         if isinstance(archival_datastream, str):
             archival_datastream_dict = {'source_file':archival_datastream,
-                                        'label':path_to_datastream_label(archival_datastream),
+                                        'label':path_to_label(archival_datastream),
                                         'mime_type':get_mime_type_from_path(archival_datastream),
                                         'ID':path_to_datastream_ID(archival_datastream),
                                         'control_group':'M'}
             datastreams.append(archival_datastream_dict)
         if isinstance(metadata_datastream, str):
             metadata_datastream_dict = {'source_file':metadata_datastream,
-                                        'label':path_to_datastream_label(metadata_datastream),
+                                        'label':path_to_label(metadata_datastream),
                                         'mime_type':get_mime_type_from_path(metadata_datastream),
                                         'ID':path_to_datastream_ID(metadata_datastream),
                                         'control_group':'X'}
             datastreams.append(metadata_datastream_dict)
-            
+        
         Fedora_object = self.get_Fedora_object(PID, object_label)
         PID = Fedora_object.pid
-        #loop through datastreams adding them to inline or managed based on mimetype
-        #@TODO: pull out the update 'M' into a function 
+        
         for datastream in datastreams:
             self.ingest_datastream(Fedora_object, datastream)
-            '''
-            #create the datastrem if it does not exist
-            if datastream['ID'] not in Fedora_object:
-                try:
-                    if datastream['control_group'] == 'X':
-                        datastream_file_handle = open(datastream['source_file'])
-                        datastream_contents = datastream_file_handle.read()
-                        Fedora_object.addDataStream(unicode(datastream['ID']), unicode(datastream_contents), label = unicode(datastream['label']),
-                                                  mimeType = unicode(datastream['mime_type']), controlGroup = u'X',
-                                                  logMessage = unicode('Added ' + datastream['ID'] + ' datastream to:' + PID +' via IslandoraPYUtils'))
-                    elif datastream['control_group'] == 'M':#do a dummy create (an artifact of fcrepo)
-                        datastream_file_handle = open(datastream['source_file'], 'rb')
-                        Fedora_object.addDataStream(unicode(datastream['ID']), u'I am an artifact, ignore me.', label = unicode(datastream['label']),
-                                                  mimeType = unicode(datastream['mime_type']), controlGroup = u'M',
-                                                  logMessage = unicode('Added ' + datastream['ID'] + ' datastream to:' + PID +' via IslandoraPYUtils'))
-                        
-                        Fedora_object_datastream = Fedora_object[datastream['ID']]
-                        Fedora_object_datastream.setContent(datastream_file_handle)
-                    self._logger.info('Added ' + datastream['ID'] + ' datastream to:' + PID)
-                except FedoraConnectionException:
-                    self._logger.error('Error in adding ' + datastream['ID'] + ' datastream to:' + PID)
-            #set the datastream if it is managed datastream
-            else:
-                try:
-                    if datastream['control_group'] == 'X':
-                        datastream_file_handle = open(datastream['source_file'])
-                        Fedora_object_datastream = Fedora_object[datastream['ID']]
-                        datastream_contents = datastream_file_handle.read()
-                        Fedora_object_datastream.setContent(datastream_contents)
-                    elif datastream['control_group'] == 'M':
-                        datastream_file_handle = open(datastream['source_file'], 'rb')
-                        Fedora_object_datastream = Fedora_object[datastream['ID']]
-                        Fedora_object_datastream.setContent(datastream_file_handle)
-                    self._logger.info('Updated ' + datastream['ID'] + ' datastream in:' + PID)
-                except FedoraConnectionException:
-                    self._logger.error('Error in updating ' + datastream['ID'] + ' datastream in:' + PID)
-            datastream_file_handle.close()
-            '''
+            
         #write relationships to the object
         if collections or content_models:
             objRelsExt = fedora_relationships.rels_ext(Fedora_object, self._Fedora_model_namespace)
@@ -236,13 +205,15 @@ class ingester(object):
             dict defining datastream
         @param string datastream_ID:
             ignored if datstream is a dict.
+            
+        #@TODO:look into: loop through datastreams adding them to inline or managed based on mimetype
         '''
         PID = Fedora_object.pid
         if isinstance(datastream, str):
             if not datastream_ID:
                 datastream_ID = path_to_datastream_ID(datastream)
             datastream_dict = {'source_file':datastream,
-                                        'label':path_to_datastream_label(datastream),
+                                        'label':path_to_label(datastream),
                                         'mime_type':get_mime_type_from_path(datastream),
                                         'ID':datastream_ID,
                                         'control_group':'M'}
