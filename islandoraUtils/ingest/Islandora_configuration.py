@@ -13,7 +13,7 @@ EXAMPLE:
 [Fedora]
 url:http://localhost:8080/fedora
 username: fedoraAdmin
-password: islandora
+password: some_where_over_the_rain_bow
 [Solr]
 url:http://localhost:8080/solr
 [Drupal]
@@ -26,7 +26,8 @@ emails:willy@domain.ca wonka@notadomian.com
 [miscellaneous]
 ingest_name:name_of_ingest
 temporary_directory:./tmp
-default_fedora_pid_namespace:packers_plus
+default_fedora_pid_namespace:islandora
+islandora_top_collection:islandora:root
 [cron]
 when_last_ran:timestamp_here
 
