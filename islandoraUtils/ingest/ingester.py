@@ -22,6 +22,27 @@ class ingester(object):
     '''
     This is the kingpin.  This object should handle creating all the other basic ingest helpers.
     @TODO: add namespace and fcrepo properties
+    @todo: implement
+                def ingest_collection_object(ingester, parent_pid=None):
+    
+                    This funciton will ingest a collection object
+                    into the Fedora repository
+                    
+                    @todo: incorporate this function into Utils? ingester.configuration['miscellaneous']['islandora_top_collection']
+                        when it has been update this scripta(ten_million) and remove the function
+                    
+                    @param parent_pid:
+                        The collection that the new object should go into
+                    @param ingester:
+                        The IslandoraPYUtils ingester object to use.
+                        
+                    @return: 
+                        Fedora_PID the PID of the new object created in Fedora
+                    
+                    Fedora_PID = ingester.ingest_object(archival_datastream = ingester.configuration['ten_million']['path_to_thumbnail'],
+                                                        collections = [parent_pid],
+                                                        content_models = ['islandora:collectionCModel'])
+                    return Fedora_PID
     '''
 
 
