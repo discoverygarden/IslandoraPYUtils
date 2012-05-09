@@ -28,6 +28,7 @@ ingest_name:name_of_ingest
 temporary_directory:./tmp
 default_fedora_pid_namespace:islandora
 islandora_top_collection:islandora:root
+islandora_collection_content_model:islandora:collectionCModel
 [cron]
 when_last_ran:timestamp_here
 
