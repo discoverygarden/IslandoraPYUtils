@@ -22,6 +22,7 @@ class ingester(object):
     '''
     This is the kingpin.  This object should handle creating all the other basic ingest helpers.
     @TODO: add namespace and fcrepo properties
+    @todo: add an add default TN method
     @todo: implement (this will mean a user will not need to know the content_model for a collection, or the pid of top
             both of wich could come from the config file)
                 def ingest_collection_object(ingester, parent_pid=None):

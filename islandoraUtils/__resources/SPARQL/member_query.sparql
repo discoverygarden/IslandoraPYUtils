@@ -1,0 +1,11 @@
+PREFIX fedora_relations: <info:fedora/fedora-system:def/relations-external#>
+SELECT $member_object
+FROM <#ri>
+WHERE {
+{
+$member_object fedora_relations:isMemberOf $collection_object
+}
+UNION
+{
+$member_object fedora_relations:isMemberOfCollection $collection_object}
+}
