@@ -2,9 +2,11 @@
 Created on 2012-03-16
 
 @author: William Panting
-@TODO: should check for exceptions and log errors for missing files/sections etc., we'll need to accept a logger
+@TODO: should check for exceptions and log errors for missing important files/sections etc., 
+@TODO: we'll need to accept a logger
 '''
 import ConfigParser
+from islandoraUtils.misc import config_parser_to_dict
 
 class Islandora_configuration(object):
     '''
@@ -37,7 +39,8 @@ when_last_ran:timestamp_here
     def __init__(self, configuration_file_path):
         '''
         Constructor
-        @param configuration_file_path: the path to the configuration file 
+        
+        @param configuration_file_path: the path to the configuration file
         '''
         #get config
         self._configuration_parser = ConfigParser.SafeConfigParser()
@@ -45,12 +48,7 @@ when_last_ran:timestamp_here
         self._configuration_dictionary = {}
         self._configuration_file_path = configuration_file_path
         #loop through he configuration file sections and dump the config to a dictionary
-        self.sections = self._configuration_parser.sections()
-        for section in self.sections:
-            self._configuration_dictionary[section] = {}
-            options = self._configuration_parser.options(section)
-            for option in options:
-                self._configuration_dictionary[section][option] = self._configuration_parser.get(section, option)
+        self._configuration_dictionary = config_parser_to_dict(self._configuration_parser)
 
     @property
     def configuration_parser(self):

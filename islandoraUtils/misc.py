@@ -3,12 +3,37 @@ Created on May 30, 2011
 
 This is a holding place for useful re-usable code
 that doesn't have a place anywhere else in the package
+        
 '''
 
 import os
 import hashlib
 import re
 import fnmatch
+
+def config_parser_to_dict(configuration_parser):
+    '''
+    This function will take a configuration parser and turn it into a simple dictionary.
+    
+    @author William Panting
+    
+    @param configuration_parser
+        The configuration parser to extract settings from.
+        
+    @return: 
+        configuration_dictionary, the dictionary containing the sections and options of the configuration parser.
+    '''
+    configuration_dictionary = dict()
+    sections = configuration_parser.sections()
+    
+    # Loop through he configuration file sections and dump the config to a dictionary.
+    for section in sections:
+        configuration_dictionary[section] = {}
+        options = configuration_parser.options(section)
+        for option in options:
+            configuration_dictionary[section][option] = configuration_parser.get(section, option)
+            
+    return configuration_dictionary
 
 def get_mime_type_from_path(path):
     '''
