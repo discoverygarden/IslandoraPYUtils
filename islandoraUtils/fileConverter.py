@@ -648,7 +648,7 @@ def exif_to_xml(inPath, outPath, *extraArgs):
 def mods_to_solr(inPath, outPath, *extraArgs):
     '''
 This function will take a MODS xml file and transform it into a SOLR xml file.
-
+@TODO: Remove this function, we should be moving all Solr docs through gsearch.
 @param inPath: source file or dir
 @param outPath: destination file or dir
 

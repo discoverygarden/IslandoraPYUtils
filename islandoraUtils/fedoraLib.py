@@ -22,7 +22,27 @@ from time import sleep
 import hashlib
 from islandoraUtils.misc import hash_file
 
-
+def get_collection_members(Fedora_client, collection_PID):
+    '''
+    This function will run a query against Fedora asking for all members of the 
+    specified collection.
+    
+    @author William Panting
+    
+    @param Fedora_client:
+        A connection to Fedora
+    @param $collection_PID:
+        A Fedora PID for the collection to query against.
+        
+    @return:
+        A list of the members of the collection.
+    '''
+    collection_URI = collection_PID
+    base_query = os.path.join(os.path.dirname(__file__), '__resources/SPARQL/member_query.sparql')
+    full_query = re.sub('$collection', collection_URI, base_query)
+    results = client.searchTriples(full_query)
+    collection_members = list(results)
+    return collection_members
     
 def mangle_dsid(dsid):
     '''

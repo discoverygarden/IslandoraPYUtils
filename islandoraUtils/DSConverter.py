@@ -6,7 +6,8 @@ Copyied into islandoraUtils by Adam Vessey
 TODO:  Should likely be made to use the fileConverter module, so as not to have
 two copies of code which do much of the same thing... If someone is doing this
 this should be treated as the cannonical copy. I have been updating these
-conversion scripts with input from JWA and Colorado.
+conversion scripts with input from JWA and Colorado. Will says maybe this should wait
+for a new version of IslandoraPYUtils to keep backwards compatibility for now.
 '''
 
 from islandoraUtils.fedoraLib import get_datastream_as_file, update_datastream
