@@ -7,5 +7,8 @@ This is a general python library module that is meant to assist in Islandora dev
 It contains document manipulations, conversions, OCR using ABBYY, Fedora helper code, email, xml and ingest helper code.
 
 @todo:
-Pull in an iconography class: 
+Create an iconography class: 
 http://commons.wikimedia.org/wiki/Crystal_Clear (LGPL)
+look at  DocumentConverter.py it has been moved to github by the maintainer: 
+    https://github.com/mirkonasato/pyodconverter
+    perhaps we can contribute any changes back and remove it from this repo.

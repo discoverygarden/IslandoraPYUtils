@@ -5,6 +5,32 @@ Created on 2012-03-19
 @TODO: properties configuration and logger, also accept overrides for all objects used in constructor
 @TODO: look into default PID namespace
 @TODO: a function for creating/deleting the tmp dir
+
+
+
+@todo: conform to this from core(two ingest functions one for ingest_Islandora_object another ingest_Fedora_object):
+
+@param $object &array
+* An associative array describing the object, comprised of:
+* - 'label': A string containing a label for the object.
+* - 'relationships': An array of arrays, containing sets of parameters to
+* pass to Fedora_Item->add_datastream.
+* - 'datastreams': An associative array of arrays; keys are datastream IDs,
+* and the values are associative arrays describing a datastream,
+* containing:
+* - 'label': A string containing a label for this datastream.
+* - 'mimetype': A string containing the mimetype of the content.
+* One of:
+* - 'fileurl': A string containing an absolute URL to a resource.
+* - 'filepath': A string containing a relative path to a resource
+* (relative to Drupal's root directory).
+* - 'content': A string containing the resource content.
+* And optionally:
+* - 'control_group': A single character indicating the control group for
+* the datastream (one of X, M, R, E); defaults to 'X' or 'M' as
+* appropriate (based on mimetype)
+* - 'children': An array of child object, described in a similar manner to
+* the current being ingested--used against this function recursively.
 '''
 import os
 
