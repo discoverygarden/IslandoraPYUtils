@@ -11,6 +11,7 @@ for a new version of IslandoraPYUtils to keep backwards compatibility for now.
 '''
 
 from islandoraUtils.fedoraLib import get_datastream_as_file, update_datastream
+from islandoraUtils.DocumentConverter import DocumentConverter
 from shutil import rmtree, move
 from datetime import datetime
 import os
@@ -26,7 +27,7 @@ tn_size = (150, 200)
 
 def create_thumbnail(obj, dsid, tnid):
     '''
-    @param string object
+    @param string obj
         an fcrepo object
     '''
     logger = logging.getLogger('islandoraUtils.DSConverter.create_thumbnail')
@@ -72,7 +73,7 @@ def create_thumbnail(obj, dsid, tnid):
 
 def create_jp2(obj, dsid, jp2id):
     '''
-    @param string object
+    @param string obj
         an fcrepo object
     '''
     logger = logging.getLogger('islandoraUtils.DSConverter.create_jp2')
@@ -98,7 +99,7 @@ def create_jp2(obj, dsid, jp2id):
 
 def create_mp4(obj, dsid, mp4id):
     '''
-    @param string object
+    @param string obj
         an fcrepo object
     '''
     logger = logging.getLogger('islandoraUtils.DSConverter.create_mp4')
@@ -161,7 +162,7 @@ def create_mp4(obj, dsid, mp4id):
 
 def create_mp3(obj, dsid, mp3id, args = None):
     '''
-    @param string object
+    @param string obj
         an fcrepo object
     '''
 
@@ -202,7 +203,7 @@ def create_mp3(obj, dsid, mp3id, args = None):
 
 def create_ogg(obj, dsid, oggid):
     '''
-    @param string object
+    @param string obj
         an fcrepo object
     '''
     logger = logging.getLogger('islandoraUtils.DSConverter.create_ogg')
@@ -220,7 +221,8 @@ def create_ogg(obj, dsid, oggid):
 
 def create_swf(obj, dsid, swfid):
     '''
-    @param string object
+    This will work on PDFs
+    @param string obj
         an fcrepo object
     '''
     logger = logging.getLogger('islandoraUtils.DSConverter.create_swf')
@@ -252,8 +254,14 @@ def create_swf(obj, dsid, swfid):
 
 def create_pdf(obj, dsid, pdfid):
     '''
-    @param string object
+    This function uses open office headless to convert to a pdf from anything that open office input
+    filters can handle.
+    @param string obj
         an fcrepo object
+    @param string dsid:
+        The datastream ID to create derivatives from.
+    @param string pdfid:
+        The datastream ID to upload the new PDF to.
     '''
     logger = logging.getLogger('islandoraUtils.DSConverter.create_pdf')
     #recieve document and create a PDF with libreoffice if possible
@@ -264,7 +272,7 @@ def create_pdf(obj, dsid, pdfid):
     newfile += '.pdf'
 
     if os.path.isfile(directory + '/' + newfile):
-        update_datastream(obj, pdfid, directory+'/'+newfile, label='doc to pdf', mimeType='application/pdf')
+        update_datastream(obj, pdfid, directory+'/'+newfile, label='document to pdf', mimeType='application/pdf')
         # we should probably be using true or false like normal python, but i stay consistant here
         value = 0
     else:
@@ -277,7 +285,7 @@ def create_pdf(obj, dsid, pdfid):
 
 def marcxml_to_mods(obj, dsid, dsidOut='MODS'):
     '''
-    @param string object
+    @param string obj
         an fcrepo object
     '''
     logger = logging.getLogger('islandoraUtils.DSConverter.marcxml_to_mods')
@@ -299,9 +307,86 @@ def marcxml_to_mods(obj, dsid, dsidOut='MODS'):
     rmtree(directory, ignore_errors=True)
     return r
 
+def create_pdf_and_swf(obj, dsid, pdfid, swfid):
+    '''
+    This function uses open office headless to convert to a pdf from anything that open office input
+    filters can handle. It then creates and uploads an swf based on the pdf.  This will be considerably
+    faster than callsing create_pdf and create_swf.
+    Currently this function expects the default settings for DocumentConverter to work
+    but this limitation can be removed when needed.
+        soffice -headless -nofirststartwizard -accept="socket,host=localhost,port=8100;urp;"
+        a potential start-up script:
+        http://www.openvpms.org/documentation/install-openoffice-headless-service-ubuntu
+        
+    @todo:
+        Remove the copy pasted code for uploading datastreams and converting swf to common functions
+            
+    @param string obj
+        an fcrepo object
+    @param string dsid:
+        The datastream ID to create derivatives from.
+    @param string pdfid:
+        The datastream ID to upload the new PDF to.
+    
+    @return
+        1 if successful 0 if not
+    '''
+    logger = logging.getLogger('islandoraUtils.DSConverter.create_pdf_and_swf')
+    #recieve document and create a PDF with libreoffice if possible
+    directory, file = get_datastream_as_file(obj, dsid, "document")
+    document_file_path = os.path.join(directory, file)
+    
+    #convert file to pdf
+    document_converter = DocumentConverter()
+    path_to_PDF = os.path.join(os.path.splitext(document_file_path)[0], '.pdf')
+    
+    document_converter.convert(document_file_path, path_to_PDF)
+    
+    #upload pdf
+    if os.path.isfile(path_to_PDF):
+        update_datastream(obj, pdfid, path_to_PDF, label='document to pdf', mimeType='application/pdf')
+        value = 0
+    else:
+        value = 1
+        logger.warning('PID:%s DSID:%s PDF creation failed.' % (obj.pid, dsid))
+
+    logger.debug(os.listdir(directory))
+    
+    #convert PDF to SWF
+    path_to_SWF = os.path.join(os.path.splitext(path_to_PDF)[0], '.swf')
+    
+    pdf2swf = subprocess.Popen(['pdf2swf', path_to_SWF,
+        '-T 9', '-f', '-t', '-s', 'storeallcharacters', '-G'], stdout=subprocess.PIPE)
+    out, err = pdf2swf.communicate()
+    if pdf2swf.returncode != 0:
+        logger.warning('PID:%s DSID:%s SWF creation failed. Trying alternative.' % (obj.pid, dsid))
+        pdf2swf = subprocess.Popen(['pdf2swf', path_to_SWF,\
+             '-T 9', '-f', '-t', '-s', 'storeallcharacters', '-G', '-s', 'poly2bitmap'], stdout=subprocess.PIPE)
+        out, err = pdf2swf.communicate()
+
+    #upload PDF
+    # catch the case where PDF2SWF fails to create the file, but returns 
+    if pdf2swf.returncode == 0 and os.path.isfile(directory + '/' + swfid):
+        update_datastream(obj, swfid, path_to_SWF, label='pdf to swf', mimeType='application/x-shockwave-flash')
+        r = 0
+    elif not os.path.isfile(path_to_SWF):
+        logger.warning('PID:%s DSID:%s SWF creation failed (pdf2swf returned: "%s").' % (obj.pid, dsid, out))
+        r = 1
+    else:
+        logger.warning('PID:%s DSID:%s SWF creation failed (pdf2swf return code:%d).' % (obj.pid, dsid, pdf2swf.returncode))
+        r = pdf2swf.returncode
+    
+    rmtree(directory, ignore_errors=True)
+    
+    #return good only if both values are true
+    if r and value:
+        return 1
+    else:
+        return 0
+
 def check_dates(obj, dsid, derivativeid):
     '''
-    @param string object
+    @param string obj
         an fcrepo object
     '''
     try:

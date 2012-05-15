@@ -42,7 +42,7 @@ def get_mime_type_from_path(path):
     @param path: the path to extract the mimetype of
     @return: the mimetype of the file pointed to by the path
     '''
-    extension = get_extension_from_path(path)
+    extension = os.path.splitext(path)[1]
     return getMimeType(extension)
 
 def getMimeType(extension):
@@ -318,7 +318,7 @@ def path_to_datastream_ID(path):
     @param path:
     @return datastream_ID:
     '''
-    extension = get_extension_from_path(path)
+    extension = os.path.splitext(path)[1]
     datastream_ID = extension[1:].upper()#don't include the period
     
     return datastream_ID
@@ -333,16 +333,6 @@ def path_to_label(path):
     '''
     datastream_label = os.path.splitext(os.path.basename(path))[0]
     return datastream_label
-
-def get_extension_from_path(path):
-    '''
-    When all you need is an extension this will let you not have an unused variable in your code
-    @author: William Panting
-    @param path: 
-    @return extension: the extension of the file pointed to by the path
-    '''
-    extension = os.path.splitext(path)[1]
-    return extension
 
 def locate(pattern, root=os.curdir):
     '''
