@@ -6,31 +6,6 @@ Created on 2012-03-19
 @TODO: look into default PID namespace
 @TODO: a function for creating/deleting the tmp dir
 
-
-
-@todo: conform to this from core(two ingest functions one for ingest_Islandora_object another ingest_Fedora_object):
-
-@param $object &array
-* An associative array describing the object, comprised of:
-* - 'label': A string containing a label for the object.
-* - 'relationships': An array of arrays, containing sets of parameters to
-* pass to Fedora_Item->add_datastream.
-* - 'datastreams': An associative array of arrays; keys are datastream IDs,
-* and the values are associative arrays describing a datastream,
-* containing:
-* - 'label': A string containing a label for this datastream.
-* - 'mimetype': A string containing the mimetype of the content.
-* One of:
-* - 'fileurl': A string containing an absolute URL to a resource.
-* - 'filepath': A string containing a relative path to a resource
-* (relative to Drupal's root directory).
-* - 'content': A string containing the resource content.
-* And optionally:
-* - 'control_group': A single character indicating the control group for
-* the datastream (one of X, M, R, E); defaults to 'X' or 'M' as
-* appropriate (based on mimetype)
-* - 'children': An array of child object, described in a similar manner to
-* the current being ingested--used against this function recursively.
 '''
 import os
 
@@ -207,16 +182,16 @@ class ingester(object):
             
         #normalize parameters to a list of dictionaries of what datastreams to ingest
         if isinstance(archival_datastream, str):
-            archival_datastream_dict = {'source_file':archival_datastream,
+            archival_datastream_dict = {'filepath':archival_datastream,
                                         'label':path_to_label(archival_datastream),
-                                        'mime_type':get_mime_type_from_path(archival_datastream),
+                                        'mimetype':get_mime_type_from_path(archival_datastream),
                                         'ID':path_to_datastream_ID(archival_datastream),
                                         'control_group':'M'}
             datastreams.append(archival_datastream_dict)
         if isinstance(metadata_datastream, str):
-            metadata_datastream_dict = {'source_file':metadata_datastream,
+            metadata_datastream_dict = {'filepath':metadata_datastream,
                                         'label':path_to_label(metadata_datastream),
-                                        'mime_type':get_mime_type_from_path(metadata_datastream),
+                                        'mimetype':get_mime_type_from_path(metadata_datastream),
                                         'ID':path_to_datastream_ID(metadata_datastream),
                                         'control_group':'X'}
             datastreams.append(metadata_datastream_dict)
@@ -261,9 +236,9 @@ class ingester(object):
         if isinstance(datastream, str):
             if not datastream_ID:
                 datastream_ID = path_to_datastream_ID(datastream)
-            datastream_dict = {'source_file':datastream,
+            datastream_dict = {'filepath':datastream,
                                         'label':path_to_label(datastream),
-                                        'mime_type':get_mime_type_from_path(datastream),
+                                        'mimetype':get_mime_type_from_path(datastream),
                                         'ID':datastream_ID,
                                         'control_group':'M'}
             datastream = datastream_dict
@@ -271,15 +246,15 @@ class ingester(object):
         if datastream['ID'] not in Fedora_object:
             try:
                 if datastream['control_group'] == 'X':
-                    datastream_file_handle = open(datastream['source_file'])
+                    datastream_file_handle = open(datastream['filepath'])
                     datastream_contents = datastream_file_handle.read()
                     Fedora_object.addDataStream(unicode(datastream['ID']), unicode(datastream_contents), label = unicode(datastream['label']),
-                                              mimeType = unicode(datastream['mime_type']), controlGroup = u'X',
+                                              mimeType = unicode(datastream['mimetype']), controlGroup = u'X',
                                               logMessage = unicode('Added ' + datastream['ID'] + ' datastream to:' + PID +' via IslandoraPYUtils'))
                 elif datastream['control_group'] == 'M':#do a dummy create (an artifact of fcrepo)
-                    datastream_file_handle = open(datastream['source_file'], 'rb')
+                    datastream_file_handle = open(datastream['filepath'], 'rb')
                     Fedora_object.addDataStream(unicode(datastream['ID']), u'I am an artifact, ignore me.', label = unicode(datastream['label']),
-                                              mimeType = unicode(datastream['mime_type']), controlGroup = u'M',
+                                              mimeType = unicode(datastream['mimetype']), controlGroup = u'M',
                                               logMessage = unicode('Added ' + datastream['ID'] + ' datastream to:' + PID +' via IslandoraPYUtils'))
                     
                     Fedora_object_datastream = Fedora_object[datastream['ID']]
@@ -291,12 +266,12 @@ class ingester(object):
         else:
             try:
                 if datastream['control_group'] == 'X':
-                    datastream_file_handle = open(datastream['source_file'])
+                    datastream_file_handle = open(datastream['filepath'])
                     Fedora_object_datastream = Fedora_object[datastream['ID']]
                     datastream_contents = datastream_file_handle.read()
                     Fedora_object_datastream.setContent(datastream_contents)
                 elif datastream['control_group'] == 'M':
-                    datastream_file_handle = open(datastream['source_file'], 'rb')
+                    datastream_file_handle = open(datastream['filepath'], 'rb')
                     Fedora_object_datastream = Fedora_object[datastream['ID']]
                     Fedora_object_datastream.setContent(datastream_file_handle)
                 self._logger.info('Updated ' + datastream['ID'] + ' datastream in:' + PID)

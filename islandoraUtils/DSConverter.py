@@ -338,7 +338,7 @@ def create_pdf_and_swf(obj, dsid, pdfid, swfid):
     
     #convert file to pdf
     document_converter = DocumentConverter()
-    path_to_PDF = os.path.join(os.path.splitext(document_file_path)[0], '.pdf')
+    path_to_PDF = os.path.join(os.path.splitext(document_file_path)[0] + '.pdf')
     
     document_converter.convert(document_file_path, path_to_PDF)
     
@@ -353,21 +353,22 @@ def create_pdf_and_swf(obj, dsid, pdfid, swfid):
     logger.debug(os.listdir(directory))
     
     #convert PDF to SWF
-    path_to_SWF = os.path.join(os.path.splitext(path_to_PDF)[0], '.swf')
+    path_to_SWF = os.path.join(os.path.splitext(path_to_PDF)[0] + '.swf')
     
-    pdf2swf = subprocess.Popen(['pdf2swf', path_to_SWF,
+    pdf2swf = subprocess.Popen(['pdf2swf', path_to_PDF, '-o', path_to_SWF,
         '-T 9', '-f', '-t', '-s', 'storeallcharacters', '-G'], stdout=subprocess.PIPE)
     out, err = pdf2swf.communicate()
+    
     if pdf2swf.returncode != 0:
         logger.warning('PID:%s DSID:%s SWF creation failed. Trying alternative.' % (obj.pid, dsid))
-        pdf2swf = subprocess.Popen(['pdf2swf', path_to_SWF,\
+        pdf2swf = subprocess.Popen(['pdf2swf', path_to_PDF, '-o',  path_to_SWF,\
              '-T 9', '-f', '-t', '-s', 'storeallcharacters', '-G', '-s', 'poly2bitmap'], stdout=subprocess.PIPE)
         out, err = pdf2swf.communicate()
 
     #upload PDF
     # catch the case where PDF2SWF fails to create the file, but returns 
-    if pdf2swf.returncode == 0 and os.path.isfile(directory + '/' + swfid):
-        update_datastream(obj, swfid, path_to_SWF, label='pdf to swf', mimeType='application/x-shockwave-flash')
+    if pdf2swf.returncode == 0 and os.path.isfile(path_to_SWF):
+        update_datastream(obj, swfid, path_to_SWF, label = 'pdf to swf', mimeType = 'application/x-shockwave-flash')
         r = 0
     elif not os.path.isfile(path_to_SWF):
         logger.warning('PID:%s DSID:%s SWF creation failed (pdf2swf returned: "%s").' % (obj.pid, dsid, out))
