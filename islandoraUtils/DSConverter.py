@@ -12,6 +12,7 @@ for a new version of IslandoraPYUtils to keep backwards compatibility for now.
 
 from islandoraUtils.fedoraLib import get_datastream_as_file, update_datastream
 from islandoraUtils.DocumentConverter import DocumentConverter
+from islandoraUtils.fileConverter import pdf_to_text_or_ocr
 from shutil import rmtree, move
 from datetime import datetime
 import os
@@ -332,7 +333,7 @@ def create_pdf_and_swf(obj, dsid, pdfid, swfid):
         1 if successful 0 if not
     '''
     logger = logging.getLogger('islandoraUtils.DSConverter.create_pdf_and_swf')
-    #recieve document and create a PDF with libreoffice if possible
+    #recieve document and create a PDF with libre/open office if possible
     directory, file = get_datastream_as_file(obj, dsid, "document")
     document_file_path = os.path.join(directory, file)
     
@@ -385,6 +386,32 @@ def create_pdf_and_swf(obj, dsid, pdfid, swfid):
     else:
         return 0
 
+def create_text(obj, dsid, txtid, ocrid):
+    '''
+    @param string obj
+        an fcrepo object
+    @param string dsid:
+        The datastream ID to create derivatives from.
+    '''
+    logger = logging.getLogger('islandoraUtils.DSConverter.create_text')
+    
+    directory, file = get_datastream_as_file(obj, dsid, "pdf")
+    
+    path_to_source = os.path.join(directory, file)
+    path_to_text = os.path.join(os.path.splitext(path_to_source)[0] + '.pdf')
+    
+    proceed, was_ocrd = pdf_to_text_or_ocr(path_to_source, path_to_text)
+    
+    if proceed and not was_ocrd:
+        update_datastream(obj, txtid, path_to_text, label = 'pdf to text', mimeType = 'text/plain')
+        return 1
+    elif proceed and was_ocrd:
+        update_datastream(obj, ocrid, path_to_text, label = 'pdf to ocr', mimeType = 'text/plain')
+        return 1
+    else:
+        logger.warning('PID:%s DSID:%s text creation or ocr failed.' % (obj.pid, dsid))
+        return 0
+    
 def check_dates(obj, dsid, derivativeid):
     '''
     @param string obj
@@ -400,4 +427,3 @@ def check_dates(obj, dsid, derivativeid):
         return True
     else:
         return False
-

@@ -21,7 +21,7 @@ TODO: Seems like generalizing file selection based on a path and extension(s) co
       or automatically determine file type by magic number (resulting in things like tif_to_jpg -> any_to_jpg)
 TODO: provide override options for various input checks
 '''
-import logging, subprocess, os, xmlib
+import logging, subprocess, os, xmlib, stat
 
 def tif_to_jp2(inPath,outPath,kakaduOpts=None,imageMagicOpts=None,*extraArgs):
     '''
@@ -215,8 +215,41 @@ def tif_OCR(inPath,outPath,fileTypeOpts,inputOpts=None,*extraArgs):
             logging.info('File OCR\'d: %s'% (absPathFileIn))
     return True
 
-
-def tif_to_jpg(inPath,outPath, imageMagicOpts,*extraArgs):
+def pdf_to_text_or_ocr(inPath, outPath):
+    '''
+    This function will create a new plain text file at the outPath derived from a PDF
+    at the inPath.
+    It will either be the imbeded text pulled out or an OCR of the PDF
+    It uses pdftotext for imbeded text and tesseract for OCR
+    @param inPath
+    @param outPath
+    
+    @return tuple:
+        first: 0 if failed 1 if successful
+        second: was_ocrd: True if the file was ocr'd false if it was not
+    '''
+    was_ocrd = False
+    #run pdf to text
+    pdftotext_call = ['pdftotext', inPath, outPath]
+    subprocess.call(pdftotext_call)
+    pdftotext_result = os.stat(outPath).ST_SIZE
+    print pdftotext_result
+    #if it fails run OCR
+    if not pdftotext_result:
+        was_ocrd = True
+        TIFF_file_path = os.path.splitext(inPath)[0] + '.tif'
+        #convert PDF to TIFF for OCR by tesseract
+        convert_call = ['convert', inPath, TIFF_file_path]
+        subprocess.call(convert_call)
+        #run tesseract OCR
+        tesseract_call = ['tesseract', TIFF_file_path, outPath, '-l', 'eng']
+        tesseract_result = subprocess.call(tesseract_call)
+        #if OCR and pdftotext both fail
+        if not tesseract_result:
+            return False, was_ocrd
+    return (True, was_ocrd)
+    
+def tif_to_jpg(inPath, outPath, imageMagicOpts, *extraArgs):
     '''
     This function will use ImageMagick to convert tifs to jpgs
     @param: inPath: source file or dir

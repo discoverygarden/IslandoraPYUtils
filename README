@@ -1,7 +1,7 @@
 @author: William Panting
 
 @dependencies: Python 2.6,
-@dependencies[if necessary for your application]: Kakadu, ABBYY CLI, ImageMagick, Lame, FFmpeg, SWFTools, pyPDF, lxml, exiftool(perl), MailX, tesseract
+@dependencies[if necessary for your application]: Kakadu, ABBYY CLI, ImageMagick, Lame, FFmpeg, SWFTools, pyPDF, lxml, exiftool(perl), MailX, tesseract, pdftotext
 
 This is a general python library module that is meant to assist in Islandora development.
 It contains document manipulations, conversions, OCR using ABBYY, Fedora helper code, email, xml and ingest helper code.
