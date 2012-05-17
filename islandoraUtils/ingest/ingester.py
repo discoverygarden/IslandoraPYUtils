@@ -49,7 +49,14 @@ class ingester(object):
     '''
 
 
-    def __init__(self, configuration_file_path, is_a_cron=False, default_Fedora_namespace=None, Islandora_configuration_object=None, Islandora_logger_object=None, Islandora_alerter_object=None, Islandora_cron_batch_object=None):
+    def __init__(self,
+                 configuration_file_path,
+                 is_a_cron = False,
+                 default_Fedora_namespace = None,
+                 Islandora_configuration_object = None,
+                 Islandora_logger_object = None,
+                 Islandora_alerter_object = None,
+                 Islandora_cron_batch_object = None):
         '''
         Get all the objects that are likely to be used for an ingest
         @param configuration_file_path: where the configuration for the ingest can be found
@@ -100,6 +107,11 @@ class ingester(object):
         
         #pyrelationships 
         self._Fedora_model_namespace = fedora_relationships.rels_namespace('fedora-model','info:fedora/fedora-system:def/model#')
+        
+        #create temporary directory if it does not exist and one is in the configuration
+        if 'temporary_directory' in self._configuration['miscellaneous']:
+            if not os.path.exists(self._configuration['miscellaneous']['temporary_directory']):
+                os.makedirs(self._configuration['miscellaneous']['temporary_directory'])
         
     @property
     def alerter(self):
