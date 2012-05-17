@@ -221,8 +221,14 @@ def pdf_to_text_or_ocr(inPath, outPath):
     at the inPath.
     It will either be the imbeded text pulled out or an OCR of the PDF
     It uses pdftotext for imbeded text and tesseract for OCR
-    @param inPath
-    @param outPath
+    
+    @author William Panting
+    
+    @param inPath:
+        The origional file to operate on.
+    @param outPath:
+        The extension on outPath will be ignored and replaced with .txt.
+        This is an artifact of tesseract and I coppy this into pdftotext for consistency.
     
     @return tuple:
         first: 0 if failed 1 if successful
@@ -230,23 +236,25 @@ def pdf_to_text_or_ocr(inPath, outPath):
     '''
     was_ocrd = False
     #run pdf to text
-    pdftotext_call = ['pdftotext', inPath, outPath]
+    pdftotext_call = ['pdftotext', inPath, os.path.splitext(outPath)[0] + '.txt']
     subprocess.call(pdftotext_call)
-    pdftotext_result = os.stat(outPath).ST_SIZE
-    print pdftotext_result
+    pdftotext_result = os.stat(os.path.splitext(outPath)[0] + '.txt').st_size
     #if it fails run OCR
     if not pdftotext_result:
         was_ocrd = True
         TIFF_file_path = os.path.splitext(inPath)[0] + '.tif'
         #convert PDF to TIFF for OCR by tesseract
-        convert_call = ['convert', inPath, TIFF_file_path]
+        #apha needs to be off because tesseracct chokes on it
+        #tesseract can only handle some color depths
+        convert_call = ['convert', '-alpha', 'off', 'depth', '8', inPath, TIFF_file_path]
         subprocess.call(convert_call)
         #run tesseract OCR
-        tesseract_call = ['tesseract', TIFF_file_path, outPath, '-l', 'eng']
+        #tesseract will autmaticaly add a .txt file extension
+        tesseract_call = ['tesseract', TIFF_file_path, os.path.splitext(outPath)[0], '-l', 'eng']
         tesseract_result = subprocess.call(tesseract_call)
         #if OCR and pdftotext both fail
         if not tesseract_result:
-            return False, was_ocrd
+            return (False, was_ocrd)
     return (True, was_ocrd)
     
 def tif_to_jpg(inPath, outPath, imageMagicOpts, *extraArgs):

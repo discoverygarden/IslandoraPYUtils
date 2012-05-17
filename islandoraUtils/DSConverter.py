@@ -388,28 +388,40 @@ def create_pdf_and_swf(obj, dsid, pdfid, swfid):
 
 def create_text(obj, dsid, txtid, ocrid):
     '''
+    This converter will create a text datasteam from imbeded text in a pdf
+    or from an ocr of that pdf.
+    
+    @author William Panting
+    
     @param string obj
         an fcrepo object
     @param string dsid:
         The datastream ID to create derivatives from.
+    @param string txtid:
+        The datastream to create if text can be pulled from the PDF.
+    @pram string ocrid:
+        The datastream ID to create if we fall back to OCR
     '''
     logger = logging.getLogger('islandoraUtils.DSConverter.create_text')
     
     directory, file = get_datastream_as_file(obj, dsid, "pdf")
     
     path_to_source = os.path.join(directory, file)
-    path_to_text = os.path.join(os.path.splitext(path_to_source)[0] + '.pdf')
+    path_to_text = os.path.join(os.path.splitext(path_to_source)[0] + '.txt')
     
     proceed, was_ocrd = pdf_to_text_or_ocr(path_to_source, path_to_text)
     
     if proceed and not was_ocrd:
         update_datastream(obj, txtid, path_to_text, label = 'pdf to text', mimeType = 'text/plain')
+        rmtree(directory, ignore_errors=True)
         return 1
     elif proceed and was_ocrd:
         update_datastream(obj, ocrid, path_to_text, label = 'pdf to ocr', mimeType = 'text/plain')
+        rmtree(directory, ignore_errors=True)
         return 1
     else:
         logger.warning('PID:%s DSID:%s text creation or ocr failed.' % (obj.pid, dsid))
+        rmtree(directory, ignore_errors=True)
         return 0
     
 def check_dates(obj, dsid, derivativeid):
