@@ -1,7 +1,7 @@
 @author: William Panting
 
 @dependencies: Python 2.6,
-@dependencies[if necessary for your application]: Kakadu, ABBYY CLI, ImageMagick, Lame, FFmpeg, SWFTools, pyPDF, lxml, exiftool(perl), MailX, tesseract, pdftotext
+@dependencies[if necessary for your application]: Kakadu, ABBYY CLI, ImageMagick, Lame, FFmpeg, SWFTools, pyPDF, lxml, exiftool(perl), MailX, tesseract, pdftotext, openOffice/libreOffice
 
 This is a general python library module that is meant to assist in Islandora development.
 It contains document manipulations, conversions, OCR using ABBYY, Fedora helper code, email, xml and ingest helper code.
@@ -12,3 +12,7 @@ http://commons.wikimedia.org/wiki/Crystal_Clear (LGPL)
 look at  DocumentConverter.py it has been moved to github by the maintainer: 
     https://github.com/mirkonasato/pyodconverter
     perhaps we can contribute any changes back and remove it from this repo.
+
+Office Conversions:
+sudo apt-get install openoffice.org openoffice.org-headless openoffice.org-writer openoffice.org-draw openoffice.org-calc python-uno
+soffice -headless -nofirststartwizard -accept="socket,host=localhost,port=8100;urp;"
