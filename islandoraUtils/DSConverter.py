@@ -336,6 +336,7 @@ def create_pdf_and_swf(obj, dsid, pdfid, swfid):
     #recieve document and create a PDF with libre/open office if possible
     directory, file = get_datastream_as_file(obj, dsid, "document")
     document_file_path = os.path.join(directory, file)
+    logger.info('DSConverter downloaded file to' + document_file_path)
     
     #convert file to pdf
     document_converter = DocumentConverter()
