@@ -50,7 +50,7 @@ def create_thumbnail(obj, dsid, tnid):
     else:
         # Make a thumbnail with convert
         r = subprocess.call(['convert', '%s[0]' % infile, '-thumbnail', \
-             '%sx%s' % tn_size, '-colorspace', 'rgb', '+profile', '*' 'jpg:%s'%tnfile])
+             '%sx%s' % tn_size, '-colorspace', 'rgb', '+profile', '*', 'jpg:%s'%tnfile])
    
     if r == 0:
         update_datastream(obj, tnid, directory+'/'+tnid, label='thumbnail', mimeType='image/jpeg')
