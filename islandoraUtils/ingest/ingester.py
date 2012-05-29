@@ -271,9 +271,9 @@ class ingester(object):
                     
                     Fedora_object_datastream = Fedora_object[datastream['ID']]
                     Fedora_object_datastream.setContent(datastream_file_handle)
-                self._logger.info('Added ' + datastream['ID'] + ' datastream to:' + PID)
+                self._logger.info('Added ' + datastream['ID'] + ' datastream to: ' + PID + ' from: ' + datastream['filepath'])
             except FedoraConnectionException:
-                self._logger.error('Error in adding ' + datastream['ID'] + ' datastream to:' + PID)
+                self._logger.error('Error in adding ' + datastream['ID'] + ' datastream to:' + PID + ' from: ' + datastream['filepath'])
         #set the datastream if it is managed datastream
         else:
             try:
@@ -286,9 +286,9 @@ class ingester(object):
                     datastream_file_handle = open(datastream['filepath'], 'rb')
                     Fedora_object_datastream = Fedora_object[datastream['ID']]
                     Fedora_object_datastream.setContent(datastream_file_handle)
-                self._logger.info('Updated ' + datastream['ID'] + ' datastream in:' + PID)
+                self._logger.info('Updated ' + datastream['ID'] + ' datastream in:' + PID + ' from: ' + datastream['filepath'])
             except FedoraConnectionException:
-                self._logger.error('Error in updating ' + datastream['ID'] + ' datastream in:' + PID)
+                self._logger.error('Error in updating ' + datastream['ID'] + ' datastream in:' + PID + ' from: ' + datastream['filepath'])
         datastream_file_handle.close()
         pass
     
