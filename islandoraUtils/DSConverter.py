@@ -311,7 +311,7 @@ def marcxml_to_mods(obj, dsid, dsidOut='MODS'):
 def create_pdf_and_swf(obj, dsid, pdfid, swfid):
     '''
     This function uses open office headless to convert to a pdf from anything that open office input
-    filters can handle. It then creates and uploads an swf based on the pdf.  This will be considerably
+    filters can handle. It then creates and uploads andf swf based on the pdf.  This will be considerably
     faster than callsing create_pdf and create_swf.
     Currently this function expects the default settings for DocumentConverter to work
     but this limitation can be removed when needed.
