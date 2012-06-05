@@ -7,11 +7,12 @@ Created on 2012-03-19
 @TODO: a function for creating/deleting the tmp dir
 
 '''
-import os
+import os, json
 
 from fcrepo.connection import Connection, FedoraConnectionException
 from fcrepo.client import FedoraClient
 
+from copy import copy
 from islandoraUtils.ingest.Islandora_configuration import Islandora_configuration
 from islandoraUtils.ingest.Islandora_logger import Islandora_logger
 from islandoraUtils.ingest.Islandora_cron_batch import Islandora_cron_batch
@@ -323,3 +324,70 @@ class ingester(object):
                 else:
                     self._logger.error(PID + ' was not created successfully.')
         return Fedora_object
+    
+    def filter_files_for_ingest(self, list_of_paths, filter_to_documents = False, filter_to_images = False):
+        '''
+        This function will filter out undesirable files
+        from a list of files for ingest.  It relies on a 
+        list of illegal file names and file extensions in the 
+        constants module.
+        It does not alter the original list object.
+        
+        @param list list_of_paths:
+            The paths to remove illegal files from.
+        
+        @return list filtered_list_of_paths:
+            The paths after illegal files have been removed.
+        '''
+        
+        filtered_list_of_paths = copy(list_of_paths)
+        
+        for file_path in list_of_paths:
+            file_name = os.path.basename(file_path)
+            #lower case extension
+            file_extension = os.path.splitext(file_path)[1].lower()
+    
+            if file_name in json.loads(self._configuration['filtering']['prohibited_file_names']):
+                if file_path in filtered_list_of_paths:
+                    filtered_list_of_paths.remove(file_path)
+            if file_extension in json.loads(self._configuration['filtering']['prohibited_file_extensions']):
+                if file_path in filtered_list_of_paths:
+                    filtered_list_of_paths.remove(file_path)
+                
+            if file_name.startswith(tuple(json.loads(self._configuration['filtering']['prohibited_file_prefixes']))):
+                if file_path in filtered_list_of_paths:
+                    filtered_list_of_paths.remove(file_path)
+                
+            if filter_to_documents:
+                if not file_extension in json.loads(self._configuration['filtering']['allowed_document_extensions']):
+                    if file_path in filtered_list_of_paths:
+                        filtered_list_of_paths.remove(file_path)
+                        
+            if filter_to_images:
+                if not file_extension in json.loads(self._configuration['filtering']['allowed_image_extensions']):
+                    if file_path in filtered_list_of_paths:
+                        filtered_list_of_paths.remove(file_path)
+                    
+        return filtered_list_of_paths
+
+    def recursivly_get_all_files_for_ingest(self, directory_to_walk, filter_to_documents = False, filter_to_images = False):
+        '''
+        This function will get all the files in a directory and all its'
+        non-symlinked directories that are suitable for ingest.
+        
+        @param string directory_to_walk:
+            The directory to grab files and filter from.
+        
+        @return list list_of_paths_to_ingest:
+            The completed list of files to ingest.
+        '''
+        
+        list_of_paths_to_ingest = list()
+        for path, dirs, files in os.walk(directory_to_walk):
+            for file_name in files:
+                file_path = os.path.join(path, file_name)
+                list_of_paths_to_ingest.append(file_path)
+                
+        list_of_paths_to_ingest = self.filter_files_for_ingest(list_of_paths_to_ingest, filter_to_documents, filter_to_images)
+        
+        return list_of_paths_to_ingest
