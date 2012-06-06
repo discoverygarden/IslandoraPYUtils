@@ -189,9 +189,13 @@ class ingester(object):
             collections = []
         if not content_models:
             content_models = []
+            
         #if datastream label not supplied build it based on archival ds path
         if not object_label:
-            object_label = path_to_label(archival_datastream)
+            if isinstance(archival_datastream, str):
+                object_label = path_to_label(archival_datastream)
+            else:
+                object_label = archival_datastream['filepath']
             
         #normalize parameters to a list of dictionaries of what datastreams to ingest
         if isinstance(archival_datastream, str):
