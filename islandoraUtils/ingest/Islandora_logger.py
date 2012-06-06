@@ -5,7 +5,7 @@ Created on 2012-03-16
 @TODO: test
 
 '''
-import logging, logging.handlers, time, os
+import logging.handlers, time, os
 
 class Islandora_logger(object):
     '''
