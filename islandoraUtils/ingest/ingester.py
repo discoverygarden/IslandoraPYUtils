@@ -206,18 +206,22 @@ class ingester(object):
                                         'mimetype':get_mime_type_from_path(archival_datastream),
                                         'ID':path_to_datastream_ID(archival_datastream),
                                         'control_group':'M'}
-            datastreams.append(archival_datastream_dict)
         if isinstance(metadata_datastream, str):
             metadata_datastream_dict = {'filepath':metadata_datastream,
                                         'label':path_to_label(metadata_datastream),
                                         'mimetype':get_mime_type_from_path(metadata_datastream),
                                         'ID':path_to_datastream_ID(metadata_datastream),
                                         'control_group':'X'}
-            datastreams.append(metadata_datastream_dict)
         
+        #add the metadata and archival datastreams to those to be ingested
+        datastreams.append(metadata_datastream_dict)
+        datastreams.append(archival_datastream_dict)
+        
+        #create the object
         Fedora_object = self.get_Fedora_object(PID, object_label)
         PID = Fedora_object.pid
         
+        #write datastreams to the object
         for datastream in datastreams:
             self.ingest_datastream(Fedora_object, datastream)
             
@@ -331,7 +335,12 @@ class ingester(object):
                     self._logger.error(PID + ' was not created successfully.')
         return Fedora_object
     
-    def filter_files_for_ingest(self, list_of_paths, filter_to_documents = False, filter_to_images = False):
+    def filter_files_for_ingest(self,
+                                list_of_paths,
+                                filter_to_documents = False,
+                                filter_to_images = False,
+                                extensions_to_filter_out = None,
+                                extensions_to_filter_to = None):
         '''
         This function will filter out undesirable files
         from a list of files for ingest.  It relies on a 
@@ -376,7 +385,12 @@ class ingester(object):
                     
         return filtered_list_of_paths
 
-    def recursivly_get_all_files_for_ingest(self, directory_to_walk, filter_to_documents = False, filter_to_images = False):
+    def recursivly_get_all_files_for_ingest(self,
+                                            directory_to_walk,
+                                            filter_to_documents = False,
+                                            filter_to_images = False,
+                                            extensions_to_filter_out = None,
+                                            extensions_to_filter_to = None):
         '''
         This function will get all the files in a directory and all its'
         non-symlinked directories that are suitable for ingest.
@@ -394,6 +408,10 @@ class ingester(object):
                 file_path = os.path.join(path, file_name)
                 list_of_paths_to_ingest.append(file_path)
                 
-        list_of_paths_to_ingest = self.filter_files_for_ingest(list_of_paths_to_ingest, filter_to_documents, filter_to_images)
+        list_of_paths_to_ingest = self.filter_files_for_ingest(list_of_paths_to_ingest,
+                                                               filter_to_documents,
+                                                               filter_to_images,
+                                                               extensions_to_filter_out,
+                                                               extensions_to_filter_to)
         
         return list_of_paths_to_ingest
