@@ -214,8 +214,10 @@ class ingester(object):
                                         'control_group':'X'}
         
         #add the metadata and archival datastreams to those to be ingested
-        datastreams.append(metadata_datastream_dict)
-        datastreams.append(archival_datastream_dict)
+        if metadata_datastream_dict:
+            datastreams.append(metadata_datastream_dict)
+        if archival_datastream_dict:
+            datastreams.append(archival_datastream_dict)
         
         #create the object
         Fedora_object = self.get_Fedora_object(PID, object_label)
