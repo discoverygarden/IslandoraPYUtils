@@ -194,8 +194,10 @@ class ingester(object):
         if not object_label:
             if isinstance(archival_datastream, str):
                 object_label = archival_datastream
-            else:
+            elif isinstance(archival_datastream, dict):
                 object_label = archival_datastream['filepath']
+            else:
+                object_label = ''
                 
             object_label = path_to_label(object_label)
             
@@ -206,12 +208,17 @@ class ingester(object):
                                         'mimetype':get_mime_type_from_path(archival_datastream),
                                         'ID':path_to_datastream_ID(archival_datastream),
                                         'control_group':'M'}
+        elif not isinstance(archival_datastream, dict):
+            archival_datastream_dict = None
+            
         if isinstance(metadata_datastream, str):
             metadata_datastream_dict = {'filepath':metadata_datastream,
                                         'label':path_to_label(metadata_datastream),
                                         'mimetype':get_mime_type_from_path(metadata_datastream),
                                         'ID':path_to_datastream_ID(metadata_datastream),
                                         'control_group':'X'}
+        elif not isinstance(metadata_datastream, dict):
+            metadata_datastream_dict = None
         
         #add the metadata and archival datastreams to those to be ingested
         if metadata_datastream_dict:
