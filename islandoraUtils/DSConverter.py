@@ -8,6 +8,9 @@ two copies of code which do much of the same thing... If someone is doing this
 this should be treated as the cannonical copy. I have been updating these
 conversion scripts with input from JWA and Colorado. Will says maybe this should wait
 for a new version of IslandoraPYUtils to keep backwards compatibility for now.
+
+@todo: Aparently DocumentConverter has not been made to work on Cent 'cause of python-uno
+    come up with a way to make it work on Cent or remove its use from this file.
 '''
 
 from islandoraUtils.fedoraLib import get_datastream_as_file, update_datastream

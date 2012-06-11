@@ -17,3 +17,6 @@ Office Conversions:
 sudo apt-get install openoffice.org openoffice.org-headless openoffice.org-writer openoffice.org-draw openoffice.org-calc python-uno
 soffice -headless -nofirststartwizard -accept="socket,host=localhost,port=8100;urp;"
 killall -9 soffice.bin
+
+@todo: move to conditional imports of dependency packages. Lots of installs do not need all the dependencies but 
+    some are forced by imports or the code fails.
