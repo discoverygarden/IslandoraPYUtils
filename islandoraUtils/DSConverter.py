@@ -15,7 +15,7 @@ for a new version of IslandoraPYUtils to keep backwards compatibility for now.
 
 from islandoraUtils.fedoraLib import get_datastream_as_file, update_datastream
 from islandoraUtils.DocumentConverter import DocumentConverter
-from islandoraUtils.fileConverter import pdf_to_text_or_ocr
+from islandoraUtils.fileConverter import pdf_to_text_or_ocr, xps_to_pdf
 from shutil import rmtree, move
 from datetime import datetime
 import os
@@ -321,7 +321,8 @@ def create_pdf_and_swf(obj, dsid, pdfid, swfid):
         soffice -headless -nofirststartwizard -accept="socket,host=localhost,port=8100;urp;"
         a potential start-up script:
         http://www.openvpms.org/documentation/install-openoffice-headless-service-ubuntu
-        
+    If open office fails it will try to use ghostpdl which can handle xps format.
+    
     @todo:
         Remove the copy pasted code for uploading datastreams and converting swf to common functions
             
@@ -346,7 +347,9 @@ def create_pdf_and_swf(obj, dsid, pdfid, swfid):
     path_to_PDF = os.path.join(os.path.splitext(document_file_path)[0] + '.pdf')
     
     document_converter.convert(document_file_path, path_to_PDF)
-    
+    #if fails, try xps
+    if not os.path.isfile(path_to_PDF):
+        xps_to_pdf(document_file_path, path_to_PDF)
     #upload pdf
     if os.path.isfile(path_to_PDF):
         update_datastream(obj, pdfid, path_to_PDF, label='document to pdf', mimeType='application/pdf')
