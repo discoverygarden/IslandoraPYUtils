@@ -208,8 +208,7 @@ class ingester(object):
                                         'mimetype':get_mime_type_from_path(archival_datastream),
                                         'ID':path_to_datastream_ID(archival_datastream),
                                         'control_group':'M'}
-        elif not isinstance(archival_datastream, dict):
-            archival_datastream_dict = None
+            archival_datastream = archival_datastream_dict
             
         if isinstance(metadata_datastream, str):
             metadata_datastream_dict = {'filepath':metadata_datastream,
@@ -217,14 +216,13 @@ class ingester(object):
                                         'mimetype':get_mime_type_from_path(metadata_datastream),
                                         'ID':path_to_datastream_ID(metadata_datastream),
                                         'control_group':'X'}
-        elif not isinstance(metadata_datastream, dict):
-            metadata_datastream_dict = None
+            metadata_datastream = metadata_datastream_dict
         
         #add the metadata and archival datastreams to those to be ingested
-        if metadata_datastream_dict:
-            datastreams.append(metadata_datastream_dict)
-        if archival_datastream_dict:
-            datastreams.append(archival_datastream_dict)
+        if metadata_datastream:
+            datastreams.append(metadata_datastream)
+        if archival_datastream:
+            datastreams.append(archival_datastream)
         
         #create the object
         Fedora_object = self.get_Fedora_object(PID, object_label)
