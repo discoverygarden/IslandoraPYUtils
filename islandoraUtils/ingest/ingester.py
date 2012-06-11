@@ -357,6 +357,14 @@ class ingester(object):
         
         @param list list_of_paths:
             The paths to remove illegal files from.
+        @param bool filter_to_documents:
+            Use the config file to filter to document files.
+        @param filter_to_images:
+            Use the config file to filter to image files.
+        @param extensions_to_filter_out:
+            Used to filter out files based on extensions.
+        @param extensions_to_filter_to:
+            Will require all files to have one of the extensions passed in.
         
         @return list filtered_list_of_paths:
             The paths after illegal files have been removed.
@@ -369,10 +377,16 @@ class ingester(object):
             #lower case extension
             file_extension = os.path.splitext(file_path)[1].lower()
     
+            if not file_extension in extensions_to_filter_to:
+                if file_path in filtered_list_of_paths:
+                    filtered_list_of_paths.remove(file_path)
             if file_name in json.loads(self._configuration['filtering']['prohibited_file_names']):
                 if file_path in filtered_list_of_paths:
                     filtered_list_of_paths.remove(file_path)
             if file_extension in json.loads(self._configuration['filtering']['prohibited_file_extensions']):
+                if file_path in filtered_list_of_paths:
+                    filtered_list_of_paths.remove(file_path)
+            if file_extension in extensions_to_filter_out:
                 if file_path in filtered_list_of_paths:
                     filtered_list_of_paths.remove(file_path)
                 
@@ -404,6 +418,14 @@ class ingester(object):
         
         @param string directory_to_walk:
             The directory to grab files and filter from.
+        @param bool filter_to_documents:
+            Passed on to filter function.
+        @param filter_to_images:
+            Passed on to filter function.
+        @param extensions_to_filter_out:
+            Passed on to filter function.
+        @param extensions_to_filter_to:
+            Passed on to filter function.
         
         @return list list_of_paths_to_ingest:
             The completed list of files to ingest.
