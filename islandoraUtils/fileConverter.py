@@ -256,7 +256,38 @@ def pdf_to_text_or_ocr(inPath, outPath):
         if not tesseract_result:
             return (False, was_ocrd)
     return (True, was_ocrd)
+
+def xps_to_pdf(inPath, outPath):
+    '''
+    This function will create a new pdf file at the outPath derived from an xps
+    at the inPath. It will use ghostpdl
+    @author William Panting
     
+    @param inPath:
+        The origional file to operate on.
+    @param outPath:
+        The path to put the pdf at.
+        
+    @return bool
+        success state
+    '''
+    
+    ghost_pdl_call = ['gxps',
+                      '-dNOPAUSE',
+                      '-dBATCH',
+                      '-sDEVICE=pdfwrite',
+                      '-r150',
+                      '-o',
+                      outPath,
+                      inPath]
+    
+    ghost_pdl_result = subprocess.call(ghost_pdl_call)
+   
+    if ghost_pdl_result:
+        return True
+    else:
+        return False
+
 def tif_to_jpg(inPath, outPath, imageMagicOpts, *extraArgs):
     '''
     This function will use ImageMagick to convert tifs to jpgs
