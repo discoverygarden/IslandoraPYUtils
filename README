@@ -18,5 +18,15 @@ sudo apt-get install openoffice.org openoffice.org-headless openoffice.org-write
 soffice -headless -nofirststartwizard -accept="socket,host=localhost,port=8100;urp;"
 killall -9 soffice.bin
 
+xps Conversions:
+sudo apt-get install libxext-dev libxt-dev
+wget "http://downloads.ghostscript.com/public/ghostpdl-9.05.tar.bz2"
+tar xjf ./ghostpdl-9.05.tar.gz
+cd ghostpdl-9.05/
+./configure
+make xps
+cp ./xps/obj/gxps /usr/bin
+gxps -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -r150 -o outfile infile
+
 @todo: move to conditional imports of dependency packages. Lots of installs do not need all the dependencies but 
     some are forced by imports or the code fails.
