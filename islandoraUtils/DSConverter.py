@@ -345,11 +345,13 @@ def create_pdf_and_swf(obj, dsid, pdfid, swfid):
     #convert file to pdf
     document_converter = DocumentConverter()
     path_to_PDF = os.path.join(os.path.splitext(document_file_path)[0] + '.pdf')
-    
-    document_converter.convert(document_file_path, path_to_PDF)
-    #if fails, try xps
-    if not os.path.isfile(path_to_PDF):
+    #if open office fails to convert try ghostpdl
+    try:
+        document_converter.convert(document_file_path, path_to_PDF)
+    except Exception:
+        logger.info('An issue occured with Document Converter, trying ghostpdl on '. obj.pid + ' ' +  dsid)
         xps_to_pdf(document_file_path, path_to_PDF)
+        
     #upload pdf
     if os.path.isfile(path_to_PDF):
         update_datastream(obj, pdfid, path_to_PDF, label='document to pdf', mimeType='application/pdf')
