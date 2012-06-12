@@ -376,19 +376,22 @@ class ingester(object):
             file_name = os.path.basename(file_path)
             #lower case extension
             file_extension = os.path.splitext(file_path)[1].lower()
-    
-            if not file_extension in extensions_to_filter_to:
-                if file_path in filtered_list_of_paths:
-                    filtered_list_of_paths.remove(file_path)
+            
+            if extensions_to_filter_to:
+                if not file_extension in extensions_to_filter_to:
+                    if file_path in filtered_list_of_paths:
+                        filtered_list_of_paths.remove(file_path)
+            
             if file_name in json.loads(self._configuration['filtering']['prohibited_file_names']):
                 if file_path in filtered_list_of_paths:
                     filtered_list_of_paths.remove(file_path)
             if file_extension in json.loads(self._configuration['filtering']['prohibited_file_extensions']):
                 if file_path in filtered_list_of_paths:
                     filtered_list_of_paths.remove(file_path)
-            if file_extension in extensions_to_filter_out:
-                if file_path in filtered_list_of_paths:
-                    filtered_list_of_paths.remove(file_path)
+            if extensions_to_filter_out:
+                if file_extension in extensions_to_filter_out:
+                    if file_path in filtered_list_of_paths:
+                        filtered_list_of_paths.remove(file_path)
                 
             if file_name.startswith(tuple(json.loads(self._configuration['filtering']['prohibited_file_prefixes']))):
                 if file_path in filtered_list_of_paths:
