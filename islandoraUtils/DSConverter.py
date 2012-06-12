@@ -349,7 +349,7 @@ def create_pdf_and_swf(obj, dsid, pdfid, swfid):
     try:
         document_converter.convert(document_file_path, path_to_PDF)
     except Exception:
-        logger.info('An issue occured with Document Converter, trying ghostpdl on '. obj.pid + ' ' +  dsid)
+        logger.info('An issue occured with Document Converter, trying ghostpdl on ' + obj.pid + ' ' + dsid)
         xps_to_pdf(document_file_path, path_to_PDF)
         
     #upload pdf
