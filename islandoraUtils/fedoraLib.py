@@ -41,7 +41,7 @@ def get_collection_members(Fedora_client, collection_PID):
     base_query = open(os.path.join(os.path.dirname(__file__), '__resources/SPARQL/member_query.sparql'), 'r').read()
     full_query = re.sub('\$collection_object', '<' + collection_URI + '>', base_query)
     
-    results = Fedora_client.searchTriples(full_query)
+    results = Fedora_client.searchTriples(full_query, limit = None)
     results = list(results)
     
     #put them in a usable list
