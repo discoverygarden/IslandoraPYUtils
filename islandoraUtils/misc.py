@@ -370,7 +370,7 @@ def convert_members_to_unicode(non_unicode_iterable):
     '''
     modified_iterable = list()
     for item in non_unicode_iterable:
-        if not isinstance(item, 'unicode'):
+        if not isinstance(item, unicode):
             modified_iterable.append(unicode(item))
     
     return modified_iterable
