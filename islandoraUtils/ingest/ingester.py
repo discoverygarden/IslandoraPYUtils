@@ -356,7 +356,7 @@ class ingester(object):
         It does not alter the original list object.
         
         @param list list_of_paths:
-            The paths to remove illegal files from.
+            The paths to remove illegal files from. Members are expected to be unicode
         @param bool filter_to_documents:
             Use the config file to filter to document files.
         @param filter_to_images:
@@ -370,7 +370,6 @@ class ingester(object):
             The paths after illegal files have been removed.
         '''
         #to handle unicode file names we convert all input strings to unicode
-        list_of_paths = convert_members_to_unicode(list_of_paths)
         if extensions_to_filter_out:
             extensions_to_filter_out = convert_members_to_unicode(extensions_to_filter_out)
         if extensions_to_filter_to:
