@@ -441,7 +441,7 @@ class ingester(object):
         '''
         
         list_of_paths_to_ingest = list()
-        for path, dirs, files in os.walk(directory_to_walk):
+        for path, dirs, files in os.walk(unicode(directory_to_walk)):
             for file_name in files:
                 file_path = os.path.join(path, file_name)
                 list_of_paths_to_ingest.append(file_path)
