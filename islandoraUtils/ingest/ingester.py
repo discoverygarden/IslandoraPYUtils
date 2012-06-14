@@ -18,7 +18,7 @@ from islandoraUtils.ingest.Islandora_logger import Islandora_logger
 from islandoraUtils.ingest.Islandora_cron_batch import Islandora_cron_batch
 from islandoraUtils.ingest.Islandora_alerter import Islandora_alerter
 from islandoraUtils.metadata import fedora_relationships
-from islandoraUtils.misc import get_mime_type_from_path, path_to_datastream_ID, path_to_label
+from islandoraUtils.misc import get_mime_type_from_path, path_to_datastream_ID, path_to_label, convert_members_to_unicode
 
 class ingester(object):
     '''
@@ -369,6 +369,12 @@ class ingester(object):
         @return list filtered_list_of_paths:
             The paths after illegal files have been removed.
         '''
+        #to handle unicode file names we convert all input strings to unicode
+        list_of_paths = convert_members_to_unicode(list_of_paths)
+        if extensions_to_filter_out:
+            extensions_to_filter_out = convert_members_to_unicode(extensions_to_filter_out)
+        if extensions_to_filter_to:
+            extensions_to_filter_to = convert_members_to_unicode(extensions_to_filter_to)
         
         filtered_list_of_paths = copy(list_of_paths)
         
@@ -382,10 +388,10 @@ class ingester(object):
                     if file_path in filtered_list_of_paths:
                         filtered_list_of_paths.remove(file_path)
             
-            if file_name in json.loads(self._configuration['filtering']['prohibited_file_names']):
+            if file_name in convert_members_to_unicode(json.loads(self._configuration['filtering']['prohibited_file_names'])):
                 if file_path in filtered_list_of_paths:
                     filtered_list_of_paths.remove(file_path)
-            if file_extension in json.loads(self._configuration['filtering']['prohibited_file_extensions']):
+            if file_extension in convert_members_to_unicode(json.loads(self._configuration['filtering']['prohibited_file_extensions'])):
                 if file_path in filtered_list_of_paths:
                     filtered_list_of_paths.remove(file_path)
             if extensions_to_filter_out:
@@ -393,17 +399,17 @@ class ingester(object):
                     if file_path in filtered_list_of_paths:
                         filtered_list_of_paths.remove(file_path)
                 
-            if file_name.startswith(tuple(json.loads(self._configuration['filtering']['prohibited_file_prefixes']))):
+            if file_name.startswith(tuple(convert_members_to_unicode(json.loads(self._configuration['filtering']['prohibited_file_prefixes'])))):
                 if file_path in filtered_list_of_paths:
                     filtered_list_of_paths.remove(file_path)
                 
             if filter_to_documents:
-                if not file_extension in json.loads(self._configuration['filtering']['allowed_document_extensions']):
+                if not file_extension in convert_members_to_unicode(json.loads(self._configuration['filtering']['allowed_document_extensions'])):
                     if file_path in filtered_list_of_paths:
                         filtered_list_of_paths.remove(file_path)
                         
             if filter_to_images:
-                if not file_extension in json.loads(self._configuration['filtering']['allowed_image_extensions']):
+                if not file_extension in convert_members_to_unicode(json.loads(self._configuration['filtering']['allowed_image_extensions'])):
                     if file_path in filtered_list_of_paths:
                         filtered_list_of_paths.remove(file_path)
                     

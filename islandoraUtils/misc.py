@@ -334,7 +334,7 @@ def path_to_label(path):
     datastream_label = os.path.splitext(os.path.basename(path))[0]
     return datastream_label
 
-def locate(pattern, root=os.curdir):
+def locate(pattern, root = os.curdir):
     '''
     Locate all files matching supplied filename pattern in and below
     supplied root directory.
@@ -355,7 +355,24 @@ def locate(pattern, root=os.curdir):
     for path, dirs, files in os.walk(os.path.abspath(root)):
         for filename in fnmatch.filter(files, pattern):
             yield os.path.join(path, filename)
-            
+
+def convert_members_to_unicode(non_unicode_iterable):
+    '''
+    This function will take in and pass out a new iterable
+    making its elments unicode.  It will not modify the original object.
+    
+    @param iterable non_unicode_iterable:
+        The iterable object to convert the members of.
+    @return iterable
+        modified_iterable the origional iterable with members casted to unicode
+        
+    @todo: make handle multi dimensional iterable
+    '''
+    
+    modified_iterable = [ unicode(item) for item in non_unicode_iterable ]
+    
+    return modified_iterable
+
 if __name__ == '__main__':
     '''
     @todo:
