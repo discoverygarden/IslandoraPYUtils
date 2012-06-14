@@ -368,8 +368,10 @@ def convert_members_to_unicode(non_unicode_iterable):
         
     @todo: make handle multi dimensional iterable
     '''
-    
-    modified_iterable = [ unicode(item) for item in non_unicode_iterable ]
+    modified_iterable = list()
+    for item in non_unicode_iterable:
+        if not isinstance(item, 'unicode'):
+            modified_iterable.append(unicode(item))
     
     return modified_iterable
 
