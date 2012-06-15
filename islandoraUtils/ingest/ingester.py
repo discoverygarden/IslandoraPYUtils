@@ -198,8 +198,8 @@ class ingester(object):
                 object_label = archival_datastream['filepath']
             else:
                 object_label = ''
-                
-            object_label = path_to_label(object_label)
+            #a utf8 unicode string may be necessary to pass through urlencode
+            object_label = path_to_label(object_label).encode('utf8')
             
         #normalize parameters to a list of dictionaries of what datastreams to ingest
         if isinstance(archival_datastream, str):
