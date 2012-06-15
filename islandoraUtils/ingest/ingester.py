@@ -436,9 +436,10 @@ class ingester(object):
             Passed on to filter function.
         
         @return list list_of_paths_to_ingest:
-            The completed list of files to ingest.
+            The completed list of files to ingest, they will be unicode strings.
         '''
         
+        #using unicode to handle if the file system is unicode
         list_of_paths_to_ingest = list()
         for path, dirs, files in os.walk(unicode(directory_to_walk)):
             for file_name in files:
