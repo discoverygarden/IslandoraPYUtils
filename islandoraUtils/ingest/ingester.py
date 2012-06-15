@@ -322,8 +322,8 @@ class ingester(object):
         '''
         Fedora_object = None
         if object_label != None:
-            #encode in unicode because that's what fcrepo needs, utf8 encode for urlencode func
-            object_label = unicode(object_label).encode('utf8')
+            #encode in unicode because that's what fcrepo needs
+            object_label = unicode(object_label)
         #set up the Fedora object PID
         if not PID:
             #PID is a list
