@@ -199,7 +199,7 @@ class ingester(object):
             else:
                 object_label = ''
             #a utf8 unicode string may be necessary to pass through urlencode
-            object_label = path_to_label(object_label).encode('utf8')
+            object_label = path_to_label(object_label)
             
         #normalize parameters to a list of dictionaries of what datastreams to ingest
         if isinstance(archival_datastream, str):
@@ -322,8 +322,8 @@ class ingester(object):
         '''
         Fedora_object = None
         if object_label != None:
-            #encode in unicode because that's what fcrepo needs
-            object_label = unicode(object_label)
+            #encode in unicode because that's what fcrepo needs, utf8 encode for urlencode func
+            object_label = unicode(object_label).encode('utf8')
         #set up the Fedora object PID
         if not PID:
             #PID is a list
