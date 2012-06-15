@@ -10,7 +10,7 @@ import os
 import hashlib
 import re
 import fnmatch
-import copy
+from copy import copy
 
 def config_parser_to_dict(configuration_parser):
     '''
@@ -369,8 +369,10 @@ def convert_members_to_unicode(non_unicode_iterable):
         
     @todo: make handle multi dimensional iterable
     '''
-    
+    #want to have an empty copy of whatever object type non_unicode_iterable was
     modified_iterable = copy(non_unicode_iterable)
+    del modified_iterable[:]
+    
     for item in non_unicode_iterable:
         modified_iterable.append(unicode(item))
     
