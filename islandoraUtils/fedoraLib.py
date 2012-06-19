@@ -234,4 +234,3 @@ if __name__ == '__main__':
     client = fcrepo.client.FedoraClient(connection)
     #print(client.getDatastreamProfile('atm:1250', 'DC'))
     #print(client.getDatastreamProfile('atm:1075', 'DC'))
-

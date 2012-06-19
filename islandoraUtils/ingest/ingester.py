@@ -25,7 +25,8 @@ class ingester(object):
     This is the kingpin.  This object should handle creating all the other basic ingest helpers.
     @TODO: add a function for taking in multiple objects as a list of dictionaries
     @todo: add an add default TN method
-    @todo: implement (this will mean a user will not need to know the content_model for a collection, or the pid of top
+    @todo: implement (this will mean a user will not need to know the content_model for a collection, or the pid of top,
+        also it will have a default TN
             both of wich could come from the config file)
                 def ingest_collection_object(ingester, parent_pid=None):
     
@@ -250,6 +251,21 @@ class ingester(object):
             objRelsExt.update()
         return(PID)
     
+    def ingest_default_thumbnail (self, Fedora_object):
+        '''
+        This function will ingest a default thumbnail into Fedora
+        
+        @param Fedora_object:
+            The fcrepo object to add the thumbnail to        
+        '''
+        
+        self.ingest_datastream (Fedora_object,
+                                datastream = os.path.join(os.path.dirname(__file__),
+                                                          '__resources/images/icons/Crystal_Clear_filesystem_folder_grey.png'),
+                                datastream_ID = 'TN')
+        
+        return
+    
     def ingest_datastream (self, Fedora_object, datastream, datastream_ID = None):
         '''
         This function will wrap creating/modifying a datastream in Fedora
@@ -308,7 +324,8 @@ class ingester(object):
             except FedoraConnectionException:
                 self._logger.error('Error in updating ' + datastream['ID'] + ' datastream in:' + PID + ' from: ' + datastream['filepath'])
         datastream_file_handle.close()
-        pass
+        
+        return
     
     def get_Fedora_object(self, PID = None, object_label = None):
         '''
