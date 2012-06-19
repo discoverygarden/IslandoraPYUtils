@@ -7,12 +7,14 @@ Created on 2012-03-19
 @TODO: a function for creating/deleting the tmp dir
 
 '''
-import os, json
+import os, json, sys
 
 from fcrepo.connection import Connection, FedoraConnectionException
 from fcrepo.client import FedoraClient
 
 from copy import copy
+
+import islandoraUtils
 from islandoraUtils.ingest.Islandora_configuration import Islandora_configuration
 from islandoraUtils.ingest.Islandora_logger import Islandora_logger
 from islandoraUtils.ingest.Islandora_cron_batch import Islandora_cron_batch
@@ -260,8 +262,8 @@ class ingester(object):
         '''
         
         self.ingest_datastream (Fedora_object,
-                                datastream = os.path.join(os.path.dirname(__file__),
-                                                          '__resources/images/icons/Crystal_Clear_filesystem_folder_grey.png'),
+                                datastream = os.path.join(os.path.dirname(sys.modules[islandoraUtils].__file__),
+                                                          '__resources/images/icons/Crystal_Clear_action_filenew.png'),
                                 datastream_ID = 'TN')
         
         return
