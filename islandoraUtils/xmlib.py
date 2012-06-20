@@ -8,6 +8,7 @@ Created on Apr 15, 2011
   lxml
 '''
 import logging
+from misc import base64_string_to_file
 
 def import_etree():
     '''
@@ -77,13 +78,36 @@ Checks if the indicated xml file's root has the indicated namespace
 def copy_element_attributes(from_element, to_element):
     '''
     This function will copy the attributes from one etree element to anther
+    
     @param from_element
       Get attributes from this one
     @param to_element
       Put attributes on this one
+      
     @author
       William Panting
+      
     '''
+    
     attributes = from_element.attrib
     for attribute, value in attributes.iteritems():
         to_element.set(attribute, value)
+
+    return
+
+def base64_element_to_file(element, file_path):
+    '''
+    This function will write the text node of an etree
+    element that is encoded as base64 to a file.
+    
+    @param etree element element:
+        The element to pull the text from
+    @param string file_path:
+        The file to write to
+    
+    '''
+    
+    base64_string = element.text
+    base64_string_to_file(base64_string, file_path)
+    
+    return

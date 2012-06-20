@@ -6,10 +6,7 @@ that doesn't have a place anywhere else in the package
         
 '''
 
-import os
-import hashlib
-import re
-import fnmatch
+import os, base64, hashlib, re, fnmatch
 from copy import copy
 
 def config_parser_to_dict(configuration_parser):
@@ -377,6 +374,21 @@ def convert_members_to_unicode(non_unicode_iterable):
         modified_iterable.append(unicode(item))
     
     return modified_iterable
+
+def base64_string_to_file(base64_string, file_path):
+    '''
+    This function will decode the given string and print it to the given path.
+    @param string base64_string:
+        The string to decode from base 64.
+    @param string file_path:
+        The path to write the decoded file to.
+    '''
+    
+    file_handle = open("file_path", "wb")
+    file_handle.write(base64_string.decode('base64'))
+    file_handle.close()
+
+    return
 
 if __name__ == '__main__':
     '''

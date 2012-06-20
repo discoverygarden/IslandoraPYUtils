@@ -26,7 +26,7 @@ This function is meant to combine multiple pdf files, I'm not sure I like the py
 @return bool
   true if successful false if not
 '''
-    pdfWriter=PdfFileWriter()
+    pdfWriter = PdfFileWriter()
     
     #out file must not be a directory
     if os.path.isdir(outFile):
@@ -85,7 +85,6 @@ This function is meant to combine multiple pdf files, I'm not sure I like the py
     pdfWriter.write(pdfStream)
     
     return True
-
 
 def isPDF(file_path):
     '''
