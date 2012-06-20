@@ -384,7 +384,7 @@ def base64_string_to_file(base64_string, file_path):
         The path to write the decoded file to.
     '''
     
-    file_handle = open("file_path", "wb")
+    file_handle = open(file_path, "wb")
     file_handle.write(base64_string.decode('base64'))
     file_handle.close()
 
