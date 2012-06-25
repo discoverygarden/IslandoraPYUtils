@@ -280,7 +280,7 @@ class ingester(object):
         #@TODO:look into: loop through datastreams adding them to inline or managed based on mimetype
         '''
         PID = Fedora_object.pid
-        if isinstance(datastream, str):
+        if not isinstance(datastream, dict):
             if not datastream_ID:
                 datastream_ID = path_to_datastream_ID(datastream)
             datastream_dict = {'filepath':datastream,
