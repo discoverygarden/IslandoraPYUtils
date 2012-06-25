@@ -7,7 +7,7 @@ Created on Apr 15, 2011
 @dependencies
   lxml
 '''
-import logging
+import logging, re
 from misc import base64_string_to_file
 
 def import_etree():
@@ -55,6 +55,53 @@ FIXME: AVOID LOGGING ISSUES
     return etree
 #yuk sory
 etree = import_etree()
+
+def filter_illegal_characters_from_file(dirty_file_path, replacement = ''):
+    '''
+    This function will alter a file, remooving the characters that are illegal
+    in XML.  It will replace them with the supplied replacement string.
+    
+    @param string dirty_file_path:
+        The path to the file that needs to have illegal characters removed.
+    @param string replacement:
+        The string to substitute in for the illegal characters,
+        defaults to the empty string.
+        
+    @todo: optimize performance, scalability
+    '''
+    
+    dirty_file_handle = open(dirty_file_path)
+    dirty_string = dirty_file_handle.read()
+    dirty_file_handle.close()
+    
+    clean_string = strip_illegal_characters(dirty_string, replacement)
+    
+    clean_file_handle = open(dirty_file_path, 'w')
+    clean_file_handle.write(clean_string)
+    clean_file_handle.close()
+    
+    return
+
+def strip_illegal_characters(dirty_string, replacement = ''):
+    '''
+    This function will strip out all characters from a string
+    that are found to be illegal in XML.
+    
+    @param string dirty_string:
+        The string that needs to have illegal characters removed.
+    @param string replacement:
+        The string to substitute in for the illegal characters,
+        defaults to the empty string.
+    
+    @return string:
+        clean_string the string with illegal XML characters removed and 
+        replaced with the replacement string.
+    '''
+    illegal_character_regex = re.compile(u'/[^\x09\x0A\x0D\x20-\xFF]/')
+    clean_string = unicode(dirty_string)
+    clean_string = illegal_character_regex.subn(replacement, clean_string)
+    
+    return clean_string
 
 def rootHasNamespace(xmlIn,namespaceIn):
     '''

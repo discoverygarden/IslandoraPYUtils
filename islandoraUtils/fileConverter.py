@@ -22,6 +22,7 @@ TODO: Seems like generalizing file selection based on a path and extension(s) co
 TODO: provide override options for various input checks
 '''
 import logging, subprocess, os, xmlib, stat
+from xmlib import filter_illegal_characters_from_file
 
 def tif_to_jp2(inPath,outPath,kakaduOpts=None,imageMagicOpts=None,*extraArgs):
     '''
@@ -221,6 +222,9 @@ def pdf_to_text_or_ocr(inPath, outPath):
     at the inPath.
     It will either be the imbeded text pulled out or an OCR of the PDF
     It uses pdftotext for imbeded text and tesseract for OCR
+    If we have to use tesseract we need to go through another processing step:
+        We will filter tesseract's output to remove all characters that are 
+        illegal in xml.
     
     @author William Panting
     
@@ -255,6 +259,10 @@ def pdf_to_text_or_ocr(inPath, outPath):
         #if OCR and pdftotext both fail
         if not tesseract_result:
             return (False, was_ocrd)
+        
+        #stip out characters illegal in xml
+        filter_illegal_characters_from_file(os.path.splitext(outPath)[0] + '.txt')
+        
     return (True, was_ocrd)
 
 def xps_to_pdf(inPath, outPath):
