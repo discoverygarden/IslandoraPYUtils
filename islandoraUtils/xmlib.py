@@ -99,7 +99,7 @@ def strip_illegal_characters(dirty_string, replacement = ''):
     '''
     illegal_character_regex = re.compile(u'/[^\x09\x0A\x0D\x20-\xFF]/')
     clean_string = unicode(dirty_string)
-    clean_string = illegal_character_regex.subn(replacement, clean_string)
+    clean_string = illegal_character_regex.sub(replacement, clean_string)
     clean_string = clean_string.encode('UTF-8')
     
     return clean_string
