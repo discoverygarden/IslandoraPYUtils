@@ -97,10 +97,9 @@ def strip_illegal_characters(dirty_string, replacement = ''):
         clean_string the string with illegal XML characters removed and 
         replaced with the replacement string.
     '''
-    illegal_character_regex = re.compile(u'/[^\x09\x0A\x0D\x20-\xFF]/')
-    clean_string = unicode(dirty_string)
-    clean_string = illegal_character_regex.sub(replacement, clean_string)
-    clean_string = clean_string.encode('UTF-8')
+    
+    illegal_character_regex = re.compile(u'[^\x09\x0A\x0D\x20-\xFF]')
+    clean_string = illegal_character_regex.sub(replacement, dirty_string)
     
     return clean_string
 
