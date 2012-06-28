@@ -298,3 +298,24 @@ def create_fits(obj, dsid, derivativeid = 'FITS', args = []):
     rmtree(directory, ignore_errors=True)
     return r
 
+def create_csv(obj, dsid, derivativeid = 'CSV', args = [])
+    logger = logging.getLogger('islandoraUtils.DSConverter.create_csv' )
+    directory, file = get_datastream_as_file(obj, dsid, "document")
+    in_file = directory + '/' + file
+    output = subprocess.Popen(['xls2csv', '-x', in_file] + args, stdout=subprocess.PIPE).communicate()[0]
+    if r != 0:
+        logger.warning('PID:%s DSID:%s CSV creation failed (fits return code:%d).' % (obj.pid, dsid, r))
+    if r == 0:
+        num_sheet = 0
+        out_file = directory + '/' + 'csv.csv'
+        sheets  = output.split('^L');
+        for sheet in sheets:
+            f = open(out_file, 'w')
+            f.write(sheet)
+            f.close()
+            dsid = num_sheet > 0 ? derivativeid + '_SHEET_' + num_sheet : derivativeid;
+            update_datastream(obj, dsid, out_file, 'CSV Generated Metadata', 'text/csv')
+            num_sheet++
+    rmtree(directory, ignore_errors=True)
+    return r
+
