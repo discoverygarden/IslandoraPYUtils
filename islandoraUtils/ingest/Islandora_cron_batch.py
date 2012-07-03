@@ -18,9 +18,14 @@ class Islandora_cron_batch(object):
                  Islandora_configuration_object = None,
                  when_last_ran = 0):
         '''
-        @param Islandora_configuration_object: let the object figure out it's own state
-        @param when_last_ran: this will override what the object can read from a configuration object
-        assume all files must be modified if niether param is set (since the down of linux)
+        Constructor!!!
+        
+        @param Islandora_configuration_object:
+            Let the object figure out it's own state.
+        
+        @param when_last_ran: 
+            This will override what the object can read from a configuration object
+            assume all files must be modified if niether param is set (since the down of linux)
         '''
         if Islandora_configuration_object:
             self._Islandora_configuration_object = Islandora_configuration_object
@@ -54,7 +59,10 @@ class Islandora_cron_batch(object):
     def does_file_require_action(self,
                                  file_path):
         '''
+        This method will figure out if the file needs to be operated on.
+        
         @param file_path: the path to the file that must be evaluated for cron work
+        
         @return boolean: Returns true if the file has been modified since the last cron
         '''
         #get timestamp
@@ -66,7 +74,9 @@ class Islandora_cron_batch(object):
                                     list_of_file_paths):
         '''
         This method returns the files that have been changed since the last time a cron was ran
+        
         @param list_of_file_paths: a list of file paths to filter for cron work
+        
         @return files_requiring_action: the list of files requiring cron work
         '''
         files_requiring_action = []
@@ -79,7 +89,9 @@ class Islandora_cron_batch(object):
                                       timestamp):
         '''
         is_timestamp_post_last_cron
+        
         @param timestamp: timestamp to evaluate
+        
         @return boolean: timestamp >= self._when_last_ran
         '''
         return timestamp >= self._when_last_ran
