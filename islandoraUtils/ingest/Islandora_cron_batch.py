@@ -14,7 +14,9 @@ class Islandora_cron_batch(object):
     checking if things are created or 'new' is not supported because it is not cross-platform
     '''
 
-    def __init__(self, Islandora_configuration_object=None, when_last_ran=0):
+    def __init__(self,
+                 Islandora_configuration_object = None,
+                 when_last_ran = 0):
         '''
         @param Islandora_configuration_object: let the object figure out it's own state
         @param when_last_ran: this will override what the object can read from a configuration object
@@ -49,7 +51,8 @@ class Islandora_cron_batch(object):
             islandora_configuration_parser.write(configuration_file_handle)
             configuration_file_handle.close()
                     
-    def does_file_require_action(self, file_path):
+    def does_file_require_action(self,
+                                 file_path):
         '''
         @param file_path: the path to the file that must be evaluated for cron work
         @return boolean: Returns true if the file has been modified since the last cron
@@ -59,7 +62,8 @@ class Islandora_cron_batch(object):
         #call to internal timestamp math func
         return self.does_timestamp_require_action(timestamp)
     
-    def find_files_requiring_action(self, list_of_file_paths):
+    def find_files_requiring_action(self,
+                                    list_of_file_paths):
         '''
         This method returns the files that have been changed since the last time a cron was ran
         @param list_of_file_paths: a list of file paths to filter for cron work
@@ -71,7 +75,8 @@ class Islandora_cron_batch(object):
                 files_requiring_action.append(file_path)
         return files_requiring_action
     
-    def does_timestamp_require_action(self, timestamp):
+    def does_timestamp_require_action(self,
+                                      timestamp):
         '''
         is_timestamp_post_last_cron
         @param timestamp: timestamp to evaluate

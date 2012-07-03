@@ -165,7 +165,14 @@ class ingester(object):
         '''
         return self._default_Fedora_namespace
     
-    def ingest_object(self, PID = None, object_label = None, archival_datastream = None, metadata_datastream = None, datastreams = None, collections = None, content_models = None):
+    def ingest_object(self,
+                      PID = None,
+                      object_label = None,
+                      archival_datastream = None,
+                      metadata_datastream = None,
+                      datastreams = None,
+                      collections = None,
+                      content_models = None):
         '''
         This function will ingest an object with a single metadata and archival datastream with a specified set of relationships
         it will use our best practices for logging and assume the use of microservices for derivatives and their RELS-INT management
@@ -252,7 +259,8 @@ class ingester(object):
             objRelsExt.update()
         return(PID)
     
-    def ingest_default_thumbnail (self, Fedora_object):
+    def ingest_default_thumbnail (self,
+                                  Fedora_object):
         '''
         This function will ingest a default thumbnail into Fedora
         
@@ -267,7 +275,10 @@ class ingester(object):
         
         return
     
-    def ingest_datastream (self, Fedora_object, datastream, datastream_ID = None):
+    def ingest_datastream (self,
+                           Fedora_object,
+                           datastream,
+                           datastream_ID = None):
         '''
         This function will wrap creating/modifying a datastream in Fedora
         It's some dynamic kinda crazy:
@@ -365,7 +376,8 @@ class ingester(object):
                                 filter_to_documents = False,
                                 filter_to_images = False,
                                 extensions_to_filter_out = None,
-                                extensions_to_filter_to = None):
+                                extensions_to_filter_to = None,
+                                filter_by_time = None):
         '''
         This function will filter out undesirable files
         from a list of files for ingest.  It relies on a 
@@ -383,6 +395,8 @@ class ingester(object):
             Used to filter out files based on extensions.
         @param extensions_to_filter_to:
             Will require all files to have one of the extensions passed in.
+        @param boolean filter_by_time:
+            Will default to true if this is a cron batch ingester.
         
         @return list filtered_list_of_paths:
             The paths after illegal files have been removed.
@@ -429,7 +443,11 @@ class ingester(object):
                 if not file_extension in convert_members_to_unicode(json.loads(self._configuration['filtering']['allowed_image_extensions'])):
                     if file_path in filtered_list_of_paths:
                         filtered_list_of_paths.remove(file_path)
-                    
+            
+        # Filter by timestamp. This is expensive so I want it last
+        if self.cron_batch:
+            filtered_list_of_paths = self.cron_batch.find_files_requiring_action(filtered_list_of_paths)
+                
         return filtered_list_of_paths
 
     def recursivly_get_all_files_for_ingest(self,
@@ -437,7 +455,8 @@ class ingester(object):
                                             filter_to_documents = False,
                                             filter_to_images = False,
                                             extensions_to_filter_out = None,
-                                            extensions_to_filter_to = None):
+                                            extensions_to_filter_to = None,
+                                            filter_by_time = None):
         '''
         This function will get all the files in a directory and all its'
         non-symlinked directories that are suitable for ingest.
@@ -452,6 +471,8 @@ class ingester(object):
             Passed on to filter function.
         @param extensions_to_filter_to:
             Passed on to filter function.
+        @param boolean filter_by_time:
+            Will default to true if this is a cron batch ingester.
         
         @return list list_of_paths_to_ingest:
             The completed list of files to ingest, they will be unicode strings.
@@ -468,6 +489,7 @@ class ingester(object):
                                                                filter_to_documents,
                                                                filter_to_images,
                                                                extensions_to_filter_out,
-                                                               extensions_to_filter_to)
+                                                               extensions_to_filter_to,
+                                                               filter_by_time)
         
         return list_of_paths_to_ingest
