@@ -62,8 +62,10 @@ class ingester(object):
                  Islandora_cron_batch_object = None):
         '''
         Get all the objects that are likely to be used for an ingest
+        
         @param configuration_file_path: where the configuration for the ingest can be found
         @param last_time_ran: the last time this ingest was ran (if this is set a cron_batch object is created with the information)
+        
         '''
         
         #configuration and logger have intermediate objects
