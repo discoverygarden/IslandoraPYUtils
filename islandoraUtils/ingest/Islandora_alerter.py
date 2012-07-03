@@ -25,7 +25,7 @@ class Islandora_alerter(object):
             logger.info('Using the mailx alerter')
             self._alerter = mailx_alerter(Islandora_configuration_object, logger)
         
-    def send_message(self, message=None, subject=None):
+    def send_message(self, message = None, subject = None):
         '''
         calls the send message on the implementation object
         '''
@@ -36,7 +36,7 @@ class mailx_alerter(object):
         This class is an alerter that operates through the mailx program
     '''
     
-    def __init__(self, Islandora_configuration_object, logger, emailer=None):
+    def __init__(self, Islandora_configuration_object, logger, emailer = None):
         '''
             Constructor
             @param Islandora_configuration_object: the configuration to base this mailx alerter on
@@ -52,7 +52,7 @@ class mailx_alerter(object):
         else:
             self._mailer = emailer
         
-    def send_message(self, message=None, subject=None):
+    def send_message(self, message = None, subject = None):
         '''
         This method will send an email using mailx
         @param subject: the subject of the message to send

@@ -390,6 +390,23 @@ def base64_string_to_file(base64_string, file_path):
 
     return
 
+def is_image(prospective_image_path):
+    '''
+    This function will check the mimetype 
+    
+    @param string prospective_image_path:
+    
+    @return boolean:
+        is_image
+    '''
+    # get mimetype
+    mime_type = getMimeType(prospective_image_path)
+    # Check for imageness.
+    if 'image' in mime_type:
+        is_image = True
+        
+    return is_image
+
 if __name__ == '__main__':
     '''
     @todo:
