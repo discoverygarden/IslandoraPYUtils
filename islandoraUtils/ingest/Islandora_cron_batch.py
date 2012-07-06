@@ -96,3 +96,12 @@ class Islandora_cron_batch(object):
         '''
         return timestamp >= self._when_last_ran
     
+    def get_pids_for_sources(self,
+                             list_of_sources):
+        pass
+    
+    def diff_datastream_and_source(self,
+                                   Fedora_PID,
+                                   datastream_ID,
+                                   source):
+    
