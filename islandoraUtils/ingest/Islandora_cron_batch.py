@@ -2,7 +2,14 @@
 Created on 2012-03-16
 
 @author: William Panting
-@TODO: tests
+
+@todo: in desperation a function like this could be called.
+    def diff_datastream_and_source(self,
+                                   Fedora_PID,
+                                   datastream_ID,
+                                   source):
+        pass
+    
 '''
 import time
 import os
@@ -98,10 +105,6 @@ class Islandora_cron_batch(object):
     
     def get_pids_for_sources(self,
                              list_of_sources):
+        '''
+        '''
         pass
-    
-    def diff_datastream_and_source(self,
-                                   Fedora_PID,
-                                   datastream_ID,
-                                   source):
-    
