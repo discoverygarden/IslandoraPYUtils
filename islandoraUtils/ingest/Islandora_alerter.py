@@ -6,6 +6,7 @@ Created on 2012-03-16
 @TODO: create an interface(abc module) with send_message(self, subject, message), _recievers(add, remove, clear, set)
 @TODO: look into more generic alerters ie. one that understands and can run parameterized bash commands
 '''
+import traceback
 from islandoraUtils.mailer import mailer 
 
 class Islandora_alerter(object):
@@ -28,9 +29,23 @@ class Islandora_alerter(object):
     def send_message(self, message = None, subject = None):
         '''
         calls the send message on the implementation object
+        If message or subject is not supplied they will be given a default.
+        
+        @param string subject:
+            the subject of the message to send defaults to stack trace
+        @param string message:
+            the body of the message to send defaults to 
+            'An exception has occured while ingesting.'
         '''
-        self._alerter.send_message(message, subject)
+        if not subject:
+            subject = 'An exception has occured while ingesting.'
+        if not message:
+            message = 'Details:' + traceback.format_exc()
             
+        self._alerter.send_message(message, subject)
+        
+        return
+    
 class mailx_alerter(object):
     '''
         This class is an alerter that operates through the mailx program
@@ -55,6 +70,7 @@ class mailx_alerter(object):
     def send_message(self, message = None, subject = None):
         '''
         This method will send an email using mailx
+        
         @param subject: the subject of the message to send
         @param message: the body of the message to send
         '''
