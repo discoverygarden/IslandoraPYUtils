@@ -81,7 +81,7 @@ class mailx_alerter(object):
         self._mailer.clear_message()
         self._mailer.add_string(message)
         
-        self._logger.info("Sending email (%s) to addresses: %s" % (subject, self._recievers))
+        self._logger.info("Sending email (%s) to addresses: (%s) with message (%s)" % (subject, self._recievers, message))
         self._mailer.send()
         
         self._mailer.set_subject(self._subject)#reset subject for next message

@@ -3,7 +3,6 @@ Created on 2012-03-19
 
 @author: William Panting
 @TODO: properties configuration and logger, also accept overrides for all objects used in constructor
-@TODO: look into default PID namespace
 @TODO: a function for creating/deleting the tmp dir
 
 '''
@@ -25,7 +24,6 @@ class ingester(object):
     '''
     This is the kingpin.  This object should handle creating all the other basic ingest helpers.
     @TODO: add a function for taking in multiple objects as a list of dictionaries
-    @todo: add an add default TN method
     @todo: implement (this will mean a user will not need to know the content_model for a collection, or the pid of top,
         also it will have a default TN
             both of wich could come from the config file)
@@ -49,6 +47,9 @@ class ingester(object):
                                                         collections = [parent_pid],
                                                         content_models = ['islandora:collectionCModel'])
                     return Fedora_PID
+                    
+                    
+def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit = None):
     '''
 
 
@@ -89,11 +90,6 @@ class ingester(object):
         else:
             self._alerter = Islandora_alerter_object
         
-        if is_a_cron:
-            if not Islandora_cron_batch_object:
-                self._cron_batch = Islandora_cron_batch(my_Islandora_configuration)
-            else:
-                self._cron_batch = Islandora_cron_batch_object
             
         #Fedora connection through fcrepo, should not be done before custom logger because the first settings on root logger are immutable
         self._fcrepo_connection = Connection(self._configuration['Fedora']['url'],
@@ -104,6 +100,14 @@ class ingester(object):
         except FedoraConnectionException:
             self._logger.error('Error connecting to Fedora')
         
+        self._is_a_cron = False
+        if is_a_cron:
+            self._is_a_cron = True
+            if not Islandora_cron_batch_object:
+                self._cron_batch = Islandora_cron_batch(self._Fedora_client, my_Islandora_configuration)
+            else:
+                self._cron_batch = Islandora_cron_batch_object
+                
         if not default_Fedora_namespace:#unicode because of fcrepo
             self._default_Fedora_namespace = unicode(self._configuration['miscellaneous']['default_fedora_pid_namespace'])#no caps in configParser
         else:
@@ -174,7 +178,8 @@ class ingester(object):
                       metadata_datastream = None,
                       datastreams = None,
                       collections = None,
-                      content_models = None):
+                      content_models = None,
+                      sources = None):
         '''
         This function will ingest an object with a single metadata and archival datastream with a specified set of relationships
         it will use our best practices for logging and assume the use of microservices for derivatives and their RELS-INT management
@@ -182,17 +187,28 @@ class ingester(object):
         this function can be extended later, the initial write is for an atomistic content model with 'sensible' defaults
         mimetypes are detected using islandoraUtils for compatibility with Islandora
         currently only control groups x and m are supported
+        
         @TODO: look at taking in a relationship object
-        @param PID: The PID of the object to create or update. If non is supplied then getNextPID is used
-        @param archival_datastream: an image, audio, whatever file path will be a managed datastream
-        [{'path':'./objectstuff'}]
-        @param metadata_file_path: will be inline xml
-        @param collection: the PID of the collection so RELS-EXT can be created
-        @param content_model: The PID of the content_model so the RELS-EXT can be created
+        
+        @param PID: 
+            The PID of the object to create or update. If non is supplied then getNextPID is used
+        @param archival_datastream: 
+            an image, audio, whatever file path will be a managed datastream
+            [{'path':'./objectstuff'}]
+        @param metadata_file_path: 
+            will be inline xml
+        @param list collection: 
+            the PIDs of the collection so RELS-EXT can be created
+        @param list content_model:
+            The PIDs of the content_model so the RELS-EXT can be created
+        @param list sources:
+            Only relevant if this is a cron ingest, will default to 
+            [archival_datastream's path].
+        
         @return:
             The PID of the object created or updated.
-        @todo: pull out datastream creation and use library function
         '''
+        
         # Set as empty lists (not in default args because of python would store state from call to call).
         if not datastreams:
             datastreams = []
@@ -211,7 +227,18 @@ class ingester(object):
                 object_label = ''
             #a utf8 unicode string may be necessary to pass through urlencode
             object_label = path_to_label(object_label)
-            
+        
+        #set the source
+        if self._is_a_cron:
+            if not sources:
+                if isinstance(archival_datastream, str):
+                    sources = [archival_datastream]
+                elif isinstance(archival_datastream, dict):
+                    sources = [archival_datastream['filepath']]
+                else:
+                    sources = []
+                
+        
         #normalize parameters to a list of dictionaries of what datastreams to ingest
         if isinstance(archival_datastream, str):
             archival_datastream_dict = {'filepath':archival_datastream,
@@ -244,20 +271,40 @@ class ingester(object):
             self.ingest_datastream(Fedora_object, datastream)
             
         #write relationships to the object
-        if collections or content_models:
-            objRelsExt = fedora_relationships.rels_ext(Fedora_object, self._Fedora_model_namespace)
-            for collection in collections:
-                #remove relationship if it exists
-                if objRelsExt.getRelationships(predicate='isMemberOfCollection'):
-                    objRelsExt.purgeRelationships(predicate='isMemberOfCollection')
-                
-                objRelsExt.addRelationship('isMemberOfCollection', unicode(collection))
+        if collections or content_models or self._is_a_cron:
             
-            for content_model in content_models:
-                if objRelsExt.getRelationships(predicate = fedora_relationships.rels_predicate('fedora-model','hasModel')):
-                    objRelsExt.purgeRelationships(predicate = fedora_relationships.rels_predicate('fedora-model','hasModel'))
+            # If it is a cron we need another namespace.
+            if self._is_a_cron and sources:
+                source_relationship_namespace = self.configuration['relationships']['has_source_identifier_relationship_namespace']
+                source_relationship_namespace_alias = self.configuration['relationships']['has_source_identifier_relationship_namespace_alias']
+                source_name_space_object = fedora_relationships.rels_namespace(source_relationship_namespace_alias, source_relationship_namespace)
                 
-                objRelsExt.addRelationship(fedora_relationships.rels_predicate('fedora-model','hasModel'), unicode(content_model))
+                objRelsExt = fedora_relationships.rels_ext(Fedora_object, [self._Fedora_model_namespace, source_name_space_object])
+            else:
+                objRelsExt = fedora_relationships.rels_ext(Fedora_object, self._Fedora_model_namespace)
+            
+            # Collection relationships.
+            self.cron_batch.replace_relationships(objRelsExt,
+                                                  'isMemberOfCollection',
+                                                  collections)
+            # Content model relationships.
+            self.cron_batch.replace_relationships(objRelsExt,
+                                                  fedora_relationships.rels_predicate('fedora-model','hasModel'),
+                                                  content_models)
+            
+            # Source relationships.
+            if self._is_a_cron and sources:
+                source_relationship_name = self.configuration['relationships']['has_source_identifier_relationship_name']
+                source_predicate = fedora_relationships.rels_predicate(source_relationship_namespace_alias, source_relationship_name)
+                objectified_sources = []
+                for source in sources:
+                    objectified_sources.append(fedora_relationships.rels_object(source,
+                                                                                fedora_relationships.rels_object.LITERAL))
+                    
+                self.cron_batch.replace_relationships(objRelsExt,
+                                                      source_predicate,
+                                                      objectified_sources)
+                
             objRelsExt.update()
         return(PID)
     
@@ -267,7 +314,7 @@ class ingester(object):
         This function will ingest a default thumbnail into Fedora
         
         @param Fedora_object:
-            The fcrepo object to add the thumbnail to        
+            The fcrepo object to add the thumbnail to.
         '''
         
         self.ingest_datastream (Fedora_object,
@@ -355,6 +402,8 @@ class ingester(object):
         if object_label != None:
             #encode in unicode because that's what fcrepo needs
             object_label = unicode(object_label)
+            
+            
         #set up the Fedora object PID
         if not PID:
             #PID is a list
@@ -362,7 +411,8 @@ class ingester(object):
             Fedora_object = self._Fedora_client.createObject(PID, label = object_label)
             
         #creating vs updating
-        if not Fedora_object:
+        #if not Fedora_object:
+        else:
             try:
                 Fedora_object = self._Fedora_client.getObject(PID)
             except FedoraConnectionException, object_fetch_exception:
@@ -447,7 +497,7 @@ class ingester(object):
                         filtered_list_of_paths.remove(file_path)
             
         # Filter by timestamp. This is expensive so I want it last
-        if self.cron_batch:
+        if self._is_a_cron:
             filtered_list_of_paths = self.cron_batch.find_files_requiring_action(filtered_list_of_paths)
                 
         return filtered_list_of_paths
