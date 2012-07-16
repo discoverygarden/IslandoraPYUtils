@@ -9,62 +9,28 @@ that doesn't have a place anywhere else in the package
 import os, base64, hashlib, re, fnmatch
 from copy import copy
 
-def config_parser_to_dict(configuration_parser):
+def get_extension_from_mimetype(mimetype):
     '''
-    This function will take a configuration parser and turn it into a simple dictionary.
+    This function will get the extensions that are applicable to a mimetype
+    '''
     
-    @author William Panting
+    mapping = get_extension_mimetype_mapping()
+    extensions = []
     
-    @param configuration_parser
-        The configuration parser to extract settings from.
-        
-    @return: 
-        configuration_dictionary, the dictionary containing the sections and options of the configuration parser.
-    '''
-    configuration_dictionary = dict()
-    sections = configuration_parser.sections()
+    for extension in mapping:
+        if mapping[extension] == mimetype:
+            extensions.append(extension)
     
-    # Loop through he configuration file sections and dump the config to a dictionary.
-    for section in sections:
-        configuration_dictionary[section] = {}
-        options = configuration_parser.options(section)
-        for option in options:
-            configuration_dictionary[section][option] = configuration_parser.get(section, option)
-            
-    return configuration_dictionary
+    return extensions
 
-def get_mime_type_from_path(path):
+def get_extension_mimetype_mapping():
     '''
-    yes I am this lazy
-    @author William Panting
-    @param path: the path to extract the mimetype of
-    @return: the mimetype of the file pointed to by the path
+    This function wraps the mimetype to extension mapping.
+    
+    @return dictionary:
+        mimes The dictionary containing ext:mimetype
     '''
-    extension = os.path.splitext(path)[1]
-    return getMimeType(extension)
-
-def getMimeType(extension):
-    '''
-    This function will get the mimetype of the provided file extension
-    This is not fool proof, some extensions have multiple mimetypes possible.  I return what was useful for me.
-    It is also limited to a small set of mimetypes.
-
-    @param extension
-      The file extension to find the mimetype from
-
-    @return mimeType
-      The mimetype that was associated to the file extension
-    @todo
-      add more mimeTypes
-
-    @todo
-      Match Islandora's functionality
-    @note
-      We could instead use the python mimetypes module
-    @see
-      http://docs.python.org/library/mimetypes.html
-    '''
-
+    
     # use mimetypes module instead
     """
     file = ext.lower()
@@ -72,15 +38,7 @@ def getMimeType(extension):
         file = "." + ext # make sure there is a . in it
     return mimetypes.guess_type("a" + file)[0] #prepend something so there definitely is a file name
     """
-
-    # use custom mimetype lookup
-    ext = extension.lower()
-
-    #strip the '.' if it was included in the ext string
-    if ext.find('.')==0:#using find to avoid catching the doesn't exist exception from index
-        ext = ext[1:]
-
-    # this is the list of mime types defined in MimeClass.inc in islandora (commit f608652cf6421c2952100b451fe2d699cb1d8b63)
+    
     mimes = {
         # openoffice:
         'odb' : 'application/vnd.oasis.opendocument.database',
@@ -237,12 +195,80 @@ def getMimeType(extension):
         '3gp' : 'video/3gpp',
         'wmv' : 'video/x-ms-wmv',
     })
+    
+    return mimes
 
+def config_parser_to_dict(configuration_parser):
+    '''
+    This function will take a configuration parser and turn it into a simple dictionary.
+    
+    @author William Panting
+    
+    @param configuration_parser
+        The configuration parser to extract settings from.
+        
+    @return: 
+        configuration_dictionary, the dictionary containing the sections and options of the configuration parser.
+    '''
+    configuration_dictionary = dict()
+    sections = configuration_parser.sections()
+    
+    # Loop through he configuration file sections and dump the config to a dictionary.
+    for section in sections:
+        configuration_dictionary[section] = {}
+        options = configuration_parser.options(section)
+        for option in options:
+            configuration_dictionary[section][option] = configuration_parser.get(section, option)
+            
+    return configuration_dictionary
+
+def get_mime_type_from_path(path):
+    '''
+    yes I am this lazy
+    @author William Panting
+    @param path: the path to extract the mimetype of
+    @return: the mimetype of the file pointed to by the path
+    '''
+    extension = os.path.splitext(path)[1]
+    return getMimeType(extension)
+
+def getMimeType(extension):
+    '''
+    This function will get the mimetype of the provided file extension
+    This is not fool proof, some extensions have multiple mimetypes possible.  I return what was useful for me.
+    It is also limited to a small set of mimetypes.
+
+    @param extension
+      The file extension to find the mimetype from
+
+    @return mimeType
+      The mimetype that was associated to the file extension
+    @todo
+      add more mimeTypes
+
+    @todo
+      Match Islandora's functionality
+    @note
+      We could instead use the python mimetypes module
+    @see
+      http://docs.python.org/library/mimetypes.html
+    '''
+
+    # use custom mimetype lookup
+    ext = extension.lower()
+
+    #strip the '.' if it was included in the ext string
+    if ext.find('.')==0:#using find to avoid catching the doesn't exist exception from index
+        ext = ext[1:]
+
+    # this is the list of mime types defined in MimeClass.inc in islandora (commit f608652cf6421c2952100b451fe2d699cb1d8b63)
+    
+    mimes = get_extension_mimetype_mapping
+    
     if ext in mimes:
         return mimes[ext]
 
     # assume an unkown binary format if no match found
-
     return 'application/octet-stream'
 
 

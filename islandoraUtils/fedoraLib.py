@@ -20,7 +20,7 @@ from metadata import fedora_relationships as FR
 import os
 from time import sleep
 import hashlib
-from islandoraUtils.misc import hash_file
+from islandoraUtils.misc import hash_file, get_extension_from_mimetype
 
 def get_collection_members(Fedora_client, collection_PID):
     '''
@@ -93,6 +93,10 @@ def get_datastream_as_file(obj, dsid, extension = ''):
     d = tempfile.mkdtemp()
     success = False
     tries = 10
+    # If extension is not set use the mimetype of the dsid to find one.
+    if not extension:
+        extension = get_extension_from_mimetype(obj[dsid].mimeType)[0]
+                
     filename = '%(dir)s/content.%(ext)s' % {'dir': d, 'ext': extension}
     while not success and tries > 0:
         with open(filename, 'w') as f:

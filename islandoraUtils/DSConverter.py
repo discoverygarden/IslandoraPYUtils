@@ -37,7 +37,7 @@ def create_thumbnail(obj, dsid, tnid):
     logger = logging.getLogger('islandoraUtils.DSConverter.create_thumbnail')
 
     # We receive a file and create a jpg thumbnail
-    directory, file = get_datastream_as_file(obj, dsid, "tmp")
+    directory, file = get_datastream_as_file(obj, dsid)
     
     # fine out what mimetype the input file is
     try:
@@ -63,17 +63,9 @@ def create_thumbnail(obj, dsid, tnid):
              '%sx%s' % tn_size, '-colorspace', 'rgb', 'jpg:%s'%tnfile])
    
     if r == 0:
-        update_datastream(obj, tnid, directory+'/'+tnid, label='thumbnail', mimeType='image/jpeg')
+        update_datastream(obj, tnid, tnfile, label='thumbnail', mimeType='image/jpeg')
     else :
-        # This might have completed fine and just sent back a warning.
-        if os.path.isfile(os.path.join(directory, tnid)):
-            update_datastream(obj,
-                              tnid,
-                              os.path.join(directory, tnid),
-                              label = 'thumbnail',
-                              mimeType = 'image/jpeg')
-        else:
-            logger.warning('PID:%s DSID:%s Thumbnail creation failed (return code:%d).' % (obj.pid, dsid, r))
+        logger.warning('PID:%s DSID:%s Thumbnail creation failed (return code:%d).' % (obj.pid, dsid, r))
        
     logger.debug(directory)
     logger.debug(file)
