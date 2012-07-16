@@ -12,6 +12,12 @@ from copy import copy
 def get_extension_from_mimetype(mimetype):
     '''
     This function will get the extensions that are applicable to a mimetype
+    
+    @param string mimetype:
+        The mimetype to match to extensions.
+    
+    @return list:
+        extensions the list matched to the mimetype.
     '''
     
     mapping = get_extension_mimetype_mapping()
