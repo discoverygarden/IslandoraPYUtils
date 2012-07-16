@@ -65,7 +65,15 @@ def create_thumbnail(obj, dsid, tnid):
     if r == 0:
         update_datastream(obj, tnid, directory+'/'+tnid, label='thumbnail', mimeType='image/jpeg')
     else :
-        logger.warning('PID:%s DSID:%s Thumbnail creation failed (return code:%d).' % (obj.pid, dsid, r))
+        # This might have completed fine and just sent back a warning.
+        if os.path.isfile(os.path.join(directory, tnid)):
+            update_datastream(obj,
+                              tnid,
+                              os.path.join(directory, tnid),
+                              label = 'thumbnail',
+                              mimeType = 'image/jpeg')
+        else:
+            logger.warning('PID:%s DSID:%s Thumbnail creation failed (return code:%d).' % (obj.pid, dsid, r))
        
     logger.debug(directory)
     logger.debug(file)
