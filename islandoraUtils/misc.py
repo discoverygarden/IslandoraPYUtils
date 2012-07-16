@@ -263,7 +263,7 @@ def getMimeType(extension):
 
     # this is the list of mime types defined in MimeClass.inc in islandora (commit f608652cf6421c2952100b451fe2d699cb1d8b63)
     
-    mimes = get_extension_mimetype_mapping
+    mimes = get_extension_mimetype_mapping()
     
     if ext in mimes:
         return mimes[ext]
