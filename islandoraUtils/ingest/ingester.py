@@ -508,7 +508,8 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                                             filter_to_images = False,
                                             extensions_to_filter_out = None,
                                             extensions_to_filter_to = None,
-                                            filter_by_time = None):
+                                            filter_by_time = None,
+                                            directories_to_ignore = []):
         '''
         This function will get all the files in a directory and all its'
         non-symlinked directories that are suitable for ingest.
@@ -533,6 +534,12 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
         #using unicode to handle if the file system is unicode
         list_of_paths_to_ingest = list()
         for path, dirs, files in os.walk(unicode(directory_to_walk)):
+            # Ignore a directory and sub dirs if specified in directories_to_ignore. 
+            if directories_to_ignore:
+                for directory in dirs:
+                    if os.path.join(path, directory) in directories_to_ignore:
+                        dirs.remove(directory)
+                            
             for file_name in files:
                 file_path = os.path.join(path, file_name)
                 list_of_paths_to_ingest.append(file_path)
