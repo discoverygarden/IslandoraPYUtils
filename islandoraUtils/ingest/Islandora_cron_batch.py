@@ -52,13 +52,17 @@ class Islandora_cron_batch(object):
         self._write_last_cron()
         
         self._Fedora_client = Fedora_client
-            
+        
+        self._sources_to_PIDs_cache = []
+        self._sources_to_PIDs_cache_limit = configuration['cron']['cache_limit']
+        
     @property
     def when_last_ran(self):
         '''
         The dictionary version of the ingest's configuration.
         '''
         return self._when_last_ran
+    
            
     def _write_last_cron(self):
         '''
@@ -138,11 +142,16 @@ class Islandora_cron_batch(object):
         source_relationship_name = config['relationships']['has_source_identifier_relationship_name']
         
         for source in list_of_sources:
+            # Check the cache before running the query.
+            results = self.check_cache_for_source(source)
+            if not results:
+                results = get_all_subjects_of_relationship(self._Fedora_client,
+                                                           source_relationship_namespace,
+                                                           source_relationship_name,
+                                                           source)
+                # Cache results.
+                self.cache_source_mapping(source, results)
             
-            results = get_all_subjects_of_relationship(self._Fedora_client,
-                                                       source_relationship_namespace,
-                                                       source_relationship_name,
-                                                       source)
             for result in results:
                 # Add to result set.
                 if sources_and_PIDs[source][0]:
@@ -181,3 +190,36 @@ class Islandora_cron_batch(object):
             rels_object.addRelationship(predicate, RDF_object)
         
         return
+    
+    def check_cache_for_source(self, source):
+        '''
+        This function is for querying the cache of source to PID mappings
+        
+        @param string source:
+            The identity of the source of the object(s).
+        
+        @return list:
+            Fedora_PIDs The list of pids associated with the source.
+        '''
+        for cached_source, Fedora_PIDs in self._sources_to_PIDs_cache:
+            if cached_source == source:
+                return Fedora_PIDs
+        return
+    
+    def cache_source_mapping(self, source, Fedora_PIDs):
+        '''
+        This function will store any result retrieved through
+        get_PIDs_for_sources up to the limit emposed by
+        self._sources_to_PIDs_cache_limit
+        
+        @param string source:
+            The string representing the source of the object(s).
+        @param list Fedora_PIDs:
+            The list of PIDs associated with the source.
+        '''
+        
+        self._sources_to_PIDs_cache.append((source, Fedora_PIDs))
+        
+        if len(self._sources_to_PIDs_cache) == self._sources_to_PIDs_cache_limit:
+            self._sources_to_PIDs_cache.pop(0)
+            
