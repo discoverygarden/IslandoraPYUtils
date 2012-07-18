@@ -22,6 +22,36 @@ from time import sleep
 import hashlib
 from islandoraUtils.misc import hash_file, get_extension_from_mimetype
 
+
+    
+def purge_related_objects(Fedora_client,
+                          Fedora_PID,
+                          relationship_namespace,
+                          relationship_name):
+    '''
+    Sometimes especialy in cron jobs that sync datastources
+    to Fedora it is necessary to delete objects that are 
+    derived or related to an origional object. This function
+    provides for that.  It will purge any objects that are 
+    related to the provided subject by a certain relationship.
+    
+    @param Fedora_PID:
+        The subject of the relationship.
+    @param relationship_namespace:
+        The namespace the relationship is found in.
+    @param relationship_name:
+        The unqualified name of the realtionship.
+    '''
+        
+    results = get_all_subjects_of_relationship(Fedora_client,
+                                               relationship_namespace,
+                                               relationship_name,
+                                               Fedora_PID)
+    for PID_to_purge in results:
+        Fedora_client.deleteObject(PID_to_purge)
+        
+    return
+
 def get_all_subjects_of_relationship(Fedora_client,
                                      relationship_namespace,
                                      relationship,

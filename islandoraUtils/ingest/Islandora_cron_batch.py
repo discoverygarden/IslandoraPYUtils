@@ -181,4 +181,3 @@ class Islandora_cron_batch(object):
             rels_object.addRelationship(predicate, RDF_object)
         
         return
-        
