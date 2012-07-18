@@ -17,12 +17,14 @@ Created on 2012-03-16
 '''
 import time
 import os
+from islandoraUtils.fedoraLib import get_all_subjects_of_relationship
 
 class Islandora_cron_batch(object):
     '''
     This class is meant to hold some helper code for handling 
     cron managed time sync something to Fedora ingests
-    checking if things are created or 'new' is not supported because it is not cross-platform
+    checking if things are created or 'new' is not supported 
+    because it is not cross-platform
     '''
 
     def __init__(self,
@@ -133,40 +135,26 @@ class Islandora_cron_batch(object):
         config = self._Islandora_configuration_object.configuration_dictionary
         
         source_relationship_namespace = config['relationships']['has_source_identifier_relationship_namespace']
-        source_relationship_namespace_alias = config['relationships']['has_source_identifier_relationship_namespace_alias']
         source_relationship_name = config['relationships']['has_source_identifier_relationship_name']
         
         for source in list_of_sources:
-            #construct basic query
-            query = 'PREFIX {0}: <{1}> \
-                     SELECT $object \
-                     FROM <#ri> \
-                     WHERE {{ \
-                       {{ \
-                         $object {0}:{2} "{3}" \
-                       }} \
-                     }}'.format(source_relationship_namespace_alias,
-                                source_relationship_namespace,
-                                source_relationship_name,
-                                source)
-                     
-            results = list(self._Fedora_client.searchTriples(query, limit = None))
             
-            # Ask Fedora for PID.
+            results = get_all_subjects_of_relationship(self._Fedora_client,
+                                                       source_relationship_namespace,
+                                                       source_relationship_name,
+                                                       source)
             for result in results:
-                # Remove: "info:fedora/"
-                Fedora_PID = result['object']['value'][12:]
                 # Add to result set.
                 if sources_and_PIDs[source][0]:
-                    sources_and_PIDs[source].append(Fedora_PID)
+                    sources_and_PIDs[source].append(result)
                 else:
-                    sources_and_PIDs[source] = [Fedora_PID]
+                    sources_and_PIDs[source] = [result]
                     
         return sources_and_PIDs
     
     def replace_relationships(self, rels_object, predicate, objects):
         '''
-        When writing a cron, it may be necessary to replace existing triple store
+        When writing a cron_syncing_ingest, it may be necessary to replace existing triple store
         relationships with updates.  This function will do that. It will not 
         run update on the rels_object.
         

@@ -22,7 +22,50 @@ from time import sleep
 import hashlib
 from islandoraUtils.misc import hash_file, get_extension_from_mimetype
 
-def get_collection_members(Fedora_client, collection_PID):
+def get_all_subjects_of_relationship(Fedora_client,
+                                     relationship_namespace,
+                                     relationship,
+                                     relationship_object):
+    '''
+    This function will run a simple query on the resource index while.
+    It will return all results.
+    @param Fedora_client:
+        The client object to use to query the resource index.
+    @param relationship_namesapce:
+        The namespace the relationship is in.
+    @param relationship
+        The relationship to query sans namespace.
+    @param relationship_object
+        The object of the relationship to query.
+    
+    @return list:
+        Fedora_PID_results the pids that match the query. Not the URIs.
+    '''
+    
+    query = 'PREFIX {0}: <{1}> \
+                     SELECT $object \
+                     FROM <#ri> \
+                     WHERE {{ \
+                       {{ \
+                         $object {0}:{2} "{3}" \
+                       }} \
+                     }}'.format('namespace_alias',
+                                relationship_namespace,
+                                relationship,
+                                relationship_object)
+                     
+    results = list(Fedora_client.searchTriples(query, limit = None))
+    Fedora_PID_results = []
+    
+    # Ask Fedora for PID.
+    for result in results:
+        # Remove: "info:fedora/"
+        Fedora_PID_results.append(result['object']['value'][12:])
+    
+    return Fedora_PID_results
+
+def get_collection_members(Fedora_client,
+                           collection_PID):
     '''
     This function will run a query against Fedora asking for all members of the 
     specified collection.
