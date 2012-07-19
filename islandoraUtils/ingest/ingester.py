@@ -453,6 +453,11 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
         @return list filtered_list_of_paths:
             The paths after illegal files have been removed.
         '''
+        
+        # Set filter by time if this is a cron and not overridden in parameters.
+        if filter_by_time == None:
+            filter_by_time = self._is_a_cron
+            
         #to handle unicode file names we convert all input strings to unicode
         if extensions_to_filter_out:
             extensions_to_filter_out = convert_members_to_unicode(extensions_to_filter_out)
@@ -461,6 +466,11 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
         
         filtered_list_of_paths = copy(list_of_paths)
         
+        # Kill by Time
+        if filter_by_time:
+            filtered_list_of_paths = self._cron_batch.find_files_requiring_action(list_of_paths)
+        
+        # Kill by file name issues.
         for file_path in list_of_paths:
             file_name = os.path.basename(file_path)
             #lower case extension
