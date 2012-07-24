@@ -8,6 +8,7 @@ that doesn't have a place anywhere else in the package
 
 import os, base64, hashlib, re, fnmatch
 from copy import copy
+from lxml import etree
 
 def get_extension_from_mimetype(mimetype):
     '''
@@ -438,6 +439,25 @@ def is_image(prospective_image_path):
         is_image = True
         
     return is_image
+
+def is_XLS_realy_XML(XLS_path):
+    '''
+    This function will check if a file is an XML (an old excel format)
+    masquerading as an XLS file.
+    
+    @param string XLS_path:
+        The path to check for XML content.
+    @return boolean:
+        True if the file is XML.
+        False if it is not XML.
+    '''
+    
+    try:
+        parser = etree.XMLParser()
+        etree.parse(XLS_path, parser)
+        return True
+    except:
+        return False
 
 if __name__ == '__main__':
     '''
