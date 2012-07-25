@@ -338,7 +338,7 @@ def create_pdf_and_swf(obj, dsid, pdfid, swfid):
     '''
     logger = logging.getLogger('islandoraUtils.DSConverter.create_pdf_and_swf')
     #recieve document and create a PDF with libre/open office if possible
-    directory, file = get_datastream_as_file(obj, dsid, "document")
+    directory, file = get_datastream_as_file(obj, dsid)
     document_file_path = os.path.join(directory, file)
     logger.info('DSConverter downloaded file to' + document_file_path)
     
