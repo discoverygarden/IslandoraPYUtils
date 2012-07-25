@@ -436,9 +436,9 @@ def is_image(prospective_image_path):
     mime_type = getMimeType(prospective_image_path)
     # Check for imageness.
     if 'image' in mime_type:
-        is_image = True
+        return True
         
-    return is_image
+    return False
 
 def is_XLS_realy_XML(XLS_path):
     '''
