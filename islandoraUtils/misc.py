@@ -6,10 +6,22 @@ that doesn't have a place anywhere else in the package
         
 '''
 
-import os, base64, hashlib, re, fnmatch
+import os, hashlib, re, fnmatch, subprocess
 from copy import copy
 from lxml import etree
 
+def start_office_headless():
+    '''
+    This function will attempt to start open/libre office headless on port 8100
+    
+    @return integer:
+        The return value of the subprocess call.
+    '''
+    return subprocess.call(['soffice',
+                            '-headless',
+                            '-nofirststartwizard',
+                            '-accept="socket,host=localhost,port=8100;urp;"'])
+    
 def get_extension_from_mimetype(mimetype):
     '''
     This function will get the extensions that are applicable to a mimetype

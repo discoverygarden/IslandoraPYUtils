@@ -14,8 +14,9 @@ for a new version of IslandoraPYUtils to keep backwards compatibility for now.
 '''
 
 from islandoraUtils.fedoraLib import get_datastream_as_file, update_datastream
-from islandoraUtils.DocumentConverter import DocumentConverter
+from islandoraUtils.DocumentConverter import DocumentConverter, DocumentConversionException
 from islandoraUtils.fileConverter import pdf_to_text_or_ocr, xps_to_pdf
+from islandoraUtils.misc import start_office_headless
 from shutil import rmtree, move
 from datetime import datetime
 import os
@@ -343,7 +344,14 @@ def create_pdf_and_swf(obj, dsid, pdfid, swfid):
     logger.info('DSConverter downloaded file to' + document_file_path)
     
     #convert file to pdf
-    document_converter = DocumentConverter()
+    try:
+        # @todo: move this try/except block into a function for possible reuse
+        document_converter = DocumentConverter()
+    except DocumentConversionException:
+        logger.warning('Trying to start open/libre office headless.')
+        start_office_headless()
+        document_converter = DocumentConverter()
+        
     path_to_PDF = os.path.join(os.path.splitext(document_file_path)[0] + '.pdf')
     #if open office fails to convert try ghostpdl
     try:
