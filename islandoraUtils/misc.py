@@ -433,7 +433,7 @@ def is_image(prospective_image_path):
         is_image
     '''
     # get mimetype
-    mime_type = getMimeType(prospective_image_path)
+    mime_type = get_mime_type_from_path(prospective_image_path)
     # Check for imageness.
     if 'image' in mime_type:
         return True
