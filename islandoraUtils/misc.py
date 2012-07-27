@@ -7,6 +7,7 @@ that doesn't have a place anywhere else in the package
 '''
 
 import os, hashlib, re, fnmatch, subprocess
+from time import sleep
 from copy import copy
 from lxml import etree
 
@@ -21,6 +22,8 @@ def start_office_headless():
                             '-headless',
                             '-nofirststartwizard',
                             '-accept="socket,host=localhost,port=8100;urp;"'])
+    # Trying to give the process time to start listening.
+    sleep(10)
     
 def get_extension_from_mimetype(mimetype):
     '''
