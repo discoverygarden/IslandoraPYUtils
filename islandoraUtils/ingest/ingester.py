@@ -366,10 +366,12 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                     
                     Fedora_object_datastream = Fedora_object[datastream['ID']]
                     Fedora_object_datastream.setContent(datastream_file_handle)
+                    
                 self._logger.info('Added ' + datastream['ID'] + ' datastream to: ' + PID + ' from: ' + datastream['filepath'])
-            except FedoraConnectionException:
+                
+            except (FedoraConnectionException, IOError):
                 self._logger.error('Error in adding ' + datastream['ID'] + ' datastream to:' + PID + ' from: ' + datastream['filepath'])
-        #set the datastream if it is managed datastream
+        # Set the datastream if it is not new.
         else:
             try:
                 if datastream['control_group'] == 'X':
@@ -382,7 +384,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                     Fedora_object_datastream = Fedora_object[datastream['ID']]
                     Fedora_object_datastream.setContent(datastream_file_handle)
                 self._logger.info('Updated ' + datastream['ID'] + ' datastream in:' + PID + ' from: ' + datastream['filepath'])
-            except FedoraConnectionException:
+            except (FedoraConnectionException, IOError):
                 self._logger.error('Error in updating ' + datastream['ID'] + ' datastream in:' + PID + ' from: ' + datastream['filepath'])
         datastream_file_handle.close()
         
