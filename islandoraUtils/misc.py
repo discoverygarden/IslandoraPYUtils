@@ -18,12 +18,13 @@ def start_office_headless():
     @return integer:
         The return value of the subprocess call.
     '''
-    return subprocess.call(['soffice',
+    result = subprocess.call(['soffice',
                             '-headless',
                             '-nofirststartwizard',
                             '-accept=socket,host=localhost,port=8100;urp;'])
     # Trying to give the process time to start listening.
     sleep(10)
+    return result
     
 def get_extension_from_mimetype(mimetype):
     '''
