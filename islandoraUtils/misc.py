@@ -21,7 +21,7 @@ def start_office_headless():
     return subprocess.call(['soffice',
                             '-headless',
                             '-nofirststartwizard',
-                            '-accept="socket,host=localhost,port=8100;urp;"'])
+                            '-accept=socket,host=localhost,port=8100;urp;'])
     # Trying to give the process time to start listening.
     sleep(10)
     
