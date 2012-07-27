@@ -82,23 +82,31 @@ class Islandora_cron_batch(object):
         '''
         This method will figure out if the file needs to be operated on.
         
-        @param file_path: the path to the file that must be evaluated for cron work
+        @param file_path:
+            the path to the file that must be evaluated for cron work
         
-        @return boolean: Returns true if the file has been modified since the last cron
+        @return boolean:
+            Returns true if the file has been modified since the last cron,
+            Returns false if the file no longer exists
         '''
         #get timestamp
-        timestamp = os.path.getmtime(file_path)
+        try: 
+            timestamp = os.path.getmtime(file_path)
+        except OSError:
+            return False
         #call to internal timestamp math func
         return self.does_timestamp_require_action(timestamp)
     
     def find_files_requiring_action(self,
                                     list_of_file_paths):
         '''
-        This method returns the files that have been changed since the last time a cron was ran
+        This method returns the files that have been changed since the last time a cron was ran.
         
-        @param list_of_file_paths: a list of file paths to filter for cron work
+        @param list_of_file_paths:
+            A list of file paths to filter for cron work
         
-        @return files_requiring_action: the list of files requiring cron work
+        @return files_requiring_action:
+            The list of files requiring cron work
         '''
         files_requiring_action = []
         for file_path in list_of_file_paths:
