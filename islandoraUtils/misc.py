@@ -22,8 +22,12 @@ def start_office_headless():
                             '-headless',
                             '-nofirststartwizard',
                             '-accept=socket,host=localhost,port=8100;urp;'])
-    # Trying to give the process time to start listening.
-    sleep(10)
+    '''
+    Trying to give the process time to start listening.
+    This can probably be lower, but the risk is great vs the
+    lost time.
+    ''' 
+    sleep(100)
     return result
     
 def get_extension_from_mimetype(mimetype):
