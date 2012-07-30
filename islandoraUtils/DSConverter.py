@@ -23,7 +23,6 @@ import os, re, logging
 import subprocess
 from lxml import etree
 from fcrepo.connection import FedoraConnectionException
-from uno import RuntimeException
 
 # thumbnail constants
 tn_postfix = '-tn.jpg'
@@ -350,8 +349,8 @@ def create_pdf_and_swf(obj, dsid, pdfid, swfid):
         logger.warning('Trying to start open/libre office headless.')
         start_office_headless()
         document_converter = DocumentConverter()
-    except RuntimeException:
-        logger.warning('Experienceing uno.RuntimeException, trying restart of soffice.')
+    except:
+        logger.warning('Had an exception trying to get DocumentConverter, trying restart of soffice.')
         restart_office_headless()
         document_converter = DocumentConverter()
         
