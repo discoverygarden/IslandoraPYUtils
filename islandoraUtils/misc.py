@@ -6,10 +6,40 @@ that doesn't have a place anywhere else in the package
         
 '''
 
-import os, hashlib, re, fnmatch, subprocess
+import os, hashlib, re, fnmatch, subprocess, signal
 from time import sleep
 from copy import copy
 from lxml import etree
+
+
+def restart_office_headless():
+    '''
+    This function will simply try to restart soffice service.
+    '''
+    
+    stop_office_headless()
+    start_office_headless()
+    return
+
+def stop_office_headless():
+    '''
+    This function will attempt to stop open/libre office headless.
+    '''
+    processname = '/usr/lib/openoffice/program/soffice.bin'
+    
+    for line in os.popen("ps xa"):
+        fields = line.split()
+        pid = fields[0]
+        process = fields[4]
+        
+        if processname in process:
+            os.kill(int(pid), signal.SIGKILL)
+        
+        # Restart the process
+        os.system(processname)
+        
+        return
+    
 
 def start_office_headless():
     '''

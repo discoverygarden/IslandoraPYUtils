@@ -16,15 +16,14 @@ for a new version of IslandoraPYUtils to keep backwards compatibility for now.
 from islandoraUtils.fedoraLib import get_datastream_as_file, update_datastream
 from islandoraUtils.DocumentConverter import DocumentConverter, DocumentConversionException
 from islandoraUtils.fileConverter import pdf_to_text_or_ocr, xps_to_pdf
-from islandoraUtils.misc import start_office_headless
+from islandoraUtils.misc import start_office_headless, restart_office_headless
 from shutil import rmtree, move
 from datetime import datetime
-import os
+import os, re, logging
 import subprocess
-import logging
 from lxml import etree
 from fcrepo.connection import FedoraConnectionException
-import re
+from uno import RuntimeException
 
 # thumbnail constants
 tn_postfix = '-tn.jpg'
@@ -350,6 +349,10 @@ def create_pdf_and_swf(obj, dsid, pdfid, swfid):
     except DocumentConversionException:
         logger.warning('Trying to start open/libre office headless.')
         start_office_headless()
+        document_converter = DocumentConverter()
+    except RuntimeException:
+        logger.warning('Experienceing uno.RuntimeException, trying restart of soffice.')
+        restart_office_headless()
         document_converter = DocumentConverter()
         
     path_to_PDF = os.path.join(os.path.splitext(document_file_path)[0] + '.pdf')

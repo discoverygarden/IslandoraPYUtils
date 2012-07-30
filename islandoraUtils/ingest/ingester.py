@@ -2,9 +2,7 @@
 Created on 2012-03-19
 
 @author: William Panting
-@TODO: properties configuration and logger, also accept overrides for all objects used in constructor
-@TODO: a function for creating/deleting the tmp dir
-
+@TODO: accept overrides for all objects used in constructor
 '''
 import os, json, sys
 
@@ -335,9 +333,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
             string of source
             dict defining datastream
         @param string datastream_ID:
-            ignored if datstream is a dict.
-            
-        #@TODO:look into: loop through datastreams adding them to inline or managed based on mimetype
+            ignored if datastream is a dict.
         '''
         PID = Fedora_object.pid
         if not isinstance(datastream, dict):
@@ -564,3 +560,15 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                                                                filter_by_time)
         
         return list_of_paths_to_ingest
+
+    def remove_temporary_directory(self):
+        '''
+        This function will remove the temporary directory.
+        '''
+        
+        # Remove temporary directory if it exists and one is in the configuration.
+        if 'temporary_directory' in self._configuration['miscellaneous']:
+            if os.path.exists(self._configuration['miscellaneous']['temporary_directory']):
+                os.remove(self._configuration['miscellaneous']['temporary_directory'])
+                
+        return

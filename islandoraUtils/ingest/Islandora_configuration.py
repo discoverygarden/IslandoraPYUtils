@@ -3,7 +3,6 @@ Created on 2012-03-16
 
 @author: William Panting
 @TODO: should check for exceptions and log errors for missing important files/sections etc., 
-@TODO: we'll need to accept a logger
 '''
 import ConfigParser
 from islandoraUtils.misc import config_parser_to_dict
