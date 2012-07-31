@@ -127,7 +127,6 @@ It explodes on non expanded pb tags. it will likely break on expanded ones
         first_page_sentinal = True
         root_text_sentinal = 0 #to be considered true only if ==1
         page_number = False
-        pb_parent = etree.Element
         DoNotRepeat_list = list()
         #go through file until eof
         for event, elem in TEI_iterator:
