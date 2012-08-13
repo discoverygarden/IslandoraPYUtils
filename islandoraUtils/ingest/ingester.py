@@ -98,19 +98,23 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
         except FedoraConnectionException:
             self._logger.error('Error connecting to Fedora')
         
-        self._is_a_cron = False
         if is_a_cron:
             self._is_a_cron = True
             if not Islandora_cron_batch_object:
                 self._cron_batch = Islandora_cron_batch(self._Fedora_client, my_Islandora_configuration)
             else:
                 self._cron_batch = Islandora_cron_batch_object
-                
+        else:
+            self._is_a_cron = False
+            
         if not default_Fedora_namespace:#unicode because of fcrepo
             self._default_Fedora_namespace = unicode(self._configuration['miscellaneous']['default_fedora_pid_namespace'])#no caps in configParser
         else:
             self._default_Fedora_namespace = unicode(default_Fedora_namespace)
             
+        
+        # Store the configuration object for future use
+        self._Islandora_configuration = my_Islandora_configuration
         
         #pyrelationships 
         self._Fedora_model_namespace = fedora_relationships.rels_namespace('fedora-model','info:fedora/fedora-system:def/model#')
@@ -140,6 +144,13 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
         The dictionary version of the ingest's configuration.
         '''
         return self._configuration
+    
+    @property
+    def configuration_object(self):
+        '''
+        The Islandora_configuration object version of the ingest's configuration.
+        '''
+        return self._Islandora_configuration
     
     @property
     def cron_batch(self):

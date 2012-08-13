@@ -46,7 +46,9 @@ class Islandora_cron_batch(object):
             configuration = Islandora_configuration_object.configuration_dictionary
             if 'cron' in configuration:
                 if 'when_last_ran' in configuration['cron']:
-                    self._when_last_ran = float(configuration['cron']['when_last_ran'])#needs to be a number for comparisons
+                    # If when_last_ran is None it has never been ran before
+                    if not configuration['cron']['when_last_ran'] == 'None':
+                        self._when_last_ran = float(configuration['cron']['when_last_ran'])#needs to be a number for comparisons
         
         self._when_last_ran = getattr(self, '_when_last_ran', when_last_ran)
         self._write_last_cron()
@@ -68,15 +70,8 @@ class Islandora_cron_batch(object):
         '''
         This function will write to the configuration the timestamp associated with this instance of the cron batch
         '''
-        if self._Islandora_configuration_object:
-            islandora_configuration_parser = self._Islandora_configuration_object.configuration_parser
-            if not islandora_configuration_parser.has_section('cron'):
-                islandora_configuration_parser.add_section('cron')
-            islandora_configuration_parser.set('cron', 'when_last_ran', str(time.time()))
-            configuration_file_handle = self._Islandora_configuration_object.configuration_file_write_handle
-            islandora_configuration_parser.write(configuration_file_handle)
-            configuration_file_handle.close()
-                    
+        self._Islandora_configuration_object.save_configuration_variable('cron', 'when_last_ran', str(time.time()))
+
     def does_file_require_action(self,
                                  file_path):
         '''

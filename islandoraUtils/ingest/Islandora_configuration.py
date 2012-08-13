@@ -49,6 +49,30 @@ when_last_ran:timestamp_here
         #loop through he configuration file sections and dump the config to a dictionary
         self._configuration_dictionary = config_parser_to_dict(self._configuration_parser)
 
+    
+    def save_configuration_variable(self, group, variable, value):
+        '''
+        This is only meant to alter variables that are already present in the configuration.
+        Please start with a representative configuration.
+        
+        @param string group:
+            The group the variable belongs to.
+        @param string variable:
+            The name of the variable to set.
+        @param string value:
+            The value to set the variable to.
+        '''
+        # Set cached value.
+        self._configuration_dictionary[group][variable] = value
+        
+        # Set value in file.
+        self._configuration_parser.set(group, variable, value)
+        configuration_file_write_handle = self.configuration_file_write_handle
+        self._configuration_parser.write(configuration_file_write_handle)
+        configuration_file_write_handle.close()
+        
+        return
+    
     @property
     def configuration_parser(self):
         '''
