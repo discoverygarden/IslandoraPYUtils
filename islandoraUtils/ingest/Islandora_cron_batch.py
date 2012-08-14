@@ -30,7 +30,8 @@ class Islandora_cron_batch(object):
     def __init__(self,
                  Fedora_client,
                  Islandora_configuration_object = None,
-                 when_last_ran = 0):
+                 when_last_ran = 0,
+                 time_math_margin = 0):
         '''
         Constructor!!!
         
@@ -46,11 +47,17 @@ class Islandora_cron_batch(object):
             configuration = Islandora_configuration_object.configuration_dictionary
             if 'cron' in configuration:
                 if 'when_last_ran' in configuration['cron']:
-                    # If when_last_ran is None it has never been ran before
+                    # If when_last_ran is None it has never been ran before.
                     if not configuration['cron']['when_last_ran'] == 'None':
-                        self._when_last_ran = float(configuration['cron']['when_last_ran'])#needs to be a number for comparisons
+                        self._when_last_ran = float(configuration['cron']['when_last_ran'])
+                if 'time_math_margin' in configuration['cron']:
+                    # If time_math_margin is None don't set it.
+                    if not configuration['cron']['time_math_margin'] == 'None':
+                        self._time_math_margin = float(configuration['cron']['time_math_margin'])
         
         self._when_last_ran = getattr(self, '_when_last_ran', when_last_ran)
+        self._time_math_margin = getattr(self, '_time_math_margin', time_math_margin)
+        
         self._write_last_cron()
         
         self._Fedora_client = Fedora_client
@@ -119,7 +126,7 @@ class Islandora_cron_batch(object):
         @return boolean: timestamp >= self._when_last_ran
         '''
         
-        return timestamp >= self._when_last_ran
+        return timestamp >= self._when_last_ran - self._time_math_margin
     
     def get_PIDs_for_sources(self,
                              list_of_sources):
