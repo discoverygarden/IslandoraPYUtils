@@ -50,7 +50,7 @@ def create_thumbnail(obj, dsid, tnid):
     else:
         # Make a thumbnail with convert
         r = subprocess.call(['convert', '%s[0]' % infile, '-thumbnail', \
-             '%sx%s' % tn_size, '-colorspace', 'rgb', 'jpg:%s'%tnfile])
+             '%sx%s' % tn_size, '-colorspace', 'rgb', '+profile', '*', 'jpg:%s'%tnfile])
    
     if r == 0:
         update_datastream(obj, tnid, directory+'/'+tnid, label='thumbnail', mimeType='image/jpeg')
@@ -103,10 +103,13 @@ def create_mp4(obj, dsid, mp4id):
     # is 25fps no matter what it is, so we need to get that
     p = subprocess.Popen(['mediainfo', infile], stdout=subprocess.PIPE)
     out, err = p.communicate()
-    #logger.debug('Mediainfo: %s' % out)
+    logger.debug('Mediainfo: %s' % out)
 
     # we need the framerate this is sort of ugly
-    frame_rate = re.search('Frame rate\s*:\s*(\d*\.\d*) fps', out).group(1)
+    try:
+        frame_rate = re.search('Frame rate\s*:\s*(\d*\.\d*) fps', out).group(1)
+    except:
+        frame_rate = None
     if not frame_rate:
         frame_rate = '30'
 
