@@ -84,7 +84,8 @@ def update_datastream(obj, dsid, filename, label='', mimeType='', controlGroup='
 
     @param obj:
     @param dsid:
-    @param filename:
+    @param filename: If this datastream is X or M. This is a filename as a string.
+      If its R or E then it should be a URL as a string.
     @param label:
     @param mimeType:
     @param controlGroup:
@@ -134,14 +135,15 @@ def update_datastream(obj, dsid, filename, label='', mimeType='', controlGroup='
 
         url += '&checksumType=%(checksumType)s&checksum=%(checksum)s' % info_dict
 
-    # Using curl due to an incompatibility with the pyfcrepo library.
-    #Go figure...  You'd think that instead of [..., '-F', 'file=@%(filename)s', ...], you should be using [..., '--data-binary', '@%(filename)s', ...], but the latter here fails to upload text correctly...
-    #Strictly, 'update' (modify) should use HTTP PUT, while add should use HTTP POST...  There doesn't really seem to be a difference, though...
     commands = ['curl', '-i', '-H', '-f', '-u', '%(username)s:%(password)s' % info_dict]
     if info_dict['controlgroup'] in ['R', 'E']:
         url += '&dsLocation=%(filename)s' % info_dict
     else:
-        commands.extend(['-F', 'file=@%(filename)s' % info_dict])
+        if(os.path.isfile(filename)):
+            commands.extend(['-F', 'file=@%(filename)s' % info_dict])
+        else:
+            logger.error('Failed updating %(pid)s/%(dsid)s. %(filename)s doesnt exist!' % info_dict)
+            return False
 
     commands.extend(['-XPOST', url])
 
