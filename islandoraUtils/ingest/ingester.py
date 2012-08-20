@@ -228,7 +228,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
             
         #if datastream label not supplied build it based on archival ds path
         if not object_label:
-            if isinstance(archival_datastream, str):
+            if isinstance(archival_datastream, basestring):
                 object_label = archival_datastream
             elif isinstance(archival_datastream, dict):
                 object_label = archival_datastream['filepath']
@@ -240,7 +240,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
         #set the source
         if self._is_a_cron:
             if not sources:
-                if isinstance(archival_datastream, str):
+                if isinstance(archival_datastream, basestring):
                     sources = [archival_datastream]
                 elif isinstance(archival_datastream, dict):
                     sources = [archival_datastream['filepath']]
@@ -249,7 +249,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                 
         
         #normalize parameters to a list of dictionaries of what datastreams to ingest
-        if isinstance(archival_datastream, str):
+        if isinstance(archival_datastream, basestring):
             archival_datastream_dict = {'filepath':archival_datastream,
                                         'label':path_to_label(archival_datastream),
                                         'mimetype':get_mime_type_from_path(archival_datastream),
@@ -257,7 +257,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                                         'control_group':'M'}
             archival_datastream = archival_datastream_dict
             
-        if isinstance(metadata_datastream, str):
+        if isinstance(metadata_datastream, basestring):
             metadata_datastream_dict = {'filepath':metadata_datastream,
                                         'label':path_to_label(metadata_datastream),
                                         'mimetype':get_mime_type_from_path(metadata_datastream),
