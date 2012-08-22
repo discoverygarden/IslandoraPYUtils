@@ -15,8 +15,7 @@ Created on 2012-03-16
         has_source_datastream_relationship_name:a_sane_rdf_name
     
 '''
-import time
-import os
+import time, os, datetime
 from islandoraUtils.fedoraLib import get_all_subjects_of_relationship
 
 class Islandora_cron_batch(object):
@@ -68,9 +67,16 @@ class Islandora_cron_batch(object):
     @property
     def when_last_ran(self):
         '''
-        The dictionary version of the ingest's configuration.
+        Timestamp of the begining of the last ingest.
         '''
         return self._when_last_ran
+    
+    @property
+    def UTC_when_last_ran(self):
+        '''
+        UTC string of the begining of the last ingest.
+        '''
+        return datetime.datetime.utcfromtimestamp(self._when_last_ran)
     
            
     def _write_last_cron(self):
