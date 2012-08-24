@@ -292,15 +292,29 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
             else:
                 objRelsExt = fedora_relationships.rels_ext(Fedora_object, self._Fedora_model_namespace)
             
-            # Collection relationships.
-            self.cron_batch.replace_relationships(objRelsExt,
-                                                  'isMemberOfCollection',
-                                                  collections)
-            # Content model relationships.
-            self.cron_batch.replace_relationships(objRelsExt,
-                                                  fedora_relationships.rels_predicate('fedora-model','hasModel'),
-                                                  content_models)
+            if self._is_a_cron:
+                # Collection relationships.
+                self.cron_batch.replace_relationships(objRelsExt,
+                                                      'isMemberOfCollection',
+                                                      collections)
+                # Content model relationships.
+                self.cron_batch.replace_relationships(objRelsExt,
+                                                      fedora_relationships.rels_predicate('fedora-model','hasModel'),
+                                                      content_models)
             
+            # If it isn't a cron we need to only add the relationships
+            else:
+                # Collection relationships.
+                for collection in collections:
+                    if isinstance(collection, str):
+                        unicode(collection)
+                    objRelsExt.addRelationship('isMemberOfCollection', collection)
+                # Content model relationships.
+                for content_model in content_models:
+                    if isinstance(content_model, str):
+                        unicode(content_model)
+                    objRelsExt.addRelationship(fedora_relationships.rels_predicate('fedora-model','hasModel'),
+                                               content_model)
             # Source relationships.
             if self._is_a_cron and sources:
                 source_relationship_name = self.configuration['relationships']['has_source_identifier_relationship_name']
