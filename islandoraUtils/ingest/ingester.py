@@ -4,7 +4,7 @@ Created on 2012-03-19
 @author: William Panting
 @TODO: accept overrides for all objects used in constructor
 '''
-import os, json, sys
+import os, json, csv
 
 from fcrepo.connection import Connection, FedoraConnectionException
 from fcrepo.client import FedoraClient
@@ -16,7 +16,8 @@ from islandoraUtils.ingest.Islandora_logger import Islandora_logger
 from islandoraUtils.ingest.Islandora_cron_batch import Islandora_cron_batch
 from islandoraUtils.ingest.Islandora_alerter import Islandora_alerter
 from islandoraUtils.metadata import fedora_relationships
-from islandoraUtils.misc import get_mime_type_from_path, path_to_datastream_ID, path_to_label, convert_members_to_unicode
+from islandoraUtils.misc import get_mime_type_from_path, path_to_datastream_ID, path_to_label,\
+                                convert_members_to_unicode, convert_string_to_timestamp
 
 class ingester(object):
     '''
@@ -91,8 +92,8 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
             
         #Fedora connection through fcrepo, should not be done before custom logger because the first settings on root logger are immutable
         self._fcrepo_connection = Connection(self._configuration['Fedora']['url'],
-                        username=self._configuration['Fedora']['username'],
-                         password=self._configuration['Fedora']['password'])
+                                             username = self._configuration['Fedora']['username'],
+                                             password = self._configuration['Fedora']['password'])
         try:
             self._Fedora_client = FedoraClient(self._fcrepo_connection)
         except FedoraConnectionException:
@@ -107,8 +108,9 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
         else:
             self._is_a_cron = False
             
-        if not default_Fedora_namespace:#unicode because of fcrepo
-            self._default_Fedora_namespace = unicode(self._configuration['miscellaneous']['default_fedora_pid_namespace'])#no caps in configParser
+        if not default_Fedora_namespace:
+            # No caps in configParser.
+            self._default_Fedora_namespace = unicode(self._configuration['miscellaneous']['default_fedora_pid_namespace'])
         else:
             self._default_Fedora_namespace = unicode(default_Fedora_namespace)
             
@@ -124,6 +126,11 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
             if not os.path.exists(self._configuration['miscellaneous']['temporary_directory']):
                 os.makedirs(self._configuration['miscellaneous']['temporary_directory'])
         
+        try:
+            self._sync_time_format = self._configuration['cron']['sync_report_time_format']
+        except KeyError:
+            self._sync_time_format = None
+            
     @property
     def alerter(self):
         '''
@@ -478,7 +485,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
         '''
         
         # Set filter by time if this is a cron and not overridden in parameters.
-        if filter_by_time == None:
+        if filter_by_time is None:
             filter_by_time = self._is_a_cron
             
         #to handle unicode file names we convert all input strings to unicode
@@ -503,22 +510,24 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                 if not file_extension in extensions_to_filter_to:
                     if file_path in filtered_list_of_paths:
                         filtered_list_of_paths.remove(file_path)
-            
+
             if file_name in convert_members_to_unicode(json.loads(self._configuration['filtering']['prohibited_file_names'])):
                 if file_path in filtered_list_of_paths:
                     filtered_list_of_paths.remove(file_path)
+
             if file_extension in convert_members_to_unicode(json.loads(self._configuration['filtering']['prohibited_file_extensions'])):
                 if file_path in filtered_list_of_paths:
                     filtered_list_of_paths.remove(file_path)
+
             if extensions_to_filter_out:
                 if file_extension in extensions_to_filter_out:
                     if file_path in filtered_list_of_paths:
                         filtered_list_of_paths.remove(file_path)
-                
+
             if file_name.startswith(tuple(convert_members_to_unicode(json.loads(self._configuration['filtering']['prohibited_file_prefixes'])))):
                 if file_path in filtered_list_of_paths:
                     filtered_list_of_paths.remove(file_path)
-                
+
             if filter_to_documents:
                 if not file_extension in convert_members_to_unicode(json.loads(self._configuration['filtering']['allowed_document_extensions'])):
                     if file_path in filtered_list_of_paths:
@@ -528,9 +537,9 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                 if not file_extension in convert_members_to_unicode(json.loads(self._configuration['filtering']['allowed_image_extensions'])):
                     if file_path in filtered_list_of_paths:
                         filtered_list_of_paths.remove(file_path)
-            
+        
         # Filter by timestamp. This is expensive so I want it last
-        if self._is_a_cron:
+        if filter_by_time:
             filtered_list_of_paths = self.cron_batch.find_files_requiring_action(filtered_list_of_paths)
                 
         return filtered_list_of_paths
@@ -562,30 +571,95 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
         
         @return list list_of_paths_to_ingest:
             The completed list of files to ingest, they will be unicode strings.
-        '''
         
-        #using unicode to handle if the file system is unicode
-        list_of_paths_to_ingest = list()
-        for path, dirs, files in os.walk(unicode(directory_to_walk)):
-            # Ignore a directory and sub dirs if specified in directories_to_ignore. 
-            if directories_to_ignore:
-                for directory in dirs:
-                    if os.path.join(path, directory) in directories_to_ignore:
-                        dirs.remove(directory)
-                            
-            for file_name in files:
-                file_path = os.path.join(path, file_name)
-                list_of_paths_to_ingest.append(file_path)
-                
-        list_of_paths_to_ingest = self.filter_files_for_ingest(list_of_paths_to_ingest,
-                                                               filter_to_documents,
-                                                               filter_to_images,
-                                                               extensions_to_filter_out,
-                                                               extensions_to_filter_to,
-                                                               filter_by_time)
+        @todo: have report based program path respect directory filtering
+        '''
+        report_dict = self.retrieve_filesystem_report(directory_to_walk)
+        
+        # Using unicode to handle if the file system is unicode.
+        if report_dict:
+            list_of_paths_to_ingest = report_dict.keys()
+            list_of_paths_to_ingest = self.filter_files_for_ingest(list_of_paths_to_ingest,
+                                                                   filter_to_documents,
+                                                                   filter_to_images,
+                                                                   extensions_to_filter_out,
+                                                                   extensions_to_filter_to,
+                                                                   filter_by_time = False)
+            
+            for path_to_ingest in copy(list_of_paths_to_ingest):
+                if not self._cron_batch.does_timestamp_require_action(convert_string_to_timestamp(report_dict[path_to_ingest],
+                                                                                                  self._sync_time_format)):
+                    list_of_paths_to_ingest.remove(path_to_ingest)
+        else:
+            list_of_paths_to_ingest = list()
+            for path, dirs, files in os.walk(unicode(directory_to_walk)):
+                # Ignore a directory and sub dirs if specified in directories_to_ignore. 
+                if directories_to_ignore:
+                    for directory in dirs:
+                        if os.path.join(path, directory) in directories_to_ignore:
+                            dirs.remove(directory)
+                                
+                for file_name in files:
+                    file_path = os.path.join(path, file_name)
+                    list_of_paths_to_ingest.append(file_path)
+            
+            list_of_paths_to_ingest = self.filter_files_for_ingest(list_of_paths_to_ingest,
+                                                                   filter_to_documents,
+                                                                   filter_to_images,
+                                                                   extensions_to_filter_out,
+                                                                   extensions_to_filter_to,
+                                                                   filter_by_time)
         
         return list_of_paths_to_ingest
-
+    
+    def retrieve_filesystem_report(self, parent_directory):
+        '''
+        This function will retrieve the state of the file tree under
+        a directory
+        
+        @param parent_directory:
+            The directory that the report is to be retrieved from.
+            
+        @return dictionary:
+            The report in dictionary format {'path':'last_modified_time'}
+        '''
+        filesystem_info = dict()
+        
+        # If this directory does not exist return an empty dict.
+        if os.path.isdir(parent_directory):
+            
+            # If there is no name in the config return an empty dict.
+            try:
+                report_file_base_name = self._configuration['cron']['file_system_sync_report_file_name']
+            except KeyError:
+                return filesystem_info
+            
+            report_file_abspath = os.path.join(parent_directory, report_file_base_name)
+            
+            # Return an empty dict if the report is not present, @todo:refactor to exception.
+            if not os.path.isfile(report_file_abspath):
+                return filesystem_info
+            
+            with open(report_file_abspath, "rb") as report_file_handle:
+                
+                self._logger.info('Found filesystem sync report, reading CSV.')
+                
+                # We only need a timestamp if it is a cron.
+                if self._is_a_cron:
+                    report = csv.DictReader(report_file_handle, ['file_path', 'timestamp'])
+                else:
+                    report = csv.DictReader(report_file_handle, ['file_path'])
+                for row in report:
+                    if self._is_a_cron:
+                        timestamp = row['timestamp']
+                    else:
+                        timestamp = None
+                    file_path = unicode(row['file_path'])
+                    filesystem_info[file_path] = timestamp
+                    self._logger.debug('file_path: {0}   timestamp: {1}'.format(file_path,timestamp))
+            
+        return filesystem_info
+    
     def remove_temporary_directory(self):
         '''
         This function will remove the temporary directory.

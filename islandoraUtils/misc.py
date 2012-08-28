@@ -6,11 +6,28 @@ that doesn't have a place anywhere else in the package
         
 '''
 
-import os, hashlib, re, fnmatch, subprocess, signal
+import os, hashlib, re, fnmatch, subprocess, signal, datetime, time
 from time import sleep
 from copy import copy
 from lxml import etree
 
+def convert_string_to_timestamp(time_string, time_format = "%Y-%m-%dT%H:%M:%S"):
+    '''
+    This function will convert a UTC string to a timestamp
+    unless an override time_format is provided.
+    
+    @param string time_string:
+    @param string time_format: 
+        A string representing a time format and recognize by datetime.datetime.strptime
+        
+    @return timestamp:
+        A unix timestamp corresponding to the time string.
+    '''
+
+    datetime_obj = datetime.datetime.strptime(time_string, time_format)
+    timestamp = time.mktime(datetime_obj.timetuple())
+    
+    return timestamp
 
 def restart_office_headless():
     '''
