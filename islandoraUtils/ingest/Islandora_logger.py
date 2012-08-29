@@ -42,6 +42,9 @@ class Islandora_logger(object):
             pass
         elif 'level' in configuration['logging']:
             log_level = int(configuration['logging']['level'])
+        # Set to DEBUG if root because of fcrepo, needs to be something by default
+        elif logger_name == 'root':
+            log_level = logging.DEBUG
         elif not logger_name:
             log_level = logging.INFO
         

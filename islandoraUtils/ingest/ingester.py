@@ -121,15 +121,32 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
         #pyrelationships 
         self._Fedora_model_namespace = fedora_relationships.rels_namespace('fedora-model','info:fedora/fedora-system:def/model#')
         
-        #create temporary directory if it does not exist and one is in the configuration
+        # Create temporary directory if it does not exist and one is in the configuration.
         if 'temporary_directory' in self._configuration['miscellaneous']:
             if not os.path.exists(self._configuration['miscellaneous']['temporary_directory']):
                 os.makedirs(self._configuration['miscellaneous']['temporary_directory'])
         
+        # Set some variables to do with sync reports.
         try:
             self._sync_time_format = self._configuration['cron']['sync_report_time_format']
         except KeyError:
             self._sync_time_format = None
+        
+        try:
+            self._report_file_base_name = self._configuration['data_directories']['file_system_sync_report_file_name']
+        except KeyError:
+            self._report_file_base_name = None
+        
+        try:
+            self._path_prefixes_to_replace = self._configuration['data_directories']['path_prefixes_to_replace']
+            self._path_prefixes_to_replace = sorted(json.loads(self._path_prefixes_to_replace), key = len)
+        except KeyError:
+            self._path_prefixes_to_replace = None
+            
+        try:
+            self._replacement_path_prefix = self._configuration['data_directories']['replacement_path_prefix']
+        except KeyError:
+            self._replacement_path_prefix = None
             
     @property
     def alerter(self):
@@ -574,22 +591,30 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
         
         @todo: have report based program path respect directory filtering
         '''
-        report_dict = self.retrieve_filesystem_report(directory_to_walk)
+        report_dict = self._retrieve_filesystem_report(directory_to_walk)
         
         # Using unicode to handle if the file system is unicode.
         if report_dict:
             list_of_paths_to_ingest = report_dict.keys()
+            # Filter files
             list_of_paths_to_ingest = self.filter_files_for_ingest(list_of_paths_to_ingest,
                                                                    filter_to_documents,
                                                                    filter_to_images,
                                                                    extensions_to_filter_out,
                                                                    extensions_to_filter_to,
                                                                    filter_by_time = False)
-            
+            # Filter by time.
             for path_to_ingest in copy(list_of_paths_to_ingest):
                 if not self._cron_batch.does_timestamp_require_action(convert_string_to_timestamp(report_dict[path_to_ingest],
                                                                                                   self._sync_time_format)):
                     list_of_paths_to_ingest.remove(path_to_ingest)
+            
+            # Adapt paths
+            for path_to_ingest in copy(list_of_paths_to_ingest):
+                processed_path_to_ingest = self._replace_start_of_sync_report_path(path_to_ingest)
+                if not path_to_ingest == processed_path_to_ingest:
+                    list_of_paths_to_ingest.remove(path_to_ingest)
+                    list_of_paths_to_ingest.append(processed_path_to_ingest)
         else:
             list_of_paths_to_ingest = list()
             for path, dirs, files in os.walk(unicode(directory_to_walk)):
@@ -612,7 +637,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
         
         return list_of_paths_to_ingest
     
-    def retrieve_filesystem_report(self, parent_directory):
+    def _retrieve_filesystem_report(self, parent_directory):
         '''
         This function will retrieve the state of the file tree under
         a directory
@@ -625,16 +650,14 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
         '''
         filesystem_info = dict()
         
+        # If there is no name given for the report file.
+        if self._report_file_base_name is None:
+            return filesystem_info
+        
         # If this directory does not exist return an empty dict.
         if os.path.isdir(parent_directory):
             
-            # If there is no name in the config return an empty dict.
-            try:
-                report_file_base_name = self._configuration['cron']['file_system_sync_report_file_name']
-            except KeyError:
-                return filesystem_info
-            
-            report_file_abspath = os.path.join(parent_directory, report_file_base_name)
+            report_file_abspath = os.path.join(parent_directory, self._report_file_base_name)
             
             # Return an empty dict if the report is not present, @todo:refactor to exception.
             if not os.path.isfile(report_file_abspath):
@@ -659,6 +682,34 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                     self._logger.debug('file_path: {0}   timestamp: {1}'.format(file_path,timestamp))
             
         return filesystem_info
+    
+    
+    def _replace_start_of_sync_report_path(self, raw_path):
+        '''
+        This function will modify a path by replacing the start of it based on 
+        values set in the configuration.
+        This is meant to let the paths returned by a report generator be adapted if necessary.
+        A report generator may be ran in a context that does not match the ingester's.
+        This means the paths may need to be altered.
+        This relys on the fact that the prefixes to replace is sorted
+        '''
+        processed_path = raw_path
+        if self._path_prefixes_to_replace is not None:
+            for prefix in self._path_prefixes_to_replace:
+                if raw_path.startswith(prefix):
+                    # Remove prefix
+                    if self._replacement_path_prefix is None:
+                        processed_path = raw_path[len(prefix):]
+                        break
+                    else:
+                        # Replace prefix.
+                        processed_path = self._replacement_path_prefix + raw_path[len(prefix):]
+                        break
+        # Just add the prefix.
+        elif self._replacement_path_prefix is not None:
+            processed_path = self._replacement_path_prefix + raw_path
+            
+        return processed_path
     
     def remove_temporary_directory(self):
         '''
