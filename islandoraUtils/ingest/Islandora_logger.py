@@ -17,7 +17,11 @@ class Islandora_logger(object):
     @param Islandora_configuration_object:
         The configuration object to base construction of the logger on
     '''
-    def __init__(self, Islandora_configuration_object, log_level=None, logger_name='root'):
+    def __init__(self,
+                 Islandora_configuration_object,
+                 log_level = None,
+                 logger_name = 'root'):
+        
         '''
         Constructor
         @param Islandora_configuration: The object needed to get the information necessary for logging
@@ -32,13 +36,13 @@ class Islandora_logger(object):
         if not os.path.exists(self._log_file):
             log_file_handle = open(self._log_file, 'w')
             log_file_handle.close()
-            
-        #set log level if a logger is supplied do not set the log_level if it has not already been set
-        if log_level or logger_name:
-            pass  
+        
+        # Set loging level to parameter, configured value, whatever it already is or info respectivly.
+        if log_level:
+            pass
         elif 'level' in configuration['logging']:
-            log_level = configuration['logging']['level']
-        else:
+            log_level = int(configuration['logging']['level'])
+        elif not logger_name:
             log_level = logging.INFO
         
         #set logger name
@@ -57,7 +61,8 @@ class Islandora_logger(object):
             self._logger = logging.getLogger(self._logger_name)
         
         #configure logger
-        self._logger.setLevel(log_level)
+        if log_level is not None:
+            self._logger.setLevel(log_level)
         
         handler = logging.handlers.TimedRotatingFileHandler(self._log_file,'midnight',1)
         formatter = logging.Formatter('%(levelname)s - %(asctime)s - %(name)s - %(message)s')
