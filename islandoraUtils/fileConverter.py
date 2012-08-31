@@ -238,29 +238,44 @@ def pdf_to_text_or_ocr(inPath, outPath):
         second: was_ocrd: True if the file was ocr'd false if it was not
     '''
     was_ocrd = False
+    outPath = os.path.splitext(outPath)[0] + '.txt'
+    
     #run pdf to text
-    pdftotext_call = ['pdftotext', inPath, os.path.splitext(outPath)[0] + '.txt']
+    pdftotext_call = ['pdftotext', inPath, outPath]
     subprocess.call(pdftotext_call)
-    pdftotext_result = os.stat(os.path.splitext(outPath)[0] + '.txt').st_size
-    #if it fails run OCR
+    pdftotext_result = os.stat(outPath).st_size
+    
+    # If there is just whitespace in the text extraction try OCR.
+    if pdftotext_result:
+        with open(outPath, 'rb') as out_file_handle:
+            out_file_string = out_file_handle.read()
+            if out_file_string.isspace():
+                pdftotext_result = 0
+    
+    # If it fails run OCR
     if not pdftotext_result:
         was_ocrd = True
         TIFF_file_path = os.path.splitext(inPath)[0] + '.tif'
         #convert PDF to TIFF for OCR by tesseract
         #apha needs to be off because tesseracct chokes on it
         #tesseract can only handle some color depths
-        convert_call = ['convert', '-alpha', 'off', 'depth', '8', inPath, TIFF_file_path]
+        convert_call = ['convert', '-alpha', 'off', '-depth', '8', inPath, TIFF_file_path]
         subprocess.call(convert_call)
         #run tesseract OCR
         #tesseract will autmaticaly add a .txt file extension
         tesseract_call = ['tesseract', TIFF_file_path, os.path.splitext(outPath)[0], '-l', 'eng']
         tesseract_result = subprocess.call(tesseract_call)
+        
+        # Catch the case of tesseract giving a file, but thinking it didn't find the last page of the TIFF.
+        if os.path.isfile(outPath):
+            tesseract_result = 1
+            
         #if OCR and pdftotext both fail
         if not tesseract_result:
             return (False, was_ocrd)
         
     #stip out characters illegal in xml
-    filter_illegal_characters_from_file(os.path.splitext(outPath)[0] + '.txt')
+    filter_illegal_characters_from_file(outPath)
         
     return (True, was_ocrd)
 
