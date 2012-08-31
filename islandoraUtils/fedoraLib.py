@@ -22,15 +22,18 @@ from islandoraUtils.misc import hash_file, get_extension_from_mimetype
 
     
 def purge_related_objects(Fedora_client,
-                          Fedora_PID,
                           relationship_namespace,
-                          relationship_name):
+                          relationship_name,
+                          RDF_subject = None,
+                          RDF_object = None,
+                          is_URI = False):
     '''
     Sometimes especialy in cron jobs that sync datastources
     to Fedora it is necessary to delete objects that are 
     derived or related to an origional object. This function
     provides for that.  It will purge any objects that are 
     related to the provided subject by a certain relationship.
+    subject predicate object
     
     @param Fedora_PID:
         The subject of the relationship.
@@ -38,12 +41,20 @@ def purge_related_objects(Fedora_client,
         The namespace the relationship is found in.
     @param relationship_name:
         The unqualified name of the realtionship.
+    @param is_URI:
+        Tells if the RDF_object is a URI or a literal
     '''
-        
-    results = get_all_subjects_of_relationship(Fedora_client,
-                                               relationship_namespace,
-                                               relationship_name,
-                                               Fedora_PID)
+    if RDF_object is not None:
+        results = get_all_subjects_of_relationship(Fedora_client,
+                                                   relationship_namespace,
+                                                   relationship_name,
+                                                   RDF_object,
+                                                   is_URI)
+    if RDF_subject is not None:
+        results = get_all_objects_of_relationship(Fedora_client,
+                                                  relationship_namespace,
+                                                  relationship_name,
+                                                  RDF_subject)
     for PID_to_purge in results:
         Fedora_client.deleteObject(PID_to_purge)
         
@@ -52,10 +63,13 @@ def purge_related_objects(Fedora_client,
 def get_all_subjects_of_relationship(Fedora_client,
                                      relationship_namespace,
                                      relationship,
-                                     relationship_object):
+                                     relationship_object,
+                                     is_URI = False):
     '''
     This function will run a simple query on the resource index while.
     It will return all results.
+    subject predicate object
+    
     @param Fedora_client:
         The client object to use to query the resource index.
     @param relationship_namesapce:
@@ -64,31 +78,80 @@ def get_all_subjects_of_relationship(Fedora_client,
         The relationship to query sans namespace.
     @param relationship_object
         The object of the relationship to query.
+    @param is_URI:
+        Tells if the RDF_object is a URI or a literal
     
     @return list:
         Fedora_PID_results the pids that match the query. Not the URIs.
     '''
     
+    if is_URI:
+        relationship_object = '<{0}>'.format(relationship_object)
+    else:
+        relationship_object = '"{0}"'.format(relationship_object)
+        
     query = 'PREFIX {0}: <{1}> \
                      SELECT $object \
                      FROM <#ri> \
                      WHERE {{ \
                        {{ \
-                         $object {0}:{2} "{3}" \
+                         $object {0}:{2} {3} \
                        }} \
                      }}'.format('namespace_alias',
                                 relationship_namespace,
                                 relationship,
                                 relationship_object)
-                     
+
     results = list(Fedora_client.searchTriples(query, limit = None))
     Fedora_PID_results = []
-    
     # Ask Fedora for PID.
     for result in results:
         # Remove: "info:fedora/"
         Fedora_PID_results.append(result['object']['value'][12:])
+    return Fedora_PID_results
+
+def get_all_objects_of_relationship(Fedora_client,
+                                    relationship_namespace,
+                                    relationship,
+                                    relationship_subject,
+                                    is_URI):
+    '''
+    This function will run a simple query on the resource index.
+    It will return all results.
+    subject predicate object
     
+    @param Fedora_client:
+        The client object to use to query the resource index.
+    @param relationship_namesapce:
+        The namespace the relationship is in.
+    @param relationship
+        The relationship to query sans namespace.
+    @param relationship_object
+        The subject of the relationship to query.
+    
+    @return list:
+        Fedora_PID_results the pids that match the query. Not the URIs.
+    '''
+    
+        
+    query = 'PREFIX {0}: <{1}> \
+                     SELECT $object \
+                     FROM <#ri> \
+                     WHERE {{ \
+                       {{ \
+                         {3} {0}:{2} $object \
+                       }} \
+                     }}'.format('namespace_alias',
+                                relationship_namespace,
+                                relationship,
+                                relationship_subject)
+
+    results = list(Fedora_client.searchTriples(query, limit = None))
+    Fedora_PID_results = []
+    # Ask Fedora for PID.
+    for result in results:
+        # Remove: "info:fedora/"
+        Fedora_PID_results.append(result['object']['value'][12:])
     return Fedora_PID_results
 
 def get_collection_members(Fedora_client,
