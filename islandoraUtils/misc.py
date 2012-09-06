@@ -507,6 +507,25 @@ def is_image(prospective_image_path):
         
     return False
 
+def file_is_text(prospective_text_path):
+    '''
+    This function will check the mimetype 
+    
+    @param string prospective_text_path:
+    
+    @return boolean:
+        True if the file contains text false if not
+    '''
+    
+    # Get mimetype.
+    mime_type = get_mime_type_from_path(prospective_text_path)
+    
+    # Check for textyness.
+    if 'text' in mime_type or 'xml' in mime_type:
+        return True
+        
+    return False
+
 def is_XLS_realy_XML(XLS_path):
     '''
     This function will check if a file is an XML (an old excel format)

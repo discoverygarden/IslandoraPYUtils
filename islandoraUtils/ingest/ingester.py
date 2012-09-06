@@ -17,7 +17,9 @@ from islandoraUtils.ingest.Islandora_cron_batch import Islandora_cron_batch
 from islandoraUtils.ingest.Islandora_alerter import Islandora_alerter
 from islandoraUtils.metadata import fedora_relationships
 from islandoraUtils.misc import get_mime_type_from_path, path_to_datastream_ID, path_to_label,\
-                                convert_members_to_unicode, convert_string_to_timestamp
+                                convert_members_to_unicode, convert_string_to_timestamp, file_is_text
+from islandoraUtils.xacml.tools import Xacml
+from islandoraUtils.fedoraLib import replace_relationships
 
 class ingester(object):
     '''
@@ -212,7 +214,9 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                       datastreams = None,
                       collections = None,
                       content_models = None,
-                      sources = None):
+                      sources = None,
+                      isViewableByRoles = None,
+                      isViewableByUsers = None):
         '''
         This function will ingest an object with a single metadata and archival datastream with a specified set of relationships
         it will use our best practices for logging and assume the use of microservices for derivatives and their RELS-INT management
@@ -299,7 +303,12 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
         Fedora_object = self.get_Fedora_object(PID, object_label)
         PID = Fedora_object.pid
         
-        #write datastreams to the object
+        # Write securty FIRST!!!!!!!!!!
+        self.replace_security_on_object(Fedora_object,
+                                        isViewableByRoles,
+                                        isViewableByUsers)
+        
+        # write datastreams to the object.
         for datastream in datastreams:
             self.ingest_datastream(Fedora_object, datastream)
             
@@ -318,13 +327,13 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
             
             if self._is_a_cron:
                 # Collection relationships.
-                self.cron_batch.replace_relationships(objRelsExt,
-                                                      'isMemberOfCollection',
-                                                      collections)
+                replace_relationships(objRelsExt,
+                                      'isMemberOfCollection',
+                                      collections)
                 # Content model relationships.
-                self.cron_batch.replace_relationships(objRelsExt,
-                                                      fedora_relationships.rels_predicate('fedora-model','hasModel'),
-                                                      content_models)
+                replace_relationships(objRelsExt,
+                                      fedora_relationships.rels_predicate('fedora-model','hasModel'),
+                                      content_models)
             
             # If it isn't a cron we need to only add the relationships
             else:
@@ -348,9 +357,9 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                     objectified_sources.append(fedora_relationships.rels_object(source,
                                                                                 fedora_relationships.rels_object.LITERAL))
                     
-                self.cron_batch.replace_relationships(objRelsExt,
-                                                      source_predicate,
-                                                      objectified_sources)
+                replace_relationships(objRelsExt,
+                                      source_predicate,
+                                      objectified_sources)
                 
             objRelsExt.update()
         return(PID)
@@ -384,15 +393,17 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
         @param string datastream_ID:
             ignored if datastream is a dict.
         '''
+        
         PID = Fedora_object.pid
+        
         if not isinstance(datastream, dict):
             if not datastream_ID:
                 datastream_ID = path_to_datastream_ID(datastream)
             datastream_dict = {'filepath':datastream,
-                                        'label':path_to_label(datastream),
-                                        'mimetype':get_mime_type_from_path(datastream),
-                                        'ID':datastream_ID,
-                                        'control_group':'M'}
+                               'label':path_to_label(datastream),
+                               'mimetype':get_mime_type_from_path(datastream),
+                               'ID':datastream_ID,
+                               'control_group':'M'}
             datastream = datastream_dict
             
         if datastream['ID'] not in Fedora_object:
@@ -403,19 +414,30 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                     Fedora_object.addDataStream(unicode(datastream['ID']), unicode(datastream_contents), label = unicode(datastream['label']),
                                               mimeType = unicode(datastream['mimetype']), controlGroup = u'X',
                                               logMessage = unicode('Added ' + datastream['ID'] + ' datastream to:' + PID +' via IslandoraPYUtils'))
-                elif datastream['control_group'] == 'M':#do a dummy create (an artifact of fcrepo)
+                elif datastream['control_group'] == 'M':
                     datastream_file_handle = open(datastream['filepath'], 'rb')
-                    Fedora_object.addDataStream(unicode(datastream['ID']), u'I am an artifact, ignore me.', label = unicode(datastream['label']),
-                                              mimeType = unicode(datastream['mimetype']), controlGroup = u'M',
-                                              logMessage = unicode('Added ' + datastream['ID'] + ' datastream to:' + PID +' via IslandoraPYUtils'))
                     
-                    Fedora_object_datastream = Fedora_object[datastream['ID']]
-                    Fedora_object_datastream.setContent(datastream_file_handle)
-                    
+                    if not file_is_text(datastream['filepath']):
+                        # Do a dummy create (an artifact of fcrepo).
+                        Fedora_object.addDataStream(unicode(datastream['ID']), u'I am an artifact, ignore me.', label = unicode(datastream['label']),
+                                                    mimeType = unicode(datastream['mimetype']), controlGroup = u'M',
+                                                    logMessage = unicode('Added ' + datastream['ID'] + ' datastream to:' + PID +' via IslandoraPYUtils'))
+                        Fedora_object_datastream = Fedora_object[datastream['ID']]
+                        Fedora_object_datastream.setContent(datastream_file_handle)
+                    else:
+                        Fedora_object.addDataStream(unicode(datastream['ID']),
+                                                    unicode(datastream_file_handle.read()),
+                                                    label = unicode(datastream['label']),
+                                                    mimeType = unicode(datastream['mimetype']),
+                                                    controlGroup = u'M',
+                                                    logMessage = unicode('Added ' + datastream['ID'] + ' datastream to:'\
+                                                                         + PID +' via IslandoraPYUtils'))
+                        
                 self._logger.info('Added ' + datastream['ID'] + ' datastream to: ' + PID + ' from: ' + datastream['filepath'])
                 
             except (FedoraConnectionException, IOError):
                 self._logger.error('Error in adding ' + datastream['ID'] + ' datastream to:' + PID + ' from: ' + datastream['filepath'])
+        
         # Set the datastream if it is not new.
         else:
             try:
@@ -432,6 +454,117 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
             except (FedoraConnectionException, IOError):
                 self._logger.error('Error in updating ' + datastream['ID'] + ' datastream in:' + PID + ' from: ' + datastream['filepath'])
         datastream_file_handle.close()
+        
+        return
+    
+    def replace_security_on_object(self,
+                                   Fedora_object,
+                                   isViewableByRoles = None,
+                                   isViewableByUsers = None,
+                                   isManageableByRoles = None,
+                                   isManageableByUsers = None,):
+        '''
+        This function holds the boilerplate for adding xacml to objects and storing
+        a representation of it in the RELSEXT datastream for security integration.
+        
+        @param list isViewableByRoles:
+            List of strings with the roles that the objects should be viewable by.
+
+        @param list isViewableByUsers:
+            List of strings with the users that the objects should be viewable by.
+        
+        @todo: add more functionality, this function should encapsulate all the major
+            configurations possible on objects through the xacml package.  Add as needed
+            another function for datastreams should be added
+        
+        '''
+        # Make default args into lists
+        if isViewableByRoles is None:
+            isViewableByRoles = []
+        if isViewableByUsers is None:
+            isViewableByUsers = []
+        if isManageableByRoles is None:
+            isManageableByRoles = []
+        if isManageableByUsers is None:
+            isManageableByUsers = []
+            
+        # Add in necessary minimal access
+        if not 'admin' in isManageableByUsers:
+            isManageableByUsers.append('admin')
+        if not 'admin' in isViewableByUsers:
+            isViewableByUsers.append('admin')
+        
+        
+        # Populate XACML string
+        xacml = Xacml()
+        if isManageableByRoles is not None:
+            xacml.managementRule.addRole(isManageableByRoles)
+        if isManageableByUsers is not None:
+            xacml.managementRule.addUser(isManageableByUsers)
+        if isViewableByRoles is not None:
+            xacml.viewingRule.addRole(isViewableByRoles)
+        if isViewableByUsers is not None:
+            xacml.viewingRule.addUser(isViewableByUsers)
+        
+        
+        # Write string to temporary file
+        XACML_file_name = os.path.join(self._configuration['miscellaneous']['temporary_directory'], 'xacml.xml')
+        XACML_file_handle = open(XACML_file_name,'w')
+        XACML_file_handle.write(xacml.getXmlString(False))
+        XACML_file_handle.close()
+        
+        '''@todo:clear this out'''
+        XACML_file_handle = open(XACML_file_name,'rb')
+        self._logger.debug(XACML_file_handle.read())
+        XACML_file_handle.close()
+        import shutil
+        shutil.copy(XACML_file_name, '/home/islandora/xacml_extract.xml')
+        
+        # Populate the Fedora object's XACML datastream
+        self.ingest_datastream(Fedora_object,
+                               XACML_file_name,
+                               'POLICY')
+        
+        # Populate the Fedora object's RELS
+        XACML_RDF_name_space_object = fedora_relationships.rels_namespace(self._configuration['relationships']['xacml_relationship_namespace_alias'],
+                                                                          self._configuration['relationships']['xacml_relationship_namespace'])
+        
+        Fedora_object_RELS = fedora_relationships.rels_ext(Fedora_object,
+                                                           XACML_RDF_name_space_object)
+        # Viwable RELS
+        if isViewableByRoles is not None:
+            XACML_viewable_role_RDF_object = fedora_relationships.rels_predicate(self._configuration['relationships']['xacml_relationship_namespace_alias'],
+                                                                                 self._configuration['relationships']['xacml_viewable_role_relationship_name'])
+            
+            replace_relationships(Fedora_object_RELS,
+                                  XACML_viewable_role_RDF_object,
+                                  isViewableByRoles)
+            
+        if isViewableByUsers is not None:
+            XACML_viewable_user_RDF_object = fedora_relationships.rels_predicate(self._configuration['relationships']['xacml_relationship_namespace_alias'],
+                                                                                 self._configuration['relationships']['xacml_viewable_user_relationship_name'])
+            
+            replace_relationships(Fedora_object_RELS,
+                                  XACML_viewable_user_RDF_object,
+                                  isViewableByUsers)
+        # Management RELS
+        if isManageableByRoles is not None:
+            XACML_manageable_role_RDF_object = fedora_relationships.rels_predicate(self._configuration['relationships']['xacml_relationship_namespace_alias'],
+                                                                        self._configuration['relationships']['xacml_manageable_role_relationship_name'])
+            
+            replace_relationships(Fedora_object_RELS,
+                                  XACML_manageable_role_RDF_object,
+                                  isManageableByRoles)
+            
+        if isManageableByUsers is not None:
+            XACML_manageable_user_RDF_object = fedora_relationships.rels_predicate(self._configuration['relationships']['xacml_relationship_namespace_alias'],
+                                                                        self._configuration['relationships']['xacml_manageable_user_relationship_name'])
+            
+            replace_relationships(Fedora_object_RELS,
+                                  XACML_manageable_user_RDF_object,
+                                  isManageableByUsers)
+            
+        Fedora_object_RELS.update()
         
         return
     

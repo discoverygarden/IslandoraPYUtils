@@ -10,16 +10,43 @@ import random
 import subprocess
 from urllib import quote
 import logging
-from StringIO import StringIO as StringIO
 from fcrepo.connection import Connection
 from fcrepo.client import FedoraClient as Client
-from metadata import fedora_relationships as FR
 import os
 from time import sleep
-import hashlib
+
 from islandoraUtils.misc import hash_file, get_extension_from_mimetype
 
 
+def replace_relationships(rels_object, predicate, objects):
+    '''
+    It may be necessary to replace existing triple store
+    relationships with updates.  This function will do that. It will not 
+    run update on the rels_object.
+    
+    @todo: Get performance gain by diffing before updating.
+    
+    @param object rels_object:
+        A fedora_relationships.rels_object to operate on.
+    @param mixed predicate:
+        Something acceptable by a fedora_relationsips.rels_object as a predicate.
+    @param list objects:
+        Something acceptable by a fedora_relationsips.rels_object as an object.
+    '''
+    
+    # Remove predicate relationship if they exists.
+    if rels_object.getRelationships(predicate):
+        rels_object.purgeRelationships(predicate)
+        
+    # Populate predicate relationships.
+    for RDF_object in objects:
+        
+        if isinstance(RDF_object, str):
+            unicode(RDF_object)
+            
+        rels_object.addRelationship(predicate, RDF_object)
+    
+    return
     
 def purge_related_objects(Fedora_client,
                           relationship_namespace,

@@ -428,11 +428,12 @@ class XacmlDatastreamRule(XacmlRule):
  or no arguements and creates a blank xacml object. The interaction with the rules takes place through
  member object of this class. For instance to add roles that can manage the object:
  @code
-    xacml = new Xacml();
-    // allow userA to manage the object
-    xacml->managementRule->addUser('userA');
-    // allow roleC and roleD to manage the object
-    xacml->managementRule->addRole(array('roleC', 'roleD'));
+ from islandoraUtils.xacml.tools import Xacml
+    xacml = Xacml()
+    # allow userA to manage the object
+    xacml.managementRule.addUser('userA')
+    # allow roleC and roleD to manage the object
+    xacml.managementRule.addRole(['roleC', 'roleD'])
  @endcode
 '''
 class Xacml:
