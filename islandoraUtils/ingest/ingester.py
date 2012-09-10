@@ -513,13 +513,6 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
         XACML_file_handle.write(xacml.getXmlString(False))
         XACML_file_handle.close()
         
-        '''@todo:clear this out'''
-        XACML_file_handle = open(XACML_file_name,'rb')
-        self._logger.debug(XACML_file_handle.read())
-        XACML_file_handle.close()
-        import shutil
-        shutil.copy(XACML_file_name, '/home/islandora/xacml_extract.xml')
-        
         # Populate the Fedora object's XACML datastream
         self.ingest_datastream(Fedora_object,
                                XACML_file_name,
