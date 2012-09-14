@@ -151,7 +151,7 @@ def update_datastream(obj, dsid, filename, label='', mimeType='', controlGroup='
         info_dict['tries'] = info_dict['tries'] - 1
         logger.debug("Updating/Adding datastream %(dsid)s to %(pid)s with mimetype %(mimetype)s from file %(filename)s" % info_dict)
         if 0 == subprocess.call(commands):
-            logger.debug("%(pid)s/%(dsid)s updated!" % info_dict)
+            logger.info("%(pid)s/%(dsid)s updated!" % info_dict)
             return True
         else:
             logger.warning('Error updating %(pid)s/%(dsid)s from %(filename)s via CURL!  %(tries)s remaining...' % info_dict)
