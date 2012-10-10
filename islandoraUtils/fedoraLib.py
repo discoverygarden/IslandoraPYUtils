@@ -156,9 +156,10 @@ def update_datastream(obj, dsid, filename, label='', mimeType='', controlGroup='
       post_vars['dsLocation'] = info_dict['filename']
     else:
       files['file'] = open(info_dict['filename'], 'rb')
-    
+
     updated = False
     while not updated and info_dict['tries'] > 0:
+      files['file'].seek(0)
       info_dict['tries'] = info_dict['tries'] - 1
       r = requests.post('%(url)s/objects/%(pid)s/datastreams/%(dsid)s' % info_dict,
           auth=(info_dict['username'], info_dict['password']),
@@ -223,4 +224,3 @@ if __name__ == '__main__':
     client = fcrepo.client.FedoraClient(connection)
     #print(client.getDatastreamProfile('atm:1250', 'DC'))
     #print(client.getDatastreamProfile('atm:1075', 'DC'))
-
