@@ -225,7 +225,7 @@ def create_swf(obj, dsid, swfid, args = None):
             logger.warning('PID:%s DSID:%s SWF creation failed (pdf2swf return code:%d).' % (obj.pid, dsid, pdf2swf.returncode))
             r = pdf2swf.returncode
     else:
-        r = subprocess.call(progarm + args)
+        r = subprocess.call(program + args)
         if r != 0:
             logger.warning('PID:%s DSID:%s SWF creation failed (pdf 2swf return code:%d).' % (obj.pid, dsid, r))
         if r == 0:
@@ -299,4 +299,29 @@ def create_fits(obj, dsid, derivativeid = 'FITS', args = []):
         update_datastream(obj, derivativeid, out_file, label='FITS Generated Image Metadata', mimeType='text/xml')
     rmtree(directory, ignore_errors=True)
     return r
+
+def create_csv(obj, dsid = 'OBJ', derivativeid = 'CSV', args = []):
+    logger = logging.getLogger('islandoraUtils.DSConverter.create_csv' )
+    directory, file = get_datastream_as_file(obj, dsid, "document")
+    in_file = directory + '/' + file
+    process = subprocess.Popen(['xls2csv', '-x', in_file] + args, stdout=subprocess.PIPE);
+    output = process.communicate()[0]
+    if process.returncode != 0:
+        logger.warning('PID:%s DSID:%s CSV creation failed (fits return code:%d).' % (obj.pid, dsid, r))
+    if process.returncode == 0:
+        num_sheet = 0
+        out_file = directory + '/' + 'csv.csv'
+        logger.warning('Output: ' + output)
+        sheets  = output.split("\f")
+        for sheet in sheets:
+            if len(sheet) != 0:
+                logger.warning('PID:%s DSID:%s CSV create sheet: %d.' % (obj.pid, dsid, num_sheet))
+                f = open(out_file, 'w')
+                f.write(sheet)
+                f.close()
+                new_dsid =  derivativeid + '_SHEET_' + str(num_sheet) if num_sheet > 0 else derivativeid
+                update_datastream(obj, new_dsid, out_file, 'CSV Generated Metadata', 'text/csv')
+                num_sheet += 1
+    rmtree(directory, ignore_errors=True)
+    return process.returncode
 
