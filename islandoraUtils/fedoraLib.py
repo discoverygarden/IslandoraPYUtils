@@ -18,6 +18,7 @@ import os
 from time import sleep
 import hashlib
 from islandoraUtils.misc import hash_file
+import requests
 
 def mangle_dsid(dsid):
     '''
@@ -75,30 +76,36 @@ def get_datastream_as_file(obj, dsid, extension = ''):
 
 def update_datastream(obj, dsid, filename, label='', mimeType='', controlGroup='M', tries=3, checksumType=None, checksum=None):
     '''
-    This function uses curl to add a datastream to Fedora because
-    of a bug [we need confirmation that this is the bug Alexander referenced in Federa Microservices' code]
-    in the pyfcrepo library, that creates unnecessary failures with closed sockets.
-    The bug could be related to the use of httplib.
+    This function uses requests to add a datastream to Fedora via the REST API,
+    because of a bug [we need confirmation that this is the bug Alexander
+    referenced in Federa Microservices' code] in the pyfcrepo library, that
+    creates unnecessary failures with closed sockets.  The bug could be related
+    to the use of httplib.
 
     @author Alexander Oneil
 
     @param obj:
     @param dsid:
-    @param filename: If this datastream is X or M. This is a filename as a string.
-      If its R or E then it should be a URL as a string.
+    @param filename: If the controlGroup is X or M. This is a filename as a string.
+      If it is R or E then it should be a URL as a string.
     @param label:
     @param mimeType:
     @param controlGroup:
     @param tries:  The number of attempts at uploading
-    @param checksumType:  A hashing algorigm to attempt...
-    @param checksum: A precalculated sum for the file.
-    @return the status of the curl subprocess call
+    @param checksumType:  A hashing algorithm to attempt...
+    @param checksum: A precalculated sum for the file.  Is unlikely to work for
+      inline XML streams, due to normalization Fedora performs when saving.
+    @return boolean representing success
     '''
     logger = logging.getLogger('islandoraUtils.fedoraLib.update_datastream')
 
     #Get the connection from the object.
     conn = obj.client.api.connection
 
+    '''
+    XXX: Could probably avoid the creation of this array, and put stuff
+    directly into the post_vars dictionary.
+    '''
     info_dict = {
         'url': conn.url,
         'username': conn.username, 'password': conn.password,
@@ -109,8 +116,6 @@ def update_datastream(obj, dsid, filename, label='', mimeType='', controlGroup='
         'checksumType': checksumType,
         'checksum': checksum
     }
-
-    url = '%(url)s/objects/%(pid)s/datastreams/%(dsid)s?dsLabel=%(label)s&mimeType=%(mimetype)s&controlGroup=%(controlgroup)s' % info_dict
 
     #FIXME:  This is duplicated here and in misc.hash_file
     #The checksum/hashing algorithms supported by Fedora (mapped to the names that Python's hashlib uses)
@@ -128,36 +133,50 @@ def update_datastream(obj, dsid, filename, label='', mimeType='', controlGroup='
         #Let's figure it out ourselves!
         if checksum is None:
             #No sum provided, calculate it:
-            info_dict['checksum'] = hash_file(filename)
+            info_dict['checksum'] = hash_file(filename, checksumType)
         else:
             #We trust the user to provide the proper checksum (don't think that Fedora does, though)
             pass
 
-        url += '&checksumType=%(checksumType)s&checksum=%(checksum)s' % info_dict
+    post_vars = {
+      'dsLabel': info_dict['label'],
+      'mimeType': info_dict['mimetype'],
+      'controlGroup': info_dict['controlgroup'],
+      'checksumType': info_dict['checksumType'],
+      'checksum': info_dict['checksum']
+    }
+    if post_vars['checksumType'] is None:
+        del post_vars['checksumType']
+        del post_vars['checksum']
+    elif post_vars['checksum'] is None:
+        del post_vars['checksum']
 
-    commands = ['curl', '-i', '-H', '-f', '-u', '%(username)s:%(password)s' % info_dict]
+    files = {}
     if info_dict['controlgroup'] in ['R', 'E']:
-        url += '&dsLocation=%(filename)s' % info_dict
+      post_vars['dsLocation'] = info_dict['filename']
     else:
-        if(os.path.isfile(filename)):
-            commands.extend(['-F', 'file=@%(filename)s' % info_dict])
-        else:
-            logger.error('Failed updating %(pid)s/%(dsid)s. %(filename)s doesnt exist!' % info_dict)
-            return False
+      files['file'] = open(info_dict['filename'], 'rb')
+    
+    updated = False
+    while not updated and info_dict['tries'] > 0:
+      info_dict['tries'] = info_dict['tries'] - 1
+      r = requests.post('%(url)s/objects/%(pid)s/datastreams/%(dsid)s' % info_dict,
+          auth=(info_dict['username'], info_dict['password']),
+          params=post_vars,
+          files=files)
+      if r.status_code == 201:
+        logger.info('Updated %(pid)s/%(dsid)s.' % info_dict)
+        updated = True
+      else:
+        logger.warning('Failed to update %(pid)s/%(dsid)s: %(tries)s tries remaining.' % info_dict)
+        sleep(5) #Something went wrong...  Let's give it a few, to see if it sorts itself out.
 
-    commands.extend(['-XPOST', url])
-
-    while info_dict['tries'] > 0:
-        info_dict['tries'] = info_dict['tries'] - 1
-        logger.debug("Updating/Adding datastream %(dsid)s to %(pid)s with mimetype %(mimetype)s from file %(filename)s" % info_dict)
-        if 0 == subprocess.call(commands):
-            logger.info("%(pid)s/%(dsid)s updated!" % info_dict)
-            return True
-        else:
-            logger.warning('Error updating %(pid)s/%(dsid)s from %(filename)s via CURL!  %(tries)s remaining...' % info_dict)
-            sleep(5)
-    logger.error('Failed updating %(pid)s/%(dsid)s from %(filename)s via CURL!' % info_dict)
-    return False
+    if not updated:
+        logger.error('Failed to update %(pid)s/%(dsid)s in the given number ' +
+          'of attempts.  Failing...')
+    for name, f in files.items():
+      f.close()
+    return updated
 
 def update_hashed_datastream_without_dup(obj, dsid, filename, **params):
     '''
