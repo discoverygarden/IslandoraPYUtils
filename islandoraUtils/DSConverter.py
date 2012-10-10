@@ -307,7 +307,7 @@ def create_csv(obj, dsid = 'OBJ', derivativeid = 'CSV', args = []):
     process = subprocess.Popen(['xls2csv', '-x', in_file] + args, stdout=subprocess.PIPE);
     output = process.communicate()[0]
     if process.returncode != 0:
-        logger.warning('PID:%s DSID:%s CSV creation failed (fits return code:%d).' % (obj.pid, dsid, r))
+        logger.warning('PID:%s DSID:%s CSV creation failed (xls2csv return code:%d).' % (obj.pid, dsid, r))
     if process.returncode == 0:
         num_sheet = 0
         out_file = directory + '/' + 'csv.csv'
@@ -324,4 +324,3 @@ def create_csv(obj, dsid = 'OBJ', derivativeid = 'CSV', args = []):
                 num_sheet += 1
     rmtree(directory, ignore_errors=True)
     return process.returncode
-
