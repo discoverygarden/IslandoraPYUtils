@@ -223,7 +223,7 @@ def create_swf(obj, dsid, swfid, args = None):
             logger.warning('PID:%s DSID:%s SWF creation failed (pdf2swf return code:%d).' % (obj.pid, dsid, pdf2swf.returncode))
             r = pdf2swf.returncode
     else:
-        r = subprocess.call(progarm + args)
+        r = subprocess.call(program + args)
         if r != 0:
             logger.warning('PID:%s DSID:%s SWF creation failed (pdf 2swf return code:%d).' % (obj.pid, dsid, r))
         if r == 0:
@@ -298,24 +298,28 @@ def create_fits(obj, dsid, derivativeid = 'FITS', args = []):
     rmtree(directory, ignore_errors=True)
     return r
 
-def create_csv(obj, dsid, derivativeid = 'CSV', args = [])
+def create_csv(obj, dsid = 'OBJ', derivativeid = 'CSV', args = []):
     logger = logging.getLogger('islandoraUtils.DSConverter.create_csv' )
     directory, file = get_datastream_as_file(obj, dsid, "document")
     in_file = directory + '/' + file
-    output = subprocess.Popen(['xls2csv', '-x', in_file] + args, stdout=subprocess.PIPE).communicate()[0]
-    if r != 0:
+    process = subprocess.Popen(['xls2csv', '-x', in_file] + args, stdout=subprocess.PIPE);
+    output = process.communicate()[0]
+    if process.returncode != 0:
         logger.warning('PID:%s DSID:%s CSV creation failed (fits return code:%d).' % (obj.pid, dsid, r))
-    if r == 0:
+    if process.returncode == 0:
         num_sheet = 0
         out_file = directory + '/' + 'csv.csv'
-        sheets  = output.split('^L');
+        logger.warning('Output: ' + output)
+        sheets  = output.split("\f")
         for sheet in sheets:
-            f = open(out_file, 'w')
-            f.write(sheet)
-            f.close()
-            dsid = num_sheet > 0 ? derivativeid + '_SHEET_' + num_sheet : derivativeid;
-            update_datastream(obj, dsid, out_file, 'CSV Generated Metadata', 'text/csv')
-            num_sheet++
+            if len(sheet) != 0:
+                logger.warning('PID:%s DSID:%s CSV create sheet: %d.' % (obj.pid, dsid, num_sheet))
+                f = open(out_file, 'w')
+                f.write(sheet)
+                f.close()
+                new_dsid =  derivativeid + '_SHEET_' + str(num_sheet) if num_sheet > 0 else derivativeid
+                update_datastream(obj, new_dsid, out_file, 'CSV Generated Metadata', 'text/csv')
+                num_sheet += 1
     rmtree(directory, ignore_errors=True)
-    return r
+    return process.returncode
 
