@@ -23,5 +23,5 @@ setup(
       package_dir={"islandoraUtils" : "islandoraUtils"},
       package_data={"islandoraUtils" : ["__resources/*"]},
       long_description=read('README'),
-      install_requires=['setuptools','lxml']
+      install_requires=['setuptools','lxml', 'requests']
       )
