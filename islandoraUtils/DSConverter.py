@@ -18,6 +18,7 @@ import logging
 from lxml import etree
 from fcrepo.connection import FedoraConnectionException
 import re
+import math
 
 # thumbnail constants
 tn_postfix = '-tn.jpg'
@@ -42,7 +43,18 @@ def create_thumbnail(obj, dsid, tnid):
     # make the thumbnail based on the mimetype of the input
     # right now we assume everything but video/mp4 can be handled
     if mime == 'video/mp4':
-        r = subprocess.call(['ffmpeg', '-itsoffset', '-4', '-i', infile, '-vcodec', 'mjpeg',\
+        # grab the 'middle' of the video for use in creating thumbnails from mp4s
+        p = subprocess.Popen(['ffmpeg', '-i', infile], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = p.communicate()
+        # use stderr as ffmpeg expects two params, but duration is still returned with only the source
+        duration = re.search("Duration:\s{1}\d{2}:\d{2}:\d{2}\.\d{2},", stderr).group();
+        duration = duration.replace("Duration: ", '')
+        duration = duration.split('.')
+        # get everything before the milliseconds in hr:min:seconds format
+        duration = duration[0]
+        duration = map(int, duration.split(':'))
+        time = math.floor(((duration[0] * 360) + (duration[1] * 60) + duration[2]) / 2)
+        r = subprocess.call(['ffmpeg', '-itsoffset', '-4', '-ss', str(time), '-i', infile, '-vcodec', 'mjpeg',\
              '-vframes', '1', '-an', '-f', 'rawvideo', tmpfile])
         if r == 0:
             r = subprocess.call(['convert', '%s[0]' % tmpfile, '-thumbnail', '%sx%s' % tn_size,\
@@ -102,7 +114,7 @@ def create_mp4(obj, dsid, mp4id):
     # is 25fps no matter what it is, so we need to get that
     p = subprocess.Popen(['mediainfo', infile], stdout=subprocess.PIPE)
     out, err = p.communicate()
-    logger.debug('Mediainfo: %s' % out)
+    #logger.debug('Mediainfo: %s' % out)
 
     # we need the framerate this is sort of ugly
     try:
