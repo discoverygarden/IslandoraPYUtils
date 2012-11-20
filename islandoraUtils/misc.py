@@ -519,13 +519,8 @@ def file_is_text(prospective_text_path):
     # Get mimetype.
     mime_type = get_mime_type_from_path(prospective_text_path)
     
-    # Handle any exceptions to the general rule.
-    mime_type_exceptions = ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
-    if mime_type in mime_type_exceptions:
-        return False
-    
-    # Check for textyness.
-    if 'text' in mime_type or 'xml' in mime_type:
+    # Check for textyness 'xml' doesn't work because of docx, xlsx ext. that are tared.
+    if 'text' in mime_type or '/xml' in mime_type or '+xml' in mimetype:
         return True
         
     return False
