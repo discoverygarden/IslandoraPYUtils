@@ -520,7 +520,7 @@ def file_is_text(prospective_text_path):
     mime_type = get_mime_type_from_path(prospective_text_path)
     
     # Check for textyness 'xml' doesn't work because of docx, xlsx ext. that are tared.
-    if 'text' in mime_type or '/xml' in mime_type or '+xml' in mimetype:
+    if 'text' in mime_type or '/xml' in mime_type or '+xml' in mime_type:
         return True
         
     return False
