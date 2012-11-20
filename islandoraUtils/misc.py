@@ -42,6 +42,7 @@ def stop_office_headless():
     '''
     This function will attempt to stop open/libre office headless.
     '''
+    
     processname = '/usr/lib/openoffice/program/soffice.bin'
     
     for line in os.popen("ps xa"):
@@ -51,11 +52,8 @@ def stop_office_headless():
         
         if processname in process:
             os.kill(int(pid), signal.SIGKILL)
-        
-        # Restart the process
-        os.system(processname)
-        
-        return
+            return
+    return
     
 
 def start_office_headless():
