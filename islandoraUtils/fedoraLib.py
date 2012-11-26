@@ -111,13 +111,13 @@ def get_all_subjects_of_relationship(Fedora_client,
     @return list:
         Fedora_PID_results the pids that match the query. Not the URIs.
     '''
-    
+    # @XXX: does this handle URIs?
     if is_URI:
-        relationship_object = '<{0}>'.format(relationship_object)
+        relationship_object = u'<{0}>'.format(relationship_object)
     else:
-        relationship_object = '"{0}"'.format(relationship_object)
+        relationship_object = u'"{0}"'.format(relationship_object)
         
-    query = 'PREFIX {0}: <{1}> \
+    query = u'PREFIX {0}: <{1}> \
                      SELECT $object \
                      FROM <#ri> \
                      WHERE {{ \
