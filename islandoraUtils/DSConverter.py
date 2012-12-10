@@ -103,59 +103,14 @@ def create_mp4(obj, dsid, mp4id):
     directory, file = get_datastream_as_file(obj, dsid, 'video')
 
     infile = os.path.join(directory, file)
-    avifile = os.path.join(directory, 'output.avi')
     mp4file = os.path.join(directory, 'output.mp4')
-    h264file = os.path.join(directory, 'output_video.h264')
-    rawfile = os.path.join(directory, 'output_audio.raw')
-    aacfile = os.path.join(directory, 'output_audio.aac')
-
-    # mp4box is stupid as a bag of hammers. if you do not check if there is a audio stream it will
-    # fill the filesystem by creating a file full of junk. It also will just assume the frame rate
-    # is 25fps no matter what it is, so we need to get that
-    p = subprocess.Popen(['mediainfo', infile], stdout=subprocess.PIPE)
-    out, err = p.communicate()
-    #logger.debug('Mediainfo: %s' % out)
-
-    # we need the framerate this is sort of ugly
-    try:
-        frame_rate = re.search('Frame rate\s*:\s*(\d*\.\d*) fps', out).group(1)
-    except:
-        frame_rate = None
-    if not frame_rate:
-        frame_rate = '30'
-
-    # check if we have audio we can probably do this more efficiently
-    audio = re.search('Audio\n', out)
-
-    # mencoder will encode WMV with a frame rate of 1000 (!) fps if we do not set the -ofps option.
-    r = subprocess.call(["mencoder", infile, '-o', avifile, '-ofps', frame_rate, '-vf', 'scale=640:480,harddup', \
-    '-af', 'resample=44100', '-oac', 'faac', '-faacopts', 'br=96', '-ovc', 'x264', '-x264encopts',\
-    'bitrate=200:threads=2:turbo=2:bframes=1:nob_adapt:frameref=4:subq=5:me=umh:partitions=all'])
-
-    if r != 0:
-        logger.error('PID:%s DSID:%s MP4 creation (mencoder) failed.' % (obj.pid, dsid))
-        return r
-
-    if(audio):
-        subprocess.call(['MP4Box', '-aviraw', 'audio', avifile])
-        # again MP4Box contains vacuous space instead of logic, so we have to rename this file
-        move(rawfile, aacfile)
-
-    subprocess.call(['MP4Box', '-aviraw', 'video', avifile])
-
-    args = ['MP4Box', '-add', h264file]
-    if(audio):
-        args.append('-add')
-        args.append(aacfile)
-    args.append('-fps')
-    args.append(frame_rate)
-    args.append(mp4file)
-
-    r = subprocess.call(args)
+    
+    # In 'new' ffmpeg implementations the option of a preset file has changed to -preset. To be consistent throughout point at a directory with the preset.
+    r = subprocess.call(['ffmpeg', '-i', infile, '-f', 'mp4', '-vcodec', 'libx264', '-fpre', '/usr/share/ffmpeg/libx264-normal.ffpreset', '-acodec', 'libfaac', '-ab', '128k', '-ac', '2', '-async', '1', mp4file])
     if r == 0:
         update_datastream(obj, mp4id, mp4file, label='compressed mp4', mimeType='video/mp4')
     else:
-        logger.warning('PID:%s DSID:%s MP4 creation (MP4Box) failed.' % (obj.pid, dsid))
+        logger.warning('PID:%s DSID:%s MP4 creation (ffmpeg) failed.' % (obj.pid, dsid))
 
     rmtree(directory, ignore_errors=True)
     return r
