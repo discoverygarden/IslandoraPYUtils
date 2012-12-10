@@ -105,7 +105,8 @@ def create_mp4(obj, dsid, mp4id):
     infile = os.path.join(directory, file)
     mp4file = os.path.join(directory, 'output.mp4')
     
-    r = subprocess.call(['ffmpeg', '-i', infile, '-f', 'mp4', '-vcodec', 'libx264', '-vpre', 'normal', '-acodec', 'libfaac', '-ab', '128k', '-ac', '2', '-async', '1', mp4file])
+    # In 'new' ffmpeg implementations the option of a preset file has changed to -preset. To be consistent throughout point at a directory with the preset.
+    r = subprocess.call(['ffmpeg', '-i', infile, '-f', 'mp4', '-vcodec', 'libx264', '-fpre', '/usr/share/ffmpeg/libx264-normal.ffpreset', '-acodec', 'libfaac', '-ab', '128k', '-ac', '2', '-async', '1', mp4file])
     if r == 0:
         update_datastream(obj, mp4id, mp4file, label='compressed mp4', mimeType='video/mp4')
     else:
