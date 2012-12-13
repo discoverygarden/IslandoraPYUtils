@@ -139,7 +139,7 @@ def getMimeType(extension):
         "jp2" : "image/jp2",
         "png" : "image/png",
         "tiff" : "image/tiff",
-        "tif" : "image/tif",
+        "tif" : "image/tiff",
         "djvu" : "image/vnd.djvu",
         "djv" : "image/vnd.djvu",
         "wbmp" : "image/vnd.wap.wbmp",
