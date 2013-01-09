@@ -409,30 +409,29 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
         if datastream['ID'] not in Fedora_object:
             try:
                 if datastream['control_group'] == 'X':
-                    datastream_file_handle = open(datastream['filepath'])
-                    datastream_contents = datastream_file_handle.read()
-                    Fedora_object.addDataStream(unicode(datastream['ID']), unicode(datastream_contents), label = unicode(datastream['label']),
-                                              mimeType = unicode(datastream['mimetype']), controlGroup = u'X',
-                                              logMessage = unicode('Added ' + datastream['ID'] + ' datastream to:' + PID +' via IslandoraPYUtils'))
+                    with open(datastream['filepath']) as datastream_file_handle:
+                        datastream_contents = datastream_file_handle.read()
+                        Fedora_object.addDataStream(unicode(datastream['ID']), unicode(datastream_contents), label = unicode(datastream['label']),
+                                                  mimeType = unicode(datastream['mimetype']), controlGroup = u'X',
+                                                  logMessage = unicode('Added ' + datastream['ID'] + ' datastream to:' + PID +' via IslandoraPYUtils'))
                 elif datastream['control_group'] == 'M':
-                    datastream_file_handle = open(datastream['filepath'], 'rb')
-                    
-                    if not file_is_text(datastream['filepath']):
-                        # Do a dummy create (an artifact of fcrepo).
-                        Fedora_object.addDataStream(unicode(datastream['ID']), u'I am an artifact, ignore me.', label = unicode(datastream['label']),
-                                                    mimeType = unicode(datastream['mimetype']), controlGroup = u'M',
-                                                    logMessage = unicode('Added ' + datastream['ID'] + ' datastream to:' + PID +' via IslandoraPYUtils'))
-                        Fedora_object_datastream = Fedora_object[datastream['ID']]
-                        Fedora_object_datastream.setContent(datastream_file_handle)
-                    else:
-                        Fedora_object.addDataStream(unicode(datastream['ID']),
-                                                    unicode(datastream_file_handle.read()),
-                                                    label = unicode(datastream['label']),
-                                                    mimeType = unicode(datastream['mimetype']),
-                                                    controlGroup = u'M',
-                                                    logMessage = unicode('Added ' + datastream['ID'] + ' datastream to:'\
-                                                                         + PID +' via IslandoraPYUtils'))
-                        
+                    with open(datastream['filepath'], 'rb') as datastream_file_handle:
+                        if not file_is_text(datastream['filepath']):
+                            # Do a dummy create (an artifact of fcrepo).
+                            Fedora_object.addDataStream(unicode(datastream['ID']), u'I am an artifact, ignore me.', label = unicode(datastream['label']),
+                                                        mimeType = unicode(datastream['mimetype']), controlGroup = u'M',
+                                                        logMessage = unicode('Added ' + datastream['ID'] + ' datastream to:' + PID +' via IslandoraPYUtils'))
+                            Fedora_object_datastream = Fedora_object[datastream['ID']]
+                            Fedora_object_datastream.setContent(datastream_file_handle)
+                        else:
+                            Fedora_object.addDataStream(unicode(datastream['ID']),
+                                                        unicode(datastream_file_handle.read()),
+                                                        label = unicode(datastream['label']),
+                                                        mimeType = unicode(datastream['mimetype']),
+                                                        controlGroup = u'M',
+                                                        logMessage = unicode('Added ' + datastream['ID'] + ' datastream to:'\
+                                                                             + PID +' via IslandoraPYUtils'))
+                            
                 self._logger.info('Added ' + datastream['ID'] + ' datastream to: ' + PID + ' from: ' + datastream['filepath'])
                 
             except (FedoraConnectionException, IOError):
