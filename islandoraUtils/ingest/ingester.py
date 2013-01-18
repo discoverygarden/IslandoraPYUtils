@@ -424,13 +424,23 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                             Fedora_object_datastream = Fedora_object[datastream['ID']]
                             Fedora_object_datastream.setContent(datastream_file_handle)
                         else:
-                            Fedora_object.addDataStream(unicode(datastream['ID']),
-                                                        unicode(datastream_file_handle.read()),
-                                                        label = unicode(datastream['label']),
-                                                        mimeType = unicode(datastream['mimetype']),
-                                                        controlGroup = u'M',
-                                                        logMessage = unicode('Added ' + datastream['ID'] + ' datastream to:'\
-                                                                             + PID +' via IslandoraPYUtils'))
+                            try:
+                                Fedora_object.addDataStream(unicode(datastream['ID']),
+                                                            unicode(datastream_file_handle.read()),
+                                                            label = unicode(datastream['label']),
+                                                            mimeType = unicode(datastream['mimetype']),
+                                                            controlGroup = u'M',
+                                                            logMessage = unicode('Added ' + datastream['ID'] + ' datastream to:'\
+                                                                                 + PID +' via IslandoraPYUtils'))
+                            # If we didn't decode the file correctly we can upload it like a binary file.
+                            except UnicodeDecodeError:
+                                # Do a dummy create (an artifact of fcrepo).
+                                #@todo extract to 'private' function this is duplicated code.
+                                Fedora_object.addDataStream(unicode(datastream['ID']), u'I am an artifact, ignore me.', label = unicode(datastream['label']),
+                                                            mimeType = unicode(datastream['mimetype']), controlGroup = u'M',
+                                                            logMessage = unicode('Added ' + datastream['ID'] + ' datastream to:' + PID +' via IslandoraPYUtils'))
+                                Fedora_object_datastream = Fedora_object[datastream['ID']]
+                                Fedora_object_datastream.setContent(datastream_file_handle)
                             
                 self._logger.info('Added ' + datastream['ID'] + ' datastream to: ' + PID + ' from: ' + datastream['filepath'])
                 
