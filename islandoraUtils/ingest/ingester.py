@@ -4,7 +4,7 @@ Created on 2012-03-19
 @author: William Panting
 @TODO: accept overrides for all objects used in constructor
 '''
-import os, json, csv
+import os, json, csv, shutil
 
 from fcrepo.connection import Connection, FedoraConnectionException
 from fcrepo.client import FedoraClient
@@ -411,41 +411,32 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                 if datastream['control_group'] == 'X':
                     with open(datastream['filepath']) as datastream_file_handle:
                         datastream_contents = datastream_file_handle.read()
-                        Fedora_object.addDataStream(unicode(datastream['ID']), unicode(datastream_contents), label = unicode(datastream['label']),
-                                                  mimeType = unicode(datastream['mimetype']), controlGroup = u'X',
-                                                  logMessage = unicode('Added ' + datastream['ID'] + ' datastream to:' + PID +' via IslandoraPYUtils'))
+                        Fedora_object.addDataStream(unicode(datastream['ID']),
+                                                    unicode(datastream_contents),
+                                                    label = unicode(datastream['label']),
+                                                    mimeType = unicode(datastream['mimetype']),
+                                                    controlGroup = u'X',
+                                                    logMessage = unicode('Added ' + datastream['ID'] + ' datastream to:'
+                                                                         + PID +' via IslandoraPYUtils'))
                 elif datastream['control_group'] == 'M':
                     with open(datastream['filepath'], 'rb') as datastream_file_handle:
                         if not file_is_text(datastream['filepath']):
-                            # Do a dummy create (an artifact of fcrepo).
-                            Fedora_object.addDataStream(unicode(datastream['ID']), u'I am an artifact, ignore me.', label = unicode(datastream['label']),
-                                                        mimeType = unicode(datastream['mimetype']), controlGroup = u'M',
-                                                        logMessage = unicode('Added ' + datastream['ID'] + ' datastream to:' + PID +' via IslandoraPYUtils'))
-                            Fedora_object_datastream = Fedora_object[datastream['ID']]
-                            Fedora_object_datastream.setContent(datastream_file_handle)
+                            self._ingest_file(Fedora_object, datastream, datastream_file_handle)
                         else:
-                            try:
-                                Fedora_object.addDataStream(unicode(datastream['ID']),
-                                                            unicode(datastream_file_handle.read()),
-                                                            label = unicode(datastream['label']),
-                                                            mimeType = unicode(datastream['mimetype']),
-                                                            controlGroup = u'M',
-                                                            logMessage = unicode('Added ' + datastream['ID'] + ' datastream to:'\
-                                                                                 + PID +' via IslandoraPYUtils'))
-                            # If we didn't decode the file correctly we can upload it like a binary file.
-                            except UnicodeDecodeError:
-                                # Do a dummy create (an artifact of fcrepo).
-                                #@todo extract to 'private' function this is duplicated code.
-                                Fedora_object.addDataStream(unicode(datastream['ID']), u'I am an artifact, ignore me.', label = unicode(datastream['label']),
-                                                            mimeType = unicode(datastream['mimetype']), controlGroup = u'M',
-                                                            logMessage = unicode('Added ' + datastream['ID'] + ' datastream to:' + PID +' via IslandoraPYUtils'))
-                                Fedora_object_datastream = Fedora_object[datastream['ID']]
-                                Fedora_object_datastream.setContent(datastream_file_handle)
-                            
-                self._logger.info('Added ' + datastream['ID'] + ' datastream to: ' + PID + ' from: ' + datastream['filepath'])
+                            Fedora_object.addDataStream(unicode(datastream['ID']),
+                                                        datastream_file_handle.read(),
+                                                        label = unicode(datastream['label']),
+                                                        mimeType = unicode(datastream['mimetype']),
+                                                        controlGroup = u'M',
+                                                        logMessage = unicode('Added ' + datastream['ID']
+                                                                             + ' datastream to:'
+                                                                             + PID + ' via IslandoraPYUtils'))
+                self._logger.info('Added ' + datastream['ID'] + ' datastream to: ' + PID +
+                                  ' from: ' + datastream['filepath'])
                 
             except (FedoraConnectionException, IOError):
-                self._logger.error('Error in adding ' + datastream['ID'] + ' datastream to:' + PID + ' from: ' + datastream['filepath'])
+                self._logger.error('Error in adding ' + datastream['ID'] +
+                                   ' datastream to:' + PID + ' from: ' + datastream['filepath'])
         
         # Set the datastream if it is not new.
         else:
@@ -457,13 +448,62 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                     Fedora_object_datastream.setContent(datastream_contents)
                 elif datastream['control_group'] == 'M':
                     datastream_file_handle = open(datastream['filepath'], 'rb')
-                    Fedora_object_datastream = Fedora_object[datastream['ID']]
-                    Fedora_object_datastream.setContent(datastream_file_handle)
-                self._logger.info('Updated ' + datastream['ID'] + ' datastream in:' + PID + ' from: ' + datastream['filepath'])
+                    self._ingest_file(PID, datastream, datastream_file_handle, create = False)
+                self._logger.info('Updated ' + datastream['ID'] + ' datastream in:'
+                                  + PID + ' from: ' + datastream['filepath'])
             except (FedoraConnectionException, IOError):
-                self._logger.error('Error in updating ' + datastream['ID'] + ' datastream in:' + PID + ' from: ' + datastream['filepath'])
+                self._logger.error('Error in updating ' + datastream['ID'] + ' datastream in:'
+                                   + PID + ' from: ' + datastream['filepath'])
+                
         datastream_file_handle.close()
         
+        return
+    
+    def _ingest_file(self,
+                     Fedora_object,
+                     datastream,
+                     datastream_file_handle,
+                     create = True):
+        '''
+            This method wraps ingesting a file into Fedora without reading it into a string.
+            
+            @param object Fedora_object:
+                Fedora object to add the file to.
+            @param dict datastream:
+                Dictionary defining the datastream.
+            @param file_object datastream_file_handle:
+                File handle of the file to ingest.
+            @param boolean create:
+                To create a new datastream or just add contents.
+                Defaults to True.
+        '''
+        if (create):
+            # Do a dummy create (an artifact of fcrepo).
+            Fedora_object.addDataStream(unicode(datastream['ID']),
+                                        u'I am an artifact, ignore me.',
+                                        label = unicode(datastream['label']),
+                                        mimeType = unicode(datastream['mimetype']),
+                                        controlGroup = u'M',
+                                        logMessage = unicode('Added ' + datastream['ID'] + ' datastream to:'
+                                                             + Fedora_object.pid + ' via IslandoraPYUtils'))
+            
+        Fedora_object_datastream = Fedora_object[datastream['ID']]
+        try:
+            Fedora_object_datastream.setContent(datastream_file_handle)
+        except FedoraConnectionException:
+            # Create a local copy in case of slow shares causing a timeout.
+            self._logger.warning('Updating ' + datastream['ID'] + ' datastream in:' +
+                                 Fedora_object.pid + ' from: ' + datastream['filepath'] +
+                                 ' failed, creating local file for upload and retrying.')
+            copied_datastream_file_path = os.path.abspath(os.path.join(self.configuration['miscellaneous']['temporary_directory'],
+                                                          'copied_datastream_for_upload.',
+                                                          os.path.splitext(datastream['filepath'])[1]))
+            
+            shutil.copyfile(datastream['filepath'], copied_datastream_file_path)
+            with open(copied_datastream_file_path, 'rb') as copied_datastream_file_handle:
+                Fedora_object_datastream.setContent(copied_datastream_file_handle)
+            os.remove(copied_datastream_file_path)
+            
         return
     
     def replace_security_on_object(self,
