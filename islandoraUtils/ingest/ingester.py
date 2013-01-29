@@ -385,13 +385,14 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                            datastream,
                            datastream_ID = None):
         '''
-        This function will wrap creating/modifying a datastream in Fedora
-        It's some dynamic kinda crazy:
-        @param mixed datstream:
-            string of source
-            dict defining datastream
-        @param string datastream_ID:
-            ignored if datastream is a dict.
+            This function will wrap creating/modifying a datastream in Fedora
+            It's some dynamic kinda crazy:
+            
+            @param mixed datstream:
+                string of source
+                dict defining datastream
+            @param string datastream_ID:
+                ignored if datastream is a dict.
         '''
         
         PID = Fedora_object.pid
@@ -406,10 +407,11 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                                'control_group':'M'}
             datastream = datastream_dict
             
-        if datastream['ID'] not in Fedora_object:
-            try:
-                if datastream['control_group'] == 'X':
-                    with open(datastream['filepath']) as datastream_file_handle:
+        
+        with open(datastream['filepath'], 'rb') as datastream_file_handle:
+            if datastream['ID'] not in Fedora_object:
+                try:
+                    if datastream['control_group'] == 'X':
                         datastream_contents = datastream_file_handle.read()
                         Fedora_object.addDataStream(unicode(datastream['ID']),
                                                     unicode(datastream_contents),
@@ -418,8 +420,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                                                     controlGroup = u'X',
                                                     logMessage = unicode('Added ' + datastream['ID'] + ' datastream to:'
                                                                          + PID +' via IslandoraPYUtils'))
-                elif datastream['control_group'] == 'M':
-                    with open(datastream['filepath'], 'rb') as datastream_file_handle:
+                    elif datastream['control_group'] == 'M':
                         if not file_is_text(datastream['filepath']):
                             self._ingest_file(Fedora_object, datastream, datastream_file_handle)
                         else:
@@ -431,31 +432,30 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                                                         logMessage = unicode('Added ' + datastream['ID']
                                                                              + ' datastream to:'
                                                                              + PID + ' via IslandoraPYUtils'))
-                self._logger.info('Added ' + datastream['ID'] + ' datastream to: ' + PID +
-                                  ' from: ' + datastream['filepath'])
-                
-            except (FedoraConnectionException, IOError):
-                self._logger.error('Error in adding ' + datastream['ID'] +
-                                   ' datastream to:' + PID + ' from: ' + datastream['filepath'])
-        
-        # Set the datastream if it is not new.
-        else:
-            try:
-                if datastream['control_group'] == 'X':
-                    datastream_file_handle = open(datastream['filepath'])
-                    Fedora_object_datastream = Fedora_object[datastream['ID']]
-                    datastream_contents = datastream_file_handle.read()
-                    Fedora_object_datastream.setContent(datastream_contents)
-                elif datastream['control_group'] == 'M':
-                    datastream_file_handle = open(datastream['filepath'], 'rb')
-                    self._ingest_file(PID, datastream, datastream_file_handle, create = False)
-                self._logger.info('Updated ' + datastream['ID'] + ' datastream in:'
-                                  + PID + ' from: ' + datastream['filepath'])
-            except (FedoraConnectionException, IOError):
-                self._logger.error('Error in updating ' + datastream['ID'] + ' datastream in:'
-                                   + PID + ' from: ' + datastream['filepath'])
-                
-        datastream_file_handle.close()
+                    self._logger.info('Added ' + datastream['ID'] + ' datastream to: ' + PID +
+                                      ' from: ' + datastream['filepath'])
+                    
+                except (FedoraConnectionException, IOError):
+                    try:
+                        self._ingest_file(Fedora_object, datastream, datastream_file_handle)
+                    except (FedoraConnectionException, IOError):
+                        self._logger.error('Error in adding ' + datastream['ID'] +
+                                           ' datastream to:' + PID + ' from: ' + datastream['filepath'])
+            
+            # Set the datastream if it is not new.
+            else:
+                try:
+                    if datastream['control_group'] == 'X':
+                        Fedora_object_datastream = Fedora_object[datastream['ID']]
+                        datastream_contents = datastream_file_handle.read()
+                        Fedora_object_datastream.setContent(datastream_contents)
+                    elif datastream['control_group'] == 'M':
+                        self._ingest_file(Fedora_object, datastream, datastream_file_handle, create = False)
+                    self._logger.info('Updated ' + datastream['ID'] + ' datastream in:'
+                                      + PID + ' from: ' + datastream['filepath'])
+                except (FedoraConnectionException, IOError):
+                    self._logger.error('Error in updating ' + datastream['ID'] + ' datastream in:'
+                                       + PID + ' from: ' + datastream['filepath'])
         
         return
     
@@ -466,6 +466,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                      create = True):
         '''
             This method wraps ingesting a file into Fedora without reading it into a string.
+            It will always create a managed data stream.
             
             @param object Fedora_object:
                 Fedora object to add the file to.
