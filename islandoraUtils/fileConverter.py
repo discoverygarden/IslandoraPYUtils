@@ -228,10 +228,10 @@ def pdf_to_text_or_ocr(inPath, outPath):
     @author William Panting
     
     @param inPath:
-        The origional file to operate on.
+        The original file to operate on.
     @param outPath:
         The extension on outPath will be ignored and replaced with .txt.
-        This is an artifact of tesseract and I coppy this into pdftotext for consistency.
+        This is an artifact of tesseract and I copy this into pdftotext for consistency.
     
     @return tuple:
         first: 0 if failed 1 if successful
@@ -240,10 +240,15 @@ def pdf_to_text_or_ocr(inPath, outPath):
     was_ocrd = False
     outPath = os.path.splitext(outPath)[0] + '.txt'
     
-    #run pdf to text
+    # Run PDF to text.
     pdftotext_call = ['pdftotext', inPath, outPath]
     subprocess.call(pdftotext_call)
-    pdftotext_result = os.stat(outPath).st_size
+    
+    if (os.path.isfile(outPath)):
+        pdftotext_result = os.stat(outPath).st_size
+    else:
+        # File was not a PDF.
+        return (0, was_ocrd)
     
     # If there is just whitespace in the text extraction try OCR.
     if pdftotext_result:
