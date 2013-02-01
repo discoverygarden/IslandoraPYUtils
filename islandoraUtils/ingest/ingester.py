@@ -5,11 +5,11 @@ Created on 2012-03-19
 @TODO: accept overrides for all objects used in constructor
 '''
 import os, json, csv, shutil
+from copy import copy
+from time import sleep
 
 from fcrepo.connection import Connection, FedoraConnectionException
 from fcrepo.client import FedoraClient
-
-from copy import copy
 
 from islandoraUtils.ingest.Islandora_configuration import Islandora_configuration
 from islandoraUtils.ingest.Islandora_logger import Islandora_logger
@@ -406,58 +406,67 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                                'ID':datastream_ID,
                                'control_group':'M'}
             datastream = datastream_dict
-            
-        
-        with open(datastream['filepath'], 'rb') as datastream_file_handle:
-            if datastream['ID'] not in Fedora_object:
-                try:
-                    if datastream['control_group'] == 'X':
-                        datastream_contents = datastream_file_handle.read()
-                        Fedora_object.addDataStream(unicode(datastream['ID']),
-                                                    unicode(datastream_contents),
-                                                    label = unicode(datastream['label']),
-                                                    mimeType = unicode(datastream['mimetype']),
-                                                    controlGroup = u'X',
-                                                    logMessage = unicode('Added ' + datastream['ID'] + ' datastream to:'
-                                                                         + PID +' via IslandoraPYUtils'))
-                    elif datastream['control_group'] == 'M':
-                        if not file_is_text(datastream['filepath']):
-                            self._ingest_file(Fedora_object, datastream, datastream_file_handle)
-                        else:
-                            Fedora_object.addDataStream(unicode(datastream['ID']),
-                                                        datastream_file_handle.read(),
-                                                        label = unicode(datastream['label']),
-                                                        mimeType = unicode(datastream['mimetype']),
-                                                        controlGroup = u'M',
-                                                        logMessage = unicode('Added ' + datastream['ID']
-                                                                             + ' datastream to:'
-                                                                             + PID + ' via IslandoraPYUtils'))
-                    self._logger.info('Added ' + datastream['ID'] + ' datastream to: ' + PID +
-                                      ' from: ' + datastream['filepath'])
+        # Try to ingest the datastream a few times in case there is a momentary
+        # lapse in the file system/shares.
+        attempts = 3
+        while attempts:
+            try:
+                with open(datastream['filepath'], 'rb') as datastream_file_handle:
+                    if datastream['ID'] not in Fedora_object:
+                        try:
+                            if datastream['control_group'] == 'X':
+                                datastream_contents = datastream_file_handle.read()
+                                Fedora_object.addDataStream(unicode(datastream['ID']),
+                                                            unicode(datastream_contents),
+                                                            label = unicode(datastream['label']),
+                                                            mimeType = unicode(datastream['mimetype']),
+                                                            controlGroup = u'X',
+                                                            logMessage = unicode('Added ' + datastream['ID']
+                                                                                 + ' datastream to:'
+                                                                                 + PID +' via IslandoraPYUtils'))
+                            elif datastream['control_group'] == 'M':
+                                if not file_is_text(datastream['filepath']):
+                                    self._ingest_file(Fedora_object, datastream, datastream_file_handle)
+                                else:
+                                    Fedora_object.addDataStream(unicode(datastream['ID']),
+                                                                datastream_file_handle.read(),
+                                                                label = unicode(datastream['label']),
+                                                                mimeType = unicode(datastream['mimetype']),
+                                                                controlGroup = u'M',
+                                                                logMessage = unicode('Added ' + datastream['ID']
+                                                                                     + ' datastream to:'
+                                                                                     + PID + ' via IslandoraPYUtils'))
+                            self._logger.info('Added ' + datastream['ID'] + ' datastream to: ' + PID +
+                                              ' from: ' + datastream['filepath'])
+                            
+                        except (FedoraConnectionException, IOError):
+                            try:
+                                self._ingest_file(Fedora_object, datastream, datastream_file_handle)
+                            except (FedoraConnectionException, IOError):
+                                self._logger.error('Error in adding ' + datastream['ID'] +
+                                                   ' datastream to:' + PID + ' from: ' + datastream['filepath'])
                     
-                except (FedoraConnectionException, IOError):
-                    try:
-                        self._ingest_file(Fedora_object, datastream, datastream_file_handle)
-                    except (FedoraConnectionException, IOError):
-                        self._logger.error('Error in adding ' + datastream['ID'] +
-                                           ' datastream to:' + PID + ' from: ' + datastream['filepath'])
-            
-            # Set the datastream if it is not new.
-            else:
-                try:
-                    if datastream['control_group'] == 'X':
-                        Fedora_object_datastream = Fedora_object[datastream['ID']]
-                        datastream_contents = datastream_file_handle.read()
-                        Fedora_object_datastream.setContent(datastream_contents)
-                    elif datastream['control_group'] == 'M':
-                        self._ingest_file(Fedora_object, datastream, datastream_file_handle, create = False)
-                    self._logger.info('Updated ' + datastream['ID'] + ' datastream in:'
-                                      + PID + ' from: ' + datastream['filepath'])
-                except (FedoraConnectionException, IOError):
-                    self._logger.error('Error in updating ' + datastream['ID'] + ' datastream in:'
-                                       + PID + ' from: ' + datastream['filepath'])
-        
-        return
+                    # Set the datastream if it is not new.
+                    else:
+                        try:
+                            if datastream['control_group'] == 'X':
+                                Fedora_object_datastream = Fedora_object[datastream['ID']]
+                                datastream_contents = datastream_file_handle.read()
+                                Fedora_object_datastream.setContent(datastream_contents)
+                            elif datastream['control_group'] == 'M':
+                                self._ingest_file(Fedora_object, datastream, datastream_file_handle, create = False)
+                            self._logger.info('Updated ' + datastream['ID'] + ' datastream in:'
+                                              + PID + ' from: ' + datastream['filepath'])
+                        except (FedoraConnectionException, IOError):
+                            self._logger.error('Error in updating ' + datastream['ID'] + ' datastream in:'
+                                               + PID + ' from: ' + datastream['filepath'])
+                return
+            except IOError as gremlins:
+                attempts -= 1
+                if not attempts:
+                    raise gremlins
+                else:
+                    sleep(60)
     
     def _ingest_file(self,
                      Fedora_object,
