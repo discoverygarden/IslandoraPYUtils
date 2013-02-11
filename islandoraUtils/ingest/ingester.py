@@ -454,7 +454,8 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                                 datastream_contents = datastream_file_handle.read()
                                 Fedora_object_datastream.setContent(datastream_contents)
                             elif datastream['control_group'] == 'M':
-                                self._ingest_file(Fedora_object, datastream, datastream_file_handle, create = False)
+                                self._ingest_file(Fedora_object, datastream,
+                                                  datastream_file_handle, create = False)
                             self._logger.info('Updated ' + datastream['ID'] + ' datastream in:'
                                               + PID + ' from: ' + datastream['filepath'])
                         except (FedoraConnectionException, IOError):
@@ -466,7 +467,9 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                 if not attempts:
                     raise gremlins
                 else:
-                    sleep(60)
+                    self._logger.warning('IOError updating DS on' + PID + '/'
+                                         + datastream['ID'] + ', Trying again')
+                    sleep(300)
     
     def _ingest_file(self,
                      Fedora_object,
