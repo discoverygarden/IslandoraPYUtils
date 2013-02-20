@@ -408,7 +408,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
             datastream = datastream_dict
         # Try to ingest the datastream a few times in case there is a momentary
         # lapse in the file system/shares.
-        attempts = 3
+        attempts = 4
         while attempts:
             try:
                 with open(datastream['filepath'], 'rb') as datastream_file_handle:
@@ -469,7 +469,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                 else:
                     self._logger.warning('IOError updating DS on' + PID + '/'
                                          + datastream['ID'] + ', Trying again')
-                    sleep(300)
+                    sleep(600)
     
     def _ingest_file(self,
                      Fedora_object,
