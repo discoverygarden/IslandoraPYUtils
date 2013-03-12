@@ -36,6 +36,6 @@ def summarize_directory(directory, file_name_to_write = None):
             csv_writer = csv.writer(report_file_handle)
             csv_writer.writerow(['file_path', 'last_modified_date'])
             for path in paths_and_times:
-                csv_writer.writerow([path, paths_and_times[path]])
+                csv_writer.writerow([path.encode('utf-8'), paths_and_times[path]])
                 
     return(os.path.join(directory, file_name_to_write))
