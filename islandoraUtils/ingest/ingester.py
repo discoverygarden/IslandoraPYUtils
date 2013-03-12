@@ -866,9 +866,9 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                         timestamp = row['timestamp']
                     else:
                         timestamp = None
-                    file_path = unicode(row['file_path'])
+                    file_path = unicode(row['file_path'].decode('utf-8'))
                     filesystem_info[file_path] = timestamp
-                    self._logger.debug('file_path: {0}   timestamp: {1}'.format(file_path,timestamp))
+                    self._logger.debug('file_path: '+ file_path +'   timestamp: ' + timestamp)
             
         return filesystem_info
     
