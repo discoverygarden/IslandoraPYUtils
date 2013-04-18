@@ -282,6 +282,10 @@ def create_pdf(obj, dsid, pdfid):
         value = 1
         logger.warning('PID:%s DSID:%s PDF creation failed.' % (obj.pid, dsid))
 
+    if value == 1:
+        logger.info('An issue occured with PDF creation, trying ghostpdl on ' + obj.pid + ' ' + dsid)
+        xps_to_pdf(os.path.join(directory, file), os.path.join(directory, newfile))
+        
     logger.debug(os.listdir(directory))
     rmtree(directory, ignore_errors=True)
     return value
@@ -334,6 +338,7 @@ def create_pdf_and_swf(obj, dsid, pdfid, swfid):
     
     @return
         1 if successful 0 if not
+    '''
     '''
     logger = logging.getLogger('islandoraUtils.DSConverter.create_pdf_and_swf')
     #recieve document and create a PDF with libre/open office if possible
@@ -404,6 +409,14 @@ def create_pdf_and_swf(obj, dsid, pdfid, swfid):
         return 1
     else:
         return 0
+    '''
+    '''
+        This is a hack to get this working again with current versions of Libre
+        Office.  It should be revisited in the future.
+    '''
+    create_pdf(obj, dsid, pdfid)
+    r = create_swf(obj, pdfid, swfid)
+    return r
 
 def create_text(obj, dsid, txtid, ocrid):
     '''
