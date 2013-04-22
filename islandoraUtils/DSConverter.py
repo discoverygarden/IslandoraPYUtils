@@ -341,7 +341,7 @@ def create_pdf_and_swf(obj, dsid, pdfid, swfid):
         The datastream ID to upload the new PDF to.
     
     @return
-        1 if successful 0 if not
+        0 if successful 1 if not
     '''
     '''
     logger = logging.getLogger('islandoraUtils.DSConverter.create_pdf_and_swf')
@@ -419,7 +419,7 @@ def create_pdf_and_swf(obj, dsid, pdfid, swfid):
         Office.  It should be revisited in the future.
     '''
     # Assume unsuccesful.
-    final_return = 0
+    final_return = 1
     pdf_return = create_pdf(obj, dsid, pdfid)
     if pdf_return:
         final_return = create_swf(obj, pdfid, swfid)
