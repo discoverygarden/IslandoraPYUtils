@@ -284,7 +284,11 @@ def create_pdf(obj, dsid, pdfid):
 
     if value == 1:
         logger.info('An issue occured with PDF creation, trying ghostpdl on ' + obj.pid + ' ' + dsid)
-        xps_to_pdf(os.path.join(directory, file), os.path.join(directory, newfile))
+        xps_return = xps_to_pdf(os.path.join(directory, file), os.path.join(directory, newfile))
+        if xps_return:
+            value = 0
+        else:
+            value = 1
         
     logger.debug(os.listdir(directory))
     rmtree(directory, ignore_errors=True)
@@ -414,9 +418,13 @@ def create_pdf_and_swf(obj, dsid, pdfid, swfid):
         This is a hack to get this working again with current versions of Libre
         Office.  It should be revisited in the future.
     '''
-    create_pdf(obj, dsid, pdfid)
-    r = create_swf(obj, pdfid, swfid)
-    return r
+    # Assume unsuccesful.
+    final_return = 0
+    pdf_return = create_pdf(obj, dsid, pdfid)
+    if pdf_return:
+        final_return = create_swf(obj, pdfid, swfid)
+        
+    return final_return
 
 def create_text(obj, dsid, txtid, ocrid):
     '''
