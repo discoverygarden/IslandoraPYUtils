@@ -36,7 +36,10 @@ def create_thumbnail(obj, dsid, tnid):
     logger = logging.getLogger('islandoraUtils.DSConverter.create_thumbnail')
 
     # We receive a file and create a jpg thumbnail
-    directory, file = get_datastream_as_file(obj, dsid)
+    try:
+        directory, file = get_datastream_as_file(obj, dsid)
+    except:
+        return 1
     
     # fine out what mimetype the input file is
     try:
@@ -421,7 +424,7 @@ def create_pdf_and_swf(obj, dsid, pdfid, swfid):
     # Assume unsuccesful.
     final_return = 1
     pdf_return = create_pdf(obj, dsid, pdfid)
-    if pdf_return:
+    if pdf_return == 0:
         final_return = create_swf(obj, pdfid, swfid)
         
     return final_return
@@ -443,8 +446,10 @@ def create_text(obj, dsid, txtid, ocrid):
         The datastream ID to create if we fall back to OCR
     '''
     logger = logging.getLogger('islandoraUtils.DSConverter.create_text')
-    
-    directory, file = get_datastream_as_file(obj, dsid, "pdf")
+    try:
+        directory, file = get_datastream_as_file(obj, dsid, "pdf")
+    except:
+        return 1
     
     path_to_source = os.path.join(directory, file)
     path_to_text = os.path.join(os.path.splitext(path_to_source)[0] + '.txt')
@@ -454,15 +459,15 @@ def create_text(obj, dsid, txtid, ocrid):
     if proceed and not was_ocrd:
         update_datastream(obj, txtid, path_to_text, label = 'pdf to text', mimeType = 'text/plain')
         rmtree(directory, ignore_errors=True)
-        return 1
+        return 0
     elif proceed and was_ocrd:
         update_datastream(obj, ocrid, path_to_text, label = 'pdf to ocr', mimeType = 'text/plain')
         rmtree(directory, ignore_errors=True)
-        return 1
+        return 0
     else:
         logger.warning('PID:%s DSID:%s text creation or ocr failed.' % (obj.pid, dsid))
         rmtree(directory, ignore_errors=True)
-        return 0
+        return 1
     
 def check_dates(obj, dsid, derivativeid):
     '''
