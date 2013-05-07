@@ -106,7 +106,6 @@ def create_mp4(obj, dsid, mp4id):
     mp4file = os.path.join(directory, 'output.mp4')
     
     r = subprocess.call(['ffmpeg', '-i', infile, '-f', 'mp4', '-vcodec', 'libx264', '-preset', 'medium', '-acodec', 'libfaac', '-ab', '128k', '-ac', '2', '-async', '1', '-movflags', 'faststart', mp4file])
-    logger.info('bobbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb')
     if r == 0:
         update_datastream(obj, mp4id, mp4file, label='compressed mp4', mimeType='video/mp4')
     else:
