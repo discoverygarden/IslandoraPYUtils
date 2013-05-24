@@ -27,8 +27,12 @@ def summarize_directory(directory, file_name_to_write = None):
     for path, dirs, files in os.walk(unicode(directory)):
         for file_name in files:
             file_path = os.path.join(path, file_name)
-            last_modified_time = os.path.getmtime(file_path)
-            paths_and_times[file_path] = last_modified_time
+            try:
+                last_modified_time = os.path.getmtime(file_path)
+                paths_and_times[file_path] = last_modified_time
+            except OSError:
+                # Don't add a missing file to the summary.
+                pass
     
     # Write out report if a file name was provided.
     if file_name_to_write is not None:
