@@ -110,7 +110,7 @@ def update_datastream(obj, dsid, filename, label='', mimeType='', controlGroup='
         'url': conn.url,
         'username': conn.username, 'password': conn.password,
         'pid': obj.pid, 'dsid': dsid,
-        'label': quote(label), 'mimetype': mimeType, 'controlgroup': controlGroup,
+        'label': label, 'mimetype': mimeType, 'controlgroup': controlGroup,
         'filename': filename,
         'tries': tries,
         'checksumType': checksumType,
