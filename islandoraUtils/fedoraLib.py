@@ -403,14 +403,13 @@ def get_fedora_client(configuration):
         @return FedoraClient
             A client for accessing Fedora.
     '''
-    from fcrepo.connection import Connection, FedoraConnectionException
-    from fcrepo.client import FedoraClient
+    from fcrepo.connection import FedoraConnectionException
     
     fcrepo_connection = Connection(configuration['Fedora']['url'],
                                    username = configuration['Fedora']['username'],
                                    password = configuration['Fedora']['password'])
     try:
-        return(FedoraClient(fcrepo_connection))
+        return(Client(fcrepo_connection))
     except FedoraConnectionException:
         logging.error('Error connecting to Fedora')
 
