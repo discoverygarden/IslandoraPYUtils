@@ -392,6 +392,28 @@ def update_hashed_datastream_without_dup(obj, dsid, filename, **params):
 
     return update_datastream(obj=obj, dsid=dsid, filename=filename, **params)
 
+def get_fedora_client(configuration):
+    '''
+        This function will get a connection to Fedora.
+        Most useful with misc.get_configuration.
+        
+        @param dict configuration
+            A dict containing Fedora=> url, username, password
+            
+        @return FedoraClient
+            A client for accessing Fedora.
+    '''
+    from fcrepo.connection import Connection, FedoraConnectionException
+    from fcrepo.client import FedoraClient
+    
+    fcrepo_connection = Connection(configuration['Fedora']['url'],
+                                   username = configuration['Fedora']['username'],
+                                   password = configuration['Fedora']['password'])
+    try:
+        return(FedoraClient(fcrepo_connection))
+    except FedoraConnectionException:
+        logging.error('Error connecting to Fedora')
+        
 if __name__ == '__main__':
     import fcrepo
     connection = fcrepo.connection.Connection('http://localhost:8080/fedora', username='fedoraAdmin', password='fedoraAdmin', persistent=False)
