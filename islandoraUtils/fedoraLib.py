@@ -413,7 +413,28 @@ def get_fedora_client(configuration):
         return(FedoraClient(fcrepo_connection))
     except FedoraConnectionException:
         logging.error('Error connecting to Fedora')
+
+def strings_to_literal_rels_objects(object_strings):
+    '''
+        This function will take a list of relationship object strings and
+        return a list of relationship literal object objects compatible with 
+        the fedora_relationships module.
         
+        @param object_strings
+            A list of strings of literal objects.
+            
+        @return list
+            A list of objects of literal objects.
+    '''
+    from islandoraUtils.metadata import fedora_relationships
+
+    rels_objects = []
+
+    for object_string in object_strings:
+        rels_objects.append(fedora_relationships.rels_object(unicode(object_string),
+                                                             fedora_relationships.rels_object.LITERAL))
+    return rels_objects
+
 if __name__ == '__main__':
     import fcrepo
     connection = fcrepo.connection.Connection('http://localhost:8080/fedora', username='fedoraAdmin', password='fedoraAdmin', persistent=False)
