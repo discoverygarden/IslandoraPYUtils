@@ -541,6 +541,58 @@ def is_XLS_realy_XML(XLS_path):
         return True
     except:
         return False
+    
+def get_configuration(configuration_file_path):
+    '''
+        This file will create a configuration dictionary.
+        
+        @param string config_file_path
+            The file path to the configuration file.
+            
+        @return dict
+            A dictionary of configuration values.
+    '''
+    import ConfigParser
+    
+    configuration_parser = ConfigParser.SafeConfigParser()
+    configuration_parser.read(configuration_file_path)
+    
+    return config_parser_to_dict(configuration_parser)
+
+def get_logger(log_dir, log_file_name):
+    '''
+        This function will get a logger.
+    
+        @param string log_dir
+            The directory to put the log file.
+        @param string log_file_name
+            A name for the logging file.
+    
+        @return logger
+            A logger.
+    '''
+    
+    import logging, logging.handlers
+    
+    log_file = os.path.join(log_dir, log_file_name + '.log')
+    # Create the log file if it does not exist.
+    if not os.path.exists(log_dir):
+        os.mkdir(log_dir)
+    if not os.path.exists(log_file):
+        log_file_handle = open(log_file, 'w')
+        log_file_handle.close()
+        
+    logger = logging.getLogger()
+    
+    handler = logging.handlers.TimedRotatingFileHandler(log_file,'midnight',1)
+    formatter = logging.Formatter('%(levelname)s - %(asctime)s - %(name)s - %(message)s')
+    handler.setFormatter(formatter)
+    handler.suffix = "%Y-%m-%d"
+    logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
+    logger.info('Starting logging session.')
+    
+    return logger
 
 if __name__ == '__main__':
     '''
