@@ -541,6 +541,23 @@ def is_XLS_realy_XML(XLS_path):
         return True
     except:
         return False
+    
+def get_configuration(configuration_file_path):
+    '''
+        This file will create a configuration dictionary.
+        
+        @param string config_file_path
+            The file path to the configuration file.
+            
+        @return dict
+            A dictionary of configuration values.
+    '''
+    import ConfigParser
+    
+    configuration_parser = ConfigParser.SafeConfigParser()
+    configuration_parser.read(configuration_file_path)
+    
+    return config_parser_to_dict(configuration_parser)
 
 if __name__ == '__main__':
     '''
