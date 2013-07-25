@@ -392,6 +392,48 @@ def update_hashed_datastream_without_dup(obj, dsid, filename, **params):
 
     return update_datastream(obj=obj, dsid=dsid, filename=filename, **params)
 
+def get_fedora_client(configuration):
+    '''
+        This function will get a connection to Fedora.
+        Most useful with misc.get_configuration.
+        
+        @param dict configuration
+            A dict containing Fedora=> url, username, password
+            
+        @return FedoraClient
+            A client for accessing Fedora.
+    '''
+    from fcrepo.connection import FedoraConnectionException
+    
+    fcrepo_connection = Connection(configuration['Fedora']['url'],
+                                   username = configuration['Fedora']['username'],
+                                   password = configuration['Fedora']['password'])
+    try:
+        return(Client(fcrepo_connection))
+    except FedoraConnectionException:
+        logging.error('Error connecting to Fedora')
+
+def strings_to_literal_rels_objects(object_strings):
+    '''
+        This function will take a list of relationship object strings and
+        return a list of relationship literal object objects compatible with 
+        the fedora_relationships module.
+        
+        @param object_strings
+            A list of strings of literal objects.
+            
+        @return list
+            A list of objects of literal objects.
+    '''
+    from islandoraUtils.metadata import fedora_relationships
+
+    rels_objects = []
+
+    for object_string in object_strings:
+        rels_objects.append(fedora_relationships.rels_object(unicode(object_string),
+                                                             fedora_relationships.rels_object.LITERAL))
+    return rels_objects
+
 if __name__ == '__main__':
     import fcrepo
     connection = fcrepo.connection.Connection('http://localhost:8080/fedora', username='fedoraAdmin', password='fedoraAdmin', persistent=False)

@@ -19,7 +19,7 @@ from islandoraUtils.metadata import fedora_relationships
 from islandoraUtils.misc import get_mime_type_from_path, path_to_datastream_ID, path_to_label,\
                                 convert_members_to_unicode, convert_string_to_timestamp, file_is_text
 from islandoraUtils.xacml.tools import Xacml
-from islandoraUtils.fedoraLib import replace_relationships
+from islandoraUtils.fedoraLib import replace_relationships, strings_to_literal_rels_objects
 
 class ingester(object):
     '''
@@ -593,7 +593,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
             
             replace_relationships(Fedora_object_RELS,
                                   XACML_viewable_role_RDF_object,
-                                  isViewableByRoles)
+                                  strings_to_literal_rels_objects(isViewableByRoles))
             
         if isViewableByUsers is not None:
             XACML_viewable_user_RDF_object = fedora_relationships.rels_predicate(self._configuration['relationships']['xacml_relationship_namespace_alias'],
@@ -601,7 +601,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
             
             replace_relationships(Fedora_object_RELS,
                                   XACML_viewable_user_RDF_object,
-                                  isViewableByUsers)
+                                  strings_to_literal_rels_objects(isViewableByUsers))
         # Management RELS
         if isManageableByRoles is not None:
             XACML_manageable_role_RDF_object = fedora_relationships.rels_predicate(self._configuration['relationships']['xacml_relationship_namespace_alias'],
@@ -609,7 +609,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
             
             replace_relationships(Fedora_object_RELS,
                                   XACML_manageable_role_RDF_object,
-                                  isManageableByRoles)
+                                  strings_to_literal_rels_objects(isManageableByRoles))
             
         if isManageableByUsers is not None:
             XACML_manageable_user_RDF_object = fedora_relationships.rels_predicate(self._configuration['relationships']['xacml_relationship_namespace_alias'],
@@ -617,7 +617,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
             
             replace_relationships(Fedora_object_RELS,
                                   XACML_manageable_user_RDF_object,
-                                  isManageableByUsers)
+                                  strings_to_literal_rels_objects(isManageableByUsers))
             
         Fedora_object_RELS.update()
         
