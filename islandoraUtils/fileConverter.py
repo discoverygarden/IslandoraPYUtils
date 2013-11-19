@@ -24,6 +24,7 @@ TODO: provide override options for various input checks
 import logging, subprocess, os, xmlib, stat
 from xmlib import filter_illegal_characters_from_file
 
+@newrelic.agent.function_trace()
 def tif_to_jp2(inPath,outPath,kakaduOpts=None,imageMagicOpts=None,*extraArgs):
     '''
     Converts tiff to jp2
@@ -118,7 +119,7 @@ def tif_to_jp2(inPath,outPath,kakaduOpts=None,imageMagicOpts=None,*extraArgs):
 
     return True
 
-
+@newrelic.agent.function_trace()
 def tif_OCR(inPath,outPath,fileTypeOpts,inputOpts=None,*extraArgs):
     '''
     ABBYY OCR CLI Command Line Tool support
@@ -216,6 +217,7 @@ def tif_OCR(inPath,outPath,fileTypeOpts,inputOpts=None,*extraArgs):
             logging.info('File OCR\'d: %s'% (absPathFileIn))
     return True
 
+@newrelic.agent.function_trace()
 def pdf_to_text_or_ocr(inPath, outPath):
     '''
     This function will create a new plain text file at the outPath derived from a PDF
@@ -284,6 +286,7 @@ def pdf_to_text_or_ocr(inPath, outPath):
         
     return (True, was_ocrd)
 
+@newrelic.agent.function_trace()
 def xps_to_pdf(inPath, outPath):
     '''
     This function will create a new pdf file at the outPath derived from an xps
@@ -314,7 +317,8 @@ def xps_to_pdf(inPath, outPath):
         return True
     else:
         return False
-
+    
+@newrelic.agent.function_trace()
 def tif_to_jpg(inPath, outPath, imageMagicOpts, *extraArgs):
     '''
     This function will use ImageMagick to convert tifs to jpgs
@@ -375,6 +379,7 @@ def tif_to_jpg(inPath, outPath, imageMagicOpts, *extraArgs):
             logging.info('File converted: %s'% (filePathOut))
     return True
 
+@newrelic.agent.function_trace()
 def tif_to_pdf(inPath,outPath,tiff2pdfOpts,*extraArgs):
     '''
     This function will use the shell's tiff2pdf to convert tiff files to pdf
@@ -425,7 +430,7 @@ def tif_to_pdf(inPath,outPath,tiff2pdfOpts,*extraArgs):
             logging.warning('PDF creation failed (tiff2pdf return code:%d for file input %s).' % ( r, filePathIn))
     return True
 
-
+@newrelic.agent.function_trace()
 def pdf_to_swf(inPath,outPath,swfToolsOpts,*extraArgs):
     '''
     This function will use swftools to convert pdf files to swfs
@@ -491,7 +496,7 @@ def pdf_to_swf(inPath,outPath,swfToolsOpts,*extraArgs):
             logging.info('File converted: %s'% (filePathOut))
     return True
 
-
+@newrelic.agent.function_trace()
 def wav_to_ogg(inPath,outPath,FFmpegOpts,*extraArgs):
     '''
 This function will use FFmpeg to turn a wav file into an ogg file
@@ -553,7 +558,7 @@ This function will use FFmpeg to turn a wav file into an ogg file
             logging.info('File converted: %s'% (filePathOut))
     return True
 
-
+@newrelic.agent.function_trace()
 def wav_to_mp3(inPath,outPath,lameOpts,*extraArgs):
     '''
 This function uses the lame tool to make wav files into mp3 files
@@ -614,7 +619,7 @@ This function uses the lame tool to make wav files into mp3 files
             logging.info('File converted: %s'% (filePathOut))
     return True
 
-
+@newrelic.agent.function_trace()
 def pdf_to_jpg(inPath,outPath,imageMagicOpts,*extraArgs):
     '''
 This function will use ImageMagick to convert tifs to jpgs
@@ -675,6 +680,7 @@ This function will use ImageMagick to convert tifs to jpgs
             logging.info('File converted: %s'% (filePathOut))
     return True
 
+@newrelic.agent.function_trace()
 def exif_to_xml(inPath, outPath, *extraArgs):
     '''
     This function will extract the entire exif from an image and send it to an xml file, also for full directories
@@ -744,6 +750,7 @@ def exif_to_xml(inPath, outPath, *extraArgs):
 
     return True
 
+@newrelic.agent.function_trace()
 def mods_to_solr(inPath, outPath, *extraArgs):
     '''
 This function will take a MODS xml file and transform it into a SOLR xml file.
@@ -804,7 +811,7 @@ This function will take a MODS xml file and transform it into a SOLR xml file.
 collection of helper functions used by the API functions
 '''
 
-
+@newrelic.agent.function_trace()
 def checkPaths(pathIn, pathOut):
     '''
 Does some standardized error checking on the input and output path arguments
@@ -835,7 +842,7 @@ Does some standardized error checking on the input and output path arguments
 
     return True
 
-
+@newrelic.agent.function_trace()
 def checkOpts(optsIn):
     '''
 Does some standardized checking on command line option arguments
@@ -849,7 +856,7 @@ Does some standardized checking on command line option arguments
         return False
     return True
 
-
+@newrelic.agent.function_trace()
 def checkExtraArgs(args):
     '''
 Does a standard check to see if too many args was passed in
@@ -863,7 +870,7 @@ Does a standard check to see if too many args was passed in
         return False
     return True
 
-
+@newrelic.agent.function_trace()
 def checkStd(pathIn,pathOut,args,*opts):
     '''
 Wrapper function that calls all standard error checking

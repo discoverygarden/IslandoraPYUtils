@@ -11,6 +11,7 @@ from time import sleep
 from copy import copy
 from lxml import etree
 
+@newrelic.agent.function_trace()
 def convert_string_to_timestamp(time_string, time_format = "%Y-%m-%dT%H:%M:%S"):
     '''
     This function will convert a UTC string to a timestamp
@@ -29,6 +30,7 @@ def convert_string_to_timestamp(time_string, time_format = "%Y-%m-%dT%H:%M:%S"):
     
     return timestamp
 
+@newrelic.agent.function_trace()
 def restart_office_headless():
     '''
     This function will simply try to restart soffice service.
@@ -38,6 +40,7 @@ def restart_office_headless():
     start_office_headless()
     return
 
+@newrelic.agent.function_trace()
 def stop_office_headless():
     '''
     This function will attempt to stop open/libre office headless.
@@ -55,7 +58,7 @@ def stop_office_headless():
             return
     return
     
-
+@newrelic.agent.function_trace()
 def start_office_headless():
     '''
     This function will attempt to start open/libre office headless on port 8100
@@ -75,6 +78,7 @@ def start_office_headless():
     sleep(100)
     return result
     
+@newrelic.agent.function_trace()
 def get_extension_from_mimetype(mimetype):
     '''
     This function will get the extensions that are applicable to a mimetype
@@ -95,6 +99,7 @@ def get_extension_from_mimetype(mimetype):
     
     return extensions
 
+@newrelic.agent.function_trace()
 def get_extension_mimetype_mapping():
     '''
     This function wraps the mimetype to extension mapping.
@@ -270,6 +275,7 @@ def get_extension_mimetype_mapping():
     
     return mimes
 
+@newrelic.agent.function_trace()
 def config_parser_to_dict(configuration_parser):
     '''
     This function will take a configuration parser and turn it into a simple dictionary.
@@ -294,6 +300,7 @@ def config_parser_to_dict(configuration_parser):
             
     return configuration_dictionary
 
+@newrelic.agent.function_trace()
 def get_mime_type_from_path(path):
     '''
     yes I am this lazy
@@ -304,6 +311,7 @@ def get_mime_type_from_path(path):
     extension = os.path.splitext(path)[1]
     return getMimeType(extension)
 
+@newrelic.agent.function_trace()
 def getMimeType(extension):
     '''
     This function will get the mimetype of the provided file extension
@@ -343,12 +351,13 @@ def getMimeType(extension):
     # assume an unkown binary format if no match found
     return 'application/octet-stream'
 
-
+@newrelic.agent.function_trace()
 def __chunk(file_name, size):
     start = 0
     with open(file_name, 'r+b') as temp:
         pass
-
+    
+@newrelic.agent.function_trace()
 def hash_file(file_name, hash_type='SHA-1', chunks=2**20):
     '''
         Hashes a file at the given path with the given algorithm, and returns the hash.
@@ -393,7 +402,8 @@ def hash_file(file_name, hash_type='SHA-1', chunks=2**20):
             return h.hexdigest()
     else:
         raise ValueError('File %s does not exist!' % file_name)
-
+    
+@newrelic.agent.function_trace()
 def force_extract_integer_from_string(string_to_cast):
     '''
     This is a simple function that will quash non-numeric characters in a string and return an integer.
@@ -407,6 +417,7 @@ def force_extract_integer_from_string(string_to_cast):
     string_cast_to_int = int(interum_string)
     return string_cast_to_int
 
+@newrelic.agent.function_trace()
 def path_to_datastream_ID(path):
     '''
     Will take in a path and return a contrived datastream ID which is the capitalized version of the extension
@@ -419,6 +430,7 @@ def path_to_datastream_ID(path):
     
     return datastream_ID
 
+@newrelic.agent.function_trace()
 def path_to_label(path):
     '''
     Will take in a path and return a contrived datastream label which is the 
@@ -430,6 +442,7 @@ def path_to_label(path):
     datastream_label = os.path.splitext(os.path.basename(path))[0]
     return datastream_label
 
+@newrelic.agent.function_trace()
 def locate(pattern, root = os.curdir):
     '''
     Locate all files matching supplied filename pattern in and below
@@ -452,6 +465,7 @@ def locate(pattern, root = os.curdir):
         for filename in fnmatch.filter(files, pattern):
             yield os.path.join(path, filename)
 
+@newrelic.agent.function_trace()
 def convert_members_to_unicode(non_unicode_iterable):
     '''
     This function will take in and pass out a new iterable
@@ -473,6 +487,7 @@ def convert_members_to_unicode(non_unicode_iterable):
     
     return modified_iterable
 
+@newrelic.agent.function_trace()
 def base64_string_to_file(base64_string, file_path):
     '''
     This function will decode the given string and print it to the given path.
@@ -488,6 +503,7 @@ def base64_string_to_file(base64_string, file_path):
 
     return
 
+@newrelic.agent.function_trace()
 def is_image(prospective_image_path):
     '''
     This function will check the mimetype 
@@ -505,6 +521,7 @@ def is_image(prospective_image_path):
         
     return False
 
+@newrelic.agent.function_trace()
 def file_is_text(prospective_text_path):
     '''
     This function will check the mimetype 
@@ -523,6 +540,7 @@ def file_is_text(prospective_text_path):
         
     return False
 
+@newrelic.agent.function_trace()
 def is_XLS_realy_XML(XLS_path):
     '''
     This function will check if a file is an XML (an old excel format)
@@ -542,6 +560,7 @@ def is_XLS_realy_XML(XLS_path):
     except:
         return False
     
+@newrelic.agent.function_trace()
 def get_configuration(configuration_file_path):
     '''
         This file will create a configuration dictionary.
@@ -559,6 +578,7 @@ def get_configuration(configuration_file_path):
     
     return config_parser_to_dict(configuration_parser)
 
+@newrelic.agent.function_trace()
 def get_logger(log_dir, log_file_name):
     '''
         This function will get a logger.

@@ -17,7 +17,7 @@ from time import sleep
 
 from islandoraUtils.misc import hash_file, get_extension_from_mimetype
 
-
+@newrelic.agent.function_trace()
 def replace_relationships(rels_object, predicate, objects):
     '''
     It may be necessary to replace existing triple store
@@ -48,6 +48,7 @@ def replace_relationships(rels_object, predicate, objects):
     
     return
     
+@newrelic.agent.function_trace()
 def purge_related_objects(Fedora_client,
                           relationship_namespace,
                           relationship_name,
@@ -87,6 +88,7 @@ def purge_related_objects(Fedora_client,
         
     return
 
+@newrelic.agent.function_trace()
 def get_all_subjects_of_relationship(Fedora_client,
                                      relationship_namespace,
                                      relationship,
@@ -137,6 +139,7 @@ def get_all_subjects_of_relationship(Fedora_client,
         Fedora_PID_results.append(result['object']['value'][12:])
     return Fedora_PID_results
 
+@newrelic.agent.function_trace()
 def get_all_objects_of_relationship(Fedora_client,
                                     relationship_namespace,
                                     relationship,
@@ -181,6 +184,7 @@ def get_all_objects_of_relationship(Fedora_client,
         Fedora_PID_results.append(result['object']['value'][12:])
     return Fedora_PID_results
 
+@newrelic.agent.function_trace()
 def get_collection_members(Fedora_client,
                            collection_PID):
     '''
@@ -210,6 +214,7 @@ def get_collection_members(Fedora_client,
         collection_members.append(result['member_object']['value'])
     return collection_members
     
+@newrelic.agent.function_trace()
 def mangle_dsid(dsid):
     '''
     A very aptly named function that will take any string and make it conform [via hack and slash]
@@ -241,6 +246,7 @@ def mangle_dsid(dsid):
 
     return dsid
 
+@newrelic.agent.function_trace()
 def get_datastream_as_file(obj, dsid, extension = ''):
     '''
     Download the indicated datastream (probably for processing)
@@ -268,6 +274,7 @@ def get_datastream_as_file(obj, dsid, extension = ''):
                 tries = tries - 1
     return d, 'content.'+extension
 
+@newrelic.agent.function_trace()
 def update_datastream(obj, dsid, filename, label='', mimeType='', controlGroup='M', tries=3, checksumType=None, checksum=None):
     '''
     This function uses curl to add a datastream to Fedora because
@@ -353,6 +360,7 @@ def update_datastream(obj, dsid, filename, label='', mimeType='', controlGroup='
     logger.error('Failed updating %(pid)s/%(dsid)s from %(filename)s via CURL!' % info_dict)
     return False
 
+@newrelic.agent.function_trace()
 def update_hashed_datastream_without_dup(obj, dsid, filename, **params):
     '''
         @author Adam Vessey
@@ -392,6 +400,7 @@ def update_hashed_datastream_without_dup(obj, dsid, filename, **params):
 
     return update_datastream(obj=obj, dsid=dsid, filename=filename, **params)
 
+@newrelic.agent.function_trace()
 def get_fedora_client(configuration):
     '''
         This function will get a connection to Fedora.
@@ -413,6 +422,7 @@ def get_fedora_client(configuration):
     except FedoraConnectionException:
         logging.error('Error connecting to Fedora')
 
+@newrelic.agent.function_trace()
 def strings_to_literal_rels_objects(object_strings):
     '''
         This function will take a list of relationship object strings and

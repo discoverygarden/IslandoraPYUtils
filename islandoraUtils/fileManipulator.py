@@ -11,6 +11,7 @@ from . import xmlib
 from .misc import force_extract_integer_from_string
 etree = xmlib.import_etree()
 
+@newrelic.agent.function_trace()
 def appendPDFwithPDF(outFile,toAppend):
     '''
 This function is meant to combine multiple pdf files, I'm not sure I like the pyPdf module's issues atm, hope it updates soon
@@ -86,6 +87,7 @@ This function is meant to combine multiple pdf files, I'm not sure I like the py
     
     return True
 
+@newrelic.agent.function_trace()
 def isPDF(file_path):
     '''
 This function is a helper function that validates user input as a valid pdf file
@@ -104,6 +106,7 @@ but not realy it just checks the extension right now.
             return True
     return False
 
+@newrelic.agent.function_trace()
 def breakTEIOnPages(file_path, output_directory, force_numeric_page_numbers = False):
     '''
 This function will break a tei file into tei snipits for each page
