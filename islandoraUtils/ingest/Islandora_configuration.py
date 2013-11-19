@@ -34,7 +34,7 @@ islandora_collection_content_model:islandora:collectionCModel
 when_last_ran:timestamp_here
 
     '''
-
+    @newrelic.agent.function_trace()
     def __init__(self, configuration_file_path):
         '''
         Constructor
@@ -49,7 +49,7 @@ when_last_ran:timestamp_here
         #loop through he configuration file sections and dump the config to a dictionary
         self._configuration_dictionary = config_parser_to_dict(self._configuration_parser)
 
-    
+    @newrelic.agent.function_trace()
     def save_configuration_variable(self, group, variable, value):
         '''
         This is only meant to alter variables that are already present in the configuration.
@@ -73,6 +73,7 @@ when_last_ran:timestamp_here
         
         return
     
+    @newrelic.agent.function_trace()
     @property
     def configuration_parser(self):
         '''
@@ -80,6 +81,7 @@ when_last_ran:timestamp_here
         '''
         return self._configuration_parser
     
+    @newrelic.agent.function_trace()
     @property
     def configuration_file_write_handle(self):
         '''
@@ -87,7 +89,7 @@ when_last_ran:timestamp_here
         '''
         file_handle = open(self._configuration_file_path, 'w')
         return file_handle
-    
+    @newrelic.agent.function_trace()
     @property
     def configuration_dictionary(self):
         '''

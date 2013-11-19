@@ -27,7 +27,7 @@ class Islandora_cron_batch(object):
     checking if things are created or 'new' is not supported 
     because it is not cross-platform
     '''
-
+    @newrelic.agent.function_trace()
     def __init__(self,
                  Fedora_client,
                  Islandora_configuration_object = None,
@@ -65,14 +65,14 @@ class Islandora_cron_batch(object):
         
         self._sources_to_PIDs_cache = []
         self._sources_to_PIDs_cache_limit = configuration['cron']['cache_limit']
-        
+    @newrelic.agent.function_trace()
     @property
     def when_last_ran(self):
         '''
         Timestamp of the begining of the last ingest.
         '''
         return self._when_last_ran
-    
+    @newrelic.agent.function_trace()
     @property
     def UTC_when_last_ran(self):
         '''
@@ -80,13 +80,13 @@ class Islandora_cron_batch(object):
         '''
         return datetime.datetime.utcfromtimestamp(self._when_last_ran)
     
-           
+    @newrelic.agent.function_trace()
     def _write_last_cron(self):
         '''
         This function will write to the configuration the timestamp associated with this instance of the cron batch
         '''
         self._Islandora_configuration_object.save_configuration_variable('cron', 'when_last_ran', str(time.time()))
-
+    @newrelic.agent.function_trace()
     def does_file_require_action(self,
                                  file_path):
         '''
@@ -106,7 +106,7 @@ class Islandora_cron_batch(object):
             return False
         #call to internal timestamp math func
         return self.does_timestamp_require_action(timestamp)
-    
+    @newrelic.agent.function_trace()
     def find_files_requiring_action(self,
                                     list_of_file_paths):
         '''
@@ -123,7 +123,7 @@ class Islandora_cron_batch(object):
             if self.does_file_require_action(file_path):
                 files_requiring_action.append(file_path)
         return files_requiring_action
-    
+    @newrelic.agent.function_trace()
     def does_timestamp_require_action(self,
                                       timestamp):
         '''
@@ -135,7 +135,7 @@ class Islandora_cron_batch(object):
         '''
         
         return timestamp >= self._when_last_ran - self._time_math_margin
-    
+    @newrelic.agent.function_trace()
     def get_PIDs_for_sources(self,
                              list_of_sources):
         '''
@@ -178,7 +178,7 @@ class Islandora_cron_batch(object):
                     sources_and_PIDs[source] = [result]
                     
         return sources_and_PIDs
-    
+    @newrelic.agent.function_trace()
     def replace_relationships(self, rels_object, predicate, objects):
         '''
         When writing a cron_syncing_ingest, it may be necessary to replace existing triple store
@@ -208,7 +208,7 @@ class Islandora_cron_batch(object):
             rels_object.addRelationship(predicate, RDF_object)
         
         return
-    
+    @newrelic.agent.function_trace()
     def check_cache_for_source(self, source):
         '''
         This function is for querying the cache of source to PID mappings
@@ -223,7 +223,7 @@ class Islandora_cron_batch(object):
             if cached_source == source:
                 return Fedora_PIDs
         return
-    
+    @newrelic.agent.function_trace()
     def cache_source_mapping(self, source, Fedora_PIDs):
         '''
         This function will store any result retrieved through

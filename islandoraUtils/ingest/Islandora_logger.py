@@ -17,6 +17,7 @@ class Islandora_logger(object):
     @param Islandora_configuration_object:
         The configuration object to base construction of the logger on
     '''
+    @newrelic.agent.function_trace()
     def __init__(self,
                  Islandora_configuration_object,
                  log_level = None,
@@ -74,14 +75,14 @@ class Islandora_logger(object):
         self._logger.addHandler(handler)
         
         self._logger.info('Starting logging session.')
-        
+    @newrelic.agent.function_trace()
     @property
     def logger(self):
         '''
         Returns the logger that this object creates
         '''
         return self._logger
-    
+    @newrelic.agent.function_trace()
     @property
     def logger_name(self):
         '''
