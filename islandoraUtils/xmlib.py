@@ -10,6 +10,7 @@ Created on Apr 15, 2011
 import logging, re
 from misc import base64_string_to_file
 
+@newrelic.agent.function_trace()
 def import_etree():
     '''
 This function will import the best etree it can find. 
@@ -56,6 +57,7 @@ FIXME: AVOID LOGGING ISSUES
 #yuk sory
 etree = import_etree()
 
+@newrelic.agent.function_trace()
 def filter_illegal_characters_from_file(dirty_file_path, replacement = ''):
     '''
     This function will alter a file, remooving the characters that are illegal
@@ -82,6 +84,7 @@ def filter_illegal_characters_from_file(dirty_file_path, replacement = ''):
     
     return
 
+@newrelic.agent.function_trace()
 def strip_illegal_characters(dirty_string, replacement = ''):
     '''
     This function will strip out all characters from a string
@@ -103,6 +106,7 @@ def strip_illegal_characters(dirty_string, replacement = ''):
     
     return clean_string
 
+@newrelic.agent.function_trace()
 def rootHasNamespace(xmlIn,namespaceIn):
     '''
 Checks if the indicated xml file's root has the indicated namespace
@@ -122,6 +126,7 @@ Checks if the indicated xml file's root has the indicated namespace
             return True
     return False
 
+@newrelic.agent.function_trace()
 def copy_element_attributes(from_element, to_element):
     '''
     This function will copy the attributes from one etree element to anther
@@ -142,6 +147,7 @@ def copy_element_attributes(from_element, to_element):
 
     return
 
+@newrelic.agent.function_trace()
 def base64_element_to_file(element, file_path):
     '''
     This function will write the text node of an etree

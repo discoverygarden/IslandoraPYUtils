@@ -2,6 +2,7 @@ from lxml import etree
 import islandoraUtils.xacml.constants as xacmlconstants
 from islandoraUtils.xacml.exception import XacmlException
 
+@newrelic.agent.function_trace()
 def toXML(xacml, prettyprint=False):
     # create the root element
     policy = createRoot(xacml)
@@ -11,12 +12,14 @@ def toXML(xacml, prettyprint=False):
     # return the XML as a formatted string
     return etree.tostring(policy, pretty_print=prettyprint, xml_declaration=True)
 
+@newrelic.agent.function_trace()
 def createRoot(xacml):
     policy = etree.Element(xacmlconstants.XACML + "Policy", nsmap = xacmlconstants.NSMAP)
     policy.set('PolicyId','islandora-xacml-editor-v1')
     policy.set('RuleCombiningAlgId', xacml['RuleCombiningAlgId'])
     return policy
 
+@newrelic.agent.function_trace()
 def createTarget(policy, xacml):
     target = etree.SubElement(policy, xacmlconstants.XACML + 'Target')
 
@@ -29,10 +32,12 @@ def createTarget(policy, xacml):
     actions = etree.SubElement(target, xacmlconstants.XACML + 'Actions')
     etree.SubElement(actions, xacmlconstants.XACML + 'AnyAction')
 
+@newrelic.agent.function_trace()
 def createRules(policy, xacml):
     for rule in xacml['rules']:
         createRule(policy, rule)
 
+@newrelic.agent.function_trace()
 def createRule(policy, rule):
     root = etree.SubElement(policy, xacmlconstants.XACML + 'Rule')
 
@@ -42,6 +47,7 @@ def createRule(policy, rule):
     createRuleTarget(root, rule)
     createRuleCondition(root, rule)
 
+@newrelic.agent.function_trace()
 def createRuleTarget(root, rule):
     target = etree.SubElement(root, xacmlconstants.XACML + "Target")
 
@@ -49,10 +55,12 @@ def createRuleTarget(root, rule):
     createRuleTargetResources(target, rule)
     createRuleTargetActions(target, rule)
 
+@newrelic.agent.function_trace()
 def createRuleTargetSubjects(target, rule):
     subjects = etree.SubElement(target, xacmlconstants.XACML +  "Subjects")
     etree.SubElement(subjects, xacmlconstants.XACML + "AnySubject")
 
+@newrelic.agent.function_trace()
 def createRuleTargetActions(target, rule):
     actions = etree.SubElement(target, xacmlconstants.XACML +  "Actions")
     if rule['methods']:
@@ -61,6 +69,7 @@ def createRuleTargetActions(target, rule):
     else:
         etree.SubElement(actions, xacmlconstants.XACML + "AnyAction")
 
+@newrelic.agent.function_trace()
 def createRuleTargetAction(actions, method):
     action = etree.SubElement(actions, xacmlconstants.XACML + 'Action')
     actionMatch = etree.SubElement(action, xacmlconstants.XACML +  'ActionMatch')
@@ -81,6 +90,7 @@ def createRuleTargetAction(actions, method):
     actionAttributeDesignator.set("AttributeId", attributeid)
     actionAttributeDesignator.set("DataType","http://www.w3.org/2001/XMLSchema#string")
 
+@newrelic.agent.function_trace()
 def createRuleTargetResources(target, rule):
     resources = etree.SubElement(target, xacmlconstants.XACML +  "Resources")
 
@@ -92,6 +102,7 @@ def createRuleTargetResources(target, rule):
         for dsid in rule['dsids']:
             createRuleTargetResource(resources, dsid, 'dsid')
 
+@newrelic.agent.function_trace()
 def createRuleTargetResource(resources, name, type):
     resource = etree.SubElement(resources, xacmlconstants.XACML +  'Resource')
     resourceMatch = etree.SubElement(resource, xacmlconstants.XACML +  'ResourceMatch')
@@ -109,6 +120,7 @@ def createRuleTargetResource(resources, name, type):
     elif type == 'dsid':
         ResourceAttributeDesignator.set("AttributeId","urn:fedora:names:fedora:2.1:resource:datastream:id")
 
+@newrelic.agent.function_trace()
 def createRuleCondition(target, rule):
     condition = etree.Element(xacmlconstants.XACML + "Condition")
     condition.set("FunctionId", "urn:oasis:names:tc:xacml:1.0:function:not")
@@ -137,7 +149,8 @@ def createRuleCondition(target, rule):
             target.append(condition)
         except NameError:
             pass
- 
+
+@newrelic.agent.function_trace()
 def createRuleConditionApply(attributes, type):
     apply = etree.Element(xacmlconstants.XACML + 'Apply')
     apply.set("FunctionId","urn:oasis:names:tc:xacml:1.0:function:string-at-least-one-member-of")

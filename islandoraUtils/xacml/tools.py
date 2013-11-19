@@ -46,6 +46,7 @@ class XacmlRule:
     @return array
       The rule dictionary.
     '''
+    @newrelic.agent.function_trace()
     def _initializeRule(self, id, effect):
         rule = {}
 
@@ -66,6 +67,7 @@ class XacmlRule:
     @param $data
       Data to be added.
     '''
+    @newrelic.agent.function_trace()
     def _setValue(self, type, data):
         if isinstance(data, basestring):
             self._rule[type].add(data)
@@ -80,6 +82,7 @@ class XacmlRule:
     @return
       Array requested.
     '''
+    @newrelic.agent.function_trace()
     def _getValues(self, type):
         return list(self._rule[type])
 
@@ -91,6 +94,7 @@ class XacmlRule:
     @param $data
       Data to be removed.
     '''
+    @newrelic.agent.function_trace()
     def _removeValue(self, type, datarg):
 
         if isinstance(datarg, basestring):
@@ -114,6 +118,7 @@ class XacmlRule:
     @param $xacml
       reference to the XACML object that this datastructure is part of.
     '''
+    @newrelic.agent.function_trace()
     def __init__(self, xacml, rule = None):
         if (rule):
             self._rule = self._initializeRule(rule['ruleid'], rule['effect'])
@@ -134,6 +139,7 @@ class XacmlRule:
    
     @return boolean
     '''
+    @newrelic.agent.function_trace()
     def isPopulated(self):
         return self.getUsers() or self.getRoles()
 
@@ -143,6 +149,7 @@ class XacmlRule:
     @param $user
       String or array or strings containing users to add.
     '''
+    @newrelic.agent.function_trace()
     def addUser(self, user):
        self._setValue('users', user)
 
@@ -152,6 +159,7 @@ class XacmlRule:
     @param $role
       String or array of string containing roles to add.
     '''
+    @newrelic.agent.function_trace()
     def addRole(self,role):
         self._setValue('roles', role)
 
@@ -161,6 +169,7 @@ class XacmlRule:
     @param $user
       String or array of strings with users to remove.
     '''
+    @newrelic.agent.function_trace()
     def removeUser(self, user):
         self._removeValue('users', user)
 
@@ -170,6 +179,7 @@ class XacmlRule:
     @param $role
       String or array of string with roles to remove.
     '''
+    @newrelic.agent.function_trace()
     def removeRole(self, role):
         self._removeValue('roles', role)
 
@@ -179,6 +189,7 @@ class XacmlRule:
     @return
       Array containing the users.
     '''
+    @newrelic.agent.function_trace()
     def getUsers(self):
         return self._getValues('users')
 
@@ -188,6 +199,7 @@ class XacmlRule:
     @return
       Array containing the roles.
     '''
+    @newrelic.agent.function_trace()
     def getRoles(self):
         return self._getValues('roles')
 
@@ -197,6 +209,7 @@ class XacmlRule:
     @return
       array containing the datastructure.
     '''
+    @newrelic.agent.function_trace()
     def getRuleArray(self):
         rule = {}
 
@@ -231,6 +244,7 @@ class XacmlManagementRule(XacmlRule):
     @param $xacml
       Reference to the parent XACML object.
     '''
+    @newrelic.agent.function_trace()
     def __init__(self, xacml, rule = None):
         XacmlRule.__init__(self, xacml, rule)
         if(not rule):
@@ -276,6 +290,7 @@ class XacmlViewingRule( XacmlRule ):
     @param $xacml
       Reference to the parent XACML object.
     '''
+    @newrelic.agent.function_trace()
     def __init__(self, xacml, rule = None):
         XacmlRule.__init__(self, xacml, rule)
         if not rule:
@@ -296,6 +311,7 @@ class XacmlViewingRule( XacmlRule ):
     @return
       $rule datastructure parsable by XacmlWriter.
     '''
+    @newrelic.agent.function_trace()
     def getRuleArray(self):
         rule = XacmlRule.getRuleArray(self)
         users = set(rule['users'])
@@ -322,10 +338,11 @@ forbidden by the policy. Otherwise XACML defaults to denying access.
 This is entirely managed by Xacml object so not much needs to be said about it.
 '''
 class XacmlPermitEverythingRule(XacmlRule):
+    @newrelic.agent.function_trace()
     def __init__(self, xacml):
         XacmlRule.__init__(self, xacml)
         self._rule = self._initializeRule(xacmlconst.PERMIT_RULE, 'Permit')
-
+    @newrelic.agent.function_trace()
     def getRuleArray(self):
         rule = XacmlRule.getRuleArray(self)
 
@@ -338,7 +355,7 @@ class XacmlPermitEverythingRule(XacmlRule):
 A concrete implementation of XacmlRule to restrict who can view certain mimetypes and datastreams.
 '''
 class XacmlDatastreamRule(XacmlRule):
-
+    @newrelic.agent.function_trace()
     def __init__(self, xacml, rule = None):
         XacmlRule.__init__(self, xacml, rule)
         if not rule:
@@ -361,6 +378,7 @@ class XacmlDatastreamRule(XacmlRule):
     @return
       $rule datastructure parsable by XacmlWriter.
     '''
+    @newrelic.agent.function_trace()
     def getRuleArray(self):
         rule = XacmlRule.getRuleArray(self)
         rule['dsids'] = list(self._rule['dsids'])
@@ -382,6 +400,7 @@ class XacmlDatastreamRule(XacmlRule):
     @param $dsid
       String or array of strings containing the datastream to add.
     '''
+    @newrelic.agent.function_trace()
     def addDsid(self, dsid):
         self._setValue('dsids', dsid)
 
@@ -391,6 +410,7 @@ class XacmlDatastreamRule(XacmlRule):
     @param $mime
     String or array of strings to add to the rule.
     '''
+    @newrelic.agent.function_trace()
     def addMimetype(self, mime):
         self._setValue('mimes', mime)
 
@@ -400,15 +420,16 @@ class XacmlDatastreamRule(XacmlRule):
     @param $mime
       String or array ofs tring to remove from the rule.
     '''
+    @newrelic.agent.function_trace()
     def removeMimetype(self, mime):
         self._removeValue('mimes', mime)
-
+    @newrelic.agent.function_trace()
     def removeDsid(self, dsid):
         self._removeValue('dsids', dsid)
-
+    @newrelic.agent.function_trace()
     def getMimetypes(self):
         return self._getValues('mimes')
-
+    @newrelic.agent.function_trace()
     def getDsids(self):
         return self._getValues('dsids')
 
@@ -420,6 +441,7 @@ class XacmlDatastreamRule(XacmlRule):
    
     @return boolean
     '''
+    @newrelic.agent.function_trace()
     def isPopulated(self):
         return XacmlRule.isPopulated(self) and (self.getMimetypes or self.getDsids())
 
@@ -466,6 +488,7 @@ class Xacml:
       everything.
     @throws XacmlException if the XML cannot be parsed
     '''
+    @newrelic.agent.function_trace()
     def __init__(self, xacml = None):
         management_rule = None;
         datastream_rule = None;
@@ -492,6 +515,7 @@ class Xacml:
     This creates a datastructure to be passed into XacmlWriter. It takes into
     account which rules have been populated.
     '''
+    @newrelic.agent.function_trace()
     def _getXacmlDatastructure(self):
         xacml = {
             'RuleCombiningAlgId' : 'urn:oasis:names:tc:xacml:1.0:rule-combining-algorithm:first-applicable',
@@ -517,6 +541,7 @@ class Xacml:
    
     @return string containing xacml xml
     '''
+    @newrelic.agent.function_trace()
     def getXmlString(self, prettyPrint=True):
         xacml = self._getXacmlDatastructure()
         return xacmlwriter.toXML(xacml, prettyPrint);

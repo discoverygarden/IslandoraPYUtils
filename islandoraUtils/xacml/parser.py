@@ -3,6 +3,7 @@ from islandoraUtils.xacml.exception import XacmlException
 import string
 from lxml import etree
 
+@newrelic.agent.function_trace()
 def parse (xacml_string):
     xacml = {}
     xacml['rules'] = []
@@ -22,6 +23,7 @@ def parse (xacml_string):
 
     return xacml
 
+@newrelic.agent.function_trace()
 def parseXacml(xacml, root):
     xacml['PolicyId'] = root.get("PolicyId")
     xacml['RuleCombiningAlgId'] = root.get("RuleCombiningAlgId")
@@ -45,6 +47,7 @@ def parseXacml(xacml, root):
 
         xacml['rules'].append(rule)
 
+@newrelic.agent.function_trace()
 def findDsidMime(rule, element):
     resources = element.findall('.//' + xacmlconstants.XACML + "ResourceMatch")
 
@@ -59,6 +62,7 @@ def findDsidMime(rule, element):
         else:
             raise XacmlException('Unknown ResourceMatch AttributeId.')
 
+@newrelic.agent.function_trace()
 def findMethods(rule, element):
     actions = element.find(xacmlconstants.XACML + "Target/" + xacmlconstants.XACML + "Actions")
     values = actions.findall('.//' + xacmlconstants.XACML + 'AttributeValue')
@@ -71,6 +75,7 @@ def findMethods(rule, element):
         else:
             rule['methods'].append(method[38:])
 
+@newrelic.agent.function_trace()
 def findRoles(rule, element):
     role_designator = element.xpath('.//xacml:Apply[@FunctionId="'+xacmlconstants.onememeberof+'"]/xacml:SubjectAttributeDesignator[@AttributeId="fedoraRole"]', namespaces=xacmlconstants.XPATH_MAP)
     if len(role_designator) != 0:
@@ -78,6 +83,7 @@ def findRoles(rule, element):
         for role in role_attrib:
             rule['roles'].append(role.text)
 
+@newrelic.agent.function_trace()
 def findUsers(rule, element):
     user_designator = element.xpath('.//xacml:Apply[@FunctionId="'+xacmlconstants.onememeberof+'"]/xacml:SubjectAttributeDesignator[@AttributeId="urn:fedora:names:fedora:2.1:subject:loginId"]', namespaces=xacmlconstants.XPATH_MAP)
     if len(user_designator) != 0:

@@ -53,7 +53,7 @@ class ingester(object):
 def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit = None):
     '''
 
-
+    @newrelic.agent.function_trace()
     def __init__(self,
                  configuration_file_path,
                  is_a_cron = False,
@@ -149,63 +149,64 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
             self._replacement_path_prefix = self._configuration['data_directories']['replacement_path_prefix']
         except KeyError:
             self._replacement_path_prefix = None
-            
+    
+    @newrelic.agent.function_trace()
     @property
     def alerter(self):
         '''
         Returns the alerter that this object creates
         '''
         return self._alerter           
-
+    @newrelic.agent.function_trace()
     @property
     def logger(self):
         '''
         Returns the logger that this object creates
         '''
         return self._logger
-    
+    @newrelic.agent.function_trace()
     @property
     def configuration(self):
         '''
         The dictionary version of the ingest's configuration.
         '''
         return self._configuration
-    
+    @newrelic.agent.function_trace()
     @property
     def configuration_object(self):
         '''
         The Islandora_configuration object version of the ingest's configuration.
         '''
         return self._Islandora_configuration
-    
+    @newrelic.agent.function_trace()
     @property
     def cron_batch(self):
         '''
         returns the batch job.
         '''
         return self._cron_batch
-    
+    @newrelic.agent.function_trace()
     @property
     def Fedora_model_namespace(self):
         '''
         returns the namespace object for ('fedora-model','info:fedora/fedora-system:def/model#')
         '''
         return self._Fedora_model_namespace
-    
+    @newrelic.agent.function_trace()
     @property
     def Fedora_client(self):
         '''
         returns the fcrepo client object
         '''
         return self._Fedora_client
-    
+    @newrelic.agent.function_trace()
     @property
     def default_Fedora_namespace(self):
         '''
         returns the default namespace to ingest fedora objects into
         '''
         return self._default_Fedora_namespace
-    
+    @newrelic.agent.function_trace()
     def ingest_object(self,
                       PID = None,
                       object_label = None,
@@ -363,7 +364,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                 
             objRelsExt.update()
         return(PID)
-    
+    @newrelic.agent.function_trace()
     def ingest_default_thumbnail (self,
                                   Fedora_object):
         '''
@@ -379,7 +380,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                                 datastream_ID = 'TN')
         
         return
-    
+    @newrelic.agent.function_trace()
     def ingest_datastream (self,
                            Fedora_object,
                            datastream,
@@ -470,7 +471,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                     self._logger.warning('IOError updating DS on' + PID + '/'
                                          + datastream['ID'] + ', Trying again')
                     sleep(600)
-    
+    @newrelic.agent.function_trace()
     def _ingest_file(self,
                      Fedora_object,
                      datastream,
@@ -518,7 +519,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
             os.remove(copied_datastream_file_path)
             
         return
-    
+    @newrelic.agent.function_trace()
     def replace_security_on_object(self,
                                    Fedora_object,
                                    isViewableByRoles = None,
@@ -622,7 +623,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
         Fedora_object_RELS.update()
         
         return
-    
+    @newrelic.agent.function_trace()
     def get_Fedora_object(self, PID = None, object_label = None):
         '''
         This function will get/create a Fedora object
@@ -657,7 +658,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                 else:
                     self._logger.error(PID + ' was not created successfully.')
         return Fedora_object
-    
+    @newrelic.agent.function_trace()
     def filter_files_for_ingest(self,
                                 list_of_paths,
                                 filter_to_documents = False,
@@ -749,7 +750,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
             filtered_list_of_paths = self.cron_batch.find_files_requiring_action(filtered_list_of_paths)
                 
         return filtered_list_of_paths
-
+    @newrelic.agent.function_trace()
     def recursivly_get_all_files_for_ingest(self,
                                             directory_to_walk,
                                             filter_to_documents = False,
@@ -825,7 +826,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                                                                    filter_by_time)
         
         return list_of_paths_to_ingest
-    
+    @newrelic.agent.function_trace()
     def _retrieve_filesystem_report(self, parent_directory):
         '''
         This function will retrieve the state of the file tree under
@@ -872,7 +873,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
             
         return filesystem_info
     
-    
+    @newrelic.agent.function_trace()
     def _replace_start_of_sync_report_path(self, raw_path):
         '''
         This function will modify a path by replacing the start of it based on 
@@ -899,7 +900,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
             processed_path = self._replacement_path_prefix + raw_path
             
         return processed_path
-    
+    @newrelic.agent.function_trace()
     def remove_temporary_directory(self):
         '''
         This function will remove the temporary directory.

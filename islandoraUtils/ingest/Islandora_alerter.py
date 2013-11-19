@@ -14,7 +14,7 @@ class Islandora_alerter(object):
     This class wraps the known alerters so they can be called based on a configuration file
     '''
     
-
+    @newrelic.agent.function_trace()
     def __init__(self, Islandora_configuration_object, logger):
         '''
             Constructor
@@ -25,7 +25,7 @@ class Islandora_alerter(object):
         if Islandora_configuration_object.configuration_dictionary['alerts']['medium']=='mailx':
             logger.info('Using the mailx alerter')
             self._alerter = mailx_alerter(Islandora_configuration_object, logger)
-        
+    @newrelic.agent.function_trace()
     def send_message(self, message = None, subject = None):
         '''
         calls the send message on the implementation object
@@ -50,7 +50,7 @@ class mailx_alerter(object):
     '''
         This class is an alerter that operates through the mailx program
     '''
-    
+    @newrelic.agent.function_trace()
     def __init__(self, Islandora_configuration_object, logger, emailer = None):
         '''
             Constructor
@@ -66,7 +66,7 @@ class mailx_alerter(object):
             self._mailer = mailer(subject=self._subject, addresses=self._recievers)
         else:
             self._mailer = emailer
-        
+    @newrelic.agent.function_trace()
     def send_message(self, message = None, subject = None):
         '''
         This method will send an email using mailx
