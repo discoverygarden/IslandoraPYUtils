@@ -4,6 +4,7 @@ Created on Oct. 12 2011
 @author: Jason MacWilliams, William Panting
 """
 
+import newrelic.agent
 import subprocess
 
 @newrelic.agent.function_trace()

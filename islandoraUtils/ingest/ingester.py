@@ -4,6 +4,7 @@ Created on 2012-03-19
 @author: William Panting
 @TODO: accept overrides for all objects used in constructor
 '''
+import newrelic.agent
 import os, json, csv, shutil
 from copy import copy
 from time import sleep

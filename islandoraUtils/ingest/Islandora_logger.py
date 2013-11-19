@@ -5,6 +5,7 @@ Created on 2012-03-16
 @TODO: test
 
 '''
+import newrelic.agent
 import logging.handlers, time, os
 
 class Islandora_logger(object):

@@ -7,6 +7,7 @@ Created on Apr 15, 2011
 @dependencies
   lxml
 '''
+import newrelic.agent
 import logging, re
 from misc import base64_string_to_file
 

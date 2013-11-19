@@ -21,6 +21,7 @@ TODO: Seems like generalizing file selection based on a path and extension(s) co
       or automatically determine file type by magic number (resulting in things like tif_to_jpg -> any_to_jpg)
 TODO: provide override options for various input checks
 '''
+import newrelic.agent
 import logging, subprocess, os, xmlib, stat
 from xmlib import filter_illegal_characters_from_file
 

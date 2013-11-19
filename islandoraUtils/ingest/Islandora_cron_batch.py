@@ -16,6 +16,7 @@ Created on 2012-03-16
     
 '''
 
+import newrelic.agent
 import time, os, datetime
 
 from islandoraUtils.fedoraLib import get_all_subjects_of_relationship

@@ -13,6 +13,7 @@ for a new version of IslandoraPYUtils to keep backwards compatibility for now.
     come up with a way to make it work on Cent or remove its use from this file.
 '''
 
+import newrelic.agent
 from islandoraUtils.fedoraLib import get_datastream_as_file, update_datastream
 from islandoraUtils.DocumentConverter import DocumentConverter, DocumentConversionException
 from islandoraUtils.fileConverter import pdf_to_text_or_ocr, xps_to_pdf
