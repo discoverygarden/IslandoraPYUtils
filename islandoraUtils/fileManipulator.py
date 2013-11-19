@@ -5,6 +5,7 @@ Created on May 5, 2011
   William Panting
 This file is meant to help with file manipulations/alterations.
 '''
+import newrelic.agent
 from pyPdf import PdfFileWriter, PdfFileReader
 import logging, os
 from . import xmlib

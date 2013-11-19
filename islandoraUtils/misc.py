@@ -6,6 +6,7 @@ that doesn't have a place anywhere else in the package
         
 '''
 
+import newrelic.agent
 import os, hashlib, re, fnmatch, subprocess, signal, datetime, time
 from time import sleep
 from copy import copy

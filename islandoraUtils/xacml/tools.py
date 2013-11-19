@@ -2,6 +2,7 @@ import islandoraUtils.xacml.writer as xacmlwriter
 import islandoraUtils.xacml.parser as xacmlparser
 import islandoraUtils.xacml.constants as xacmlconst
 
+import newrelic.agent
 from abc import ABCMeta
 
 '''

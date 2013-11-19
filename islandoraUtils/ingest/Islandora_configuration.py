@@ -5,6 +5,7 @@ Created on 2012-03-16
 @TODO: should check for exceptions and log errors for missing important files/sections etc., 
 '''
 import ConfigParser
+import newrelic.agent
 from islandoraUtils.misc import config_parser_to_dict
 
 class Islandora_configuration(object):

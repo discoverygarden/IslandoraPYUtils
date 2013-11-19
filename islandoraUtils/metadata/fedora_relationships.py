@@ -1,6 +1,7 @@
 from lxml import etree
 import copy
 import fcrepo #For type checking...
+import newrelic.agent
 
 class rels_namespace:
     @newrelic.agent.function_trace()

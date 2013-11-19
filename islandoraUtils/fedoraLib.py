@@ -17,6 +17,7 @@ from time import sleep
 
 from islandoraUtils.misc import hash_file, get_extension_from_mimetype
 
+import newrelic.agent
 @newrelic.agent.function_trace()
 def replace_relationships(rels_object, predicate, objects):
     '''

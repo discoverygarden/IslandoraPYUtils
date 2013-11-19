@@ -7,6 +7,7 @@ Created on 2012-03-16
 @TODO: look into more generic alerters ie. one that understands and can run parameterized bash commands
 '''
 import traceback
+import newrelic.agent
 from islandoraUtils.mailer import mailer 
 
 class Islandora_alerter(object):

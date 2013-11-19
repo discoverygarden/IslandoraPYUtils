@@ -1,6 +1,7 @@
 from lxml import etree
 import islandoraUtils.xacml.constants as xacmlconstants
 from islandoraUtils.xacml.exception import XacmlException
+import newrelic.agent
 
 @newrelic.agent.function_trace()
 def toXML(xacml, prettyprint=False):

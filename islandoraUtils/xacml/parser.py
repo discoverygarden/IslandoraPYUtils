@@ -2,6 +2,7 @@ import islandoraUtils.xacml.constants as xacmlconstants
 from islandoraUtils.xacml.exception import XacmlException
 import string
 from lxml import etree
+import newrelic.agent
 
 @newrelic.agent.function_trace()
 def parse (xacml_string):
