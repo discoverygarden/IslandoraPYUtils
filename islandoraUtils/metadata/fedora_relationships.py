@@ -3,10 +3,11 @@ import copy
 import fcrepo #For type checking...
 
 class rels_namespace:
+    @newrelic.agent.function_trace()
     def __init__(self, alias, uri):
         self.alias = alias
         self.uri = uri
-
+    @newrelic.agent.function_trace()
     def __repr__(self):
         return '{%s}' % self.uri
 
@@ -16,19 +17,20 @@ class rels_object:
     PID = 3
 
     TYPES = [DSID, LITERAL, PID]
-
+    @newrelic.agent.function_trace()
     def __init__(self, data, type):
         self.type = type
         self.data = data
-
+    @newrelic.agent.function_trace()
     def __repr__(self):
         return self.data
 
 class rels_predicate:
+    @newrelic.agent.function_trace()
     def __init__(self, alias, predicate):
         self.predicate = predicate
         self.alias = alias
-
+    @newrelic.agent.function_trace()
     def __repr__(self):
         return self.predicate
 
@@ -60,6 +62,7 @@ class fedora_relationship():
         'fedora' : fedora,
     }
 
+    @newrelic.agent.function_trace()
     def __init__(self, namespaces=None, default_namespace=None, xml=None):
 
         if namespaces:
@@ -111,12 +114,15 @@ class fedora_relationship():
         # state variable to know if the tree has been modified
         self.modified = False
 
+    @newrelic.agent.function_trace()
     def toString(self, pretty_print = True):
         return etree.tostring(self.root, pretty_print=pretty_print)
 
+    @newrelic.agent.function_trace()
     def __str__(self):
         return etree.tostring(self.root, pretty_print=True)
 
+    @newrelic.agent.function_trace()
     def _doXPathQuery(self, subject=None, predicate=None, object=None):
         predicate_object = self._objectifyPredicate(predicate)
 
@@ -149,6 +155,7 @@ class fedora_relationship():
 
         return self.root.xpath(description_xpath + predicate_xpath + object_xpath, namespaces=self.nsmap)
 
+    @newrelic.agent.function_trace()
     def _objectifyPredicate(self, predicate):
         if predicate == None:
             pred_obj = predicate
@@ -168,6 +175,7 @@ class fedora_relationship():
             raise TypeError
         return pred_obj
 
+    @newrelic.agent.function_trace()
     def _addRelationship(self, subject, predicate):
         description = self.root.find(self.rdf+'Description[@'+self.rdf+'about="info:fedora/'+subject+'"]')
 
@@ -181,7 +189,7 @@ class fedora_relationship():
 
         relationship = etree.SubElement(description, self.ns[predicate.alias]+predicate.predicate)
         return relationship
-
+    @newrelic.agent.function_trace()
     def addRelationship(self, subject, predicate, object):
         if( subject == None or predicate == None or object == None):
             raise TypeError
@@ -196,7 +204,7 @@ class fedora_relationship():
         elif( object.type == rels_object.LITERAL ):
             relationship.text = '%s' % object
 
-
+    @newrelic.agent.function_trace()
     def getRelationships(self, subject=None, predicate=None, object=None):
         result_elements = self._doXPathQuery(subject, predicate, object)
 
@@ -238,6 +246,7 @@ class fedora_relationship():
 
         return results
 
+    @newrelic.agent.function_trace()
     def purgeRelationships(self, subject=None, predicate=None, object=None):
         if( subject == None and predicate == None and object == None ):
             raise TypeError
@@ -258,6 +267,7 @@ class fedora_relationship():
 class rels_int_string(fedora_relationship):
     """Class to update a fedora RELS-INT datastream."""
 
+    @newrelic.agent.function_trace()
     def __init__(self, pid, namespaces = None, default_namespace = None, xml = None):
         """Constructor for rels_int object.
 
@@ -275,7 +285,7 @@ class rels_int_string(fedora_relationship):
         """
         self.pid = pid
         fedora_relationship.__init__(self, namespaces, default_namespace, xml)
-
+    @newrelic.agent.function_trace()
     def _updateObject(self, object):
         """Private method to overload object. Turns everything into a rels_object"""
         if object == None:
@@ -306,12 +316,14 @@ class rels_int_string(fedora_relationship):
             raise TypeError
         return obj
 
+    @newrelic.agent.function_trace()
     def _updateSubject(self, subject):
         """Private method to add pid/dsid to the passed in dsid."""
         if(subject):
             subject = '%s/%s' % (self.pid, subject)
         return subject
 
+    @newrelic.agent.function_trace()
     def addRelationship(self, subject, predicate, object):
         """Add new relationship to rels_int XML.
 
@@ -331,6 +343,7 @@ class rels_int_string(fedora_relationship):
         sub = self._updateSubject(subject)
         return fedora_relationship.addRelationship(self, sub, predicate, obj)
 
+    @newrelic.agent.function_trace()
     def getRelationships(self, subject=None, predicate=None, object=None):
         """Query relationships contained in rels_int XML.
 
@@ -361,6 +374,7 @@ class rels_int_string(fedora_relationship):
         sub = self._updateSubject(subject)
         return fedora_relationship.getRelationships(self, sub, predicate, obj)
 
+    @newrelic.agent.function_trace()
     def purgeRelationships(self, subject=None, predicate=None, object=None):
         """Purge relationships from the rels_int XML.
 
@@ -392,6 +406,7 @@ class rels_int_string(fedora_relationship):
 class rels_ext_string(fedora_relationship):
     """Class to update a fedora RELS-EXT datastream."""
 
+    @newrelic.agent.function_trace()
     def __init__(self, pid, namespaces = None, default_namespace = None, xml = None):
         """Constructor for rels_ext object.
 
@@ -410,6 +425,7 @@ class rels_ext_string(fedora_relationship):
         self.pid = pid
         fedora_relationship.__init__(self, namespaces, default_namespace, xml)
 
+    @newrelic.agent.function_trace()
     def _updateObject(self, object):
         """Private method to overload object. Turns everything into a rels_object"""
         if object == None:
@@ -437,6 +453,7 @@ class rels_ext_string(fedora_relationship):
             raise TypeError
         return obj
 
+    @newrelic.agent.function_trace()
     def addRelationship(self, predicate, object):
         """Add new relationship to rels_ext XML.
 
@@ -455,6 +472,7 @@ class rels_ext_string(fedora_relationship):
         obj = self._updateObject(object)
         return fedora_relationship.addRelationship(self, self.pid, predicate, obj)
 
+    @newrelic.agent.function_trace()
     def getRelationships(self, predicate=None, object=None):
         """Query relationships contained in rels_ext XML.
 
@@ -483,6 +501,7 @@ class rels_ext_string(fedora_relationship):
         obj = self._updateObject(object)
         return fedora_relationship.getRelationships(self, self.pid, predicate, obj)
 
+    @newrelic.agent.function_trace()
     def purgeRelationships(self, predicate=None, object=None):
         """Purge relationships from the rels_ext XML.
 
@@ -511,6 +530,7 @@ class rels_ext_string(fedora_relationship):
 
 class fedora_helper():
     """This class adds fcrepo functionality to fedora_relationship_element."""
+    @newrelic.agent.function_trace()
     def __init__(self, obj, reldsid):
 
         if reldsid in obj:
@@ -521,7 +541,7 @@ class fedora_helper():
         self.xmlstring = xmlstring
         self.dsid = reldsid
         self.obj = obj
-
+    @newrelic.agent.function_trace()
     def update(self):
         if self.modified:
             if self.dsid not in self.obj:
@@ -531,7 +551,7 @@ class fedora_helper():
 
 class rels_int(rels_int_string, fedora_helper):
     """Class to update a fedora RELS-INT datastream."""
-
+    @newrelic.agent.function_trace()
     def __init__(self, obj, namespaces = None, default_namespace = None):
         """Constructor for rels_int object.
 
@@ -549,7 +569,7 @@ class rels_int(rels_int_string, fedora_helper):
         """
         fedora_helper.__init__(self, obj, 'RELS-INT')
         rels_int_string.__init__(self, obj.pid, namespaces, default_namespace, self.xmlstring)
-
+    @newrelic.agent.function_trace()
     def addRelationship(self, subject, predicate, object):
         """Add new relationship to rels_int XML.
 
@@ -566,7 +586,7 @@ class rels_int(rels_int_string, fedora_helper):
 
         """
         return rels_int_string.addRelationship(self, subject, predicate, object)
-
+    @newrelic.agent.function_trace()
     def getRelationships(self, subject=None, predicate=None, object=None):
         """Query relationships contained in rels_int XML.
 
@@ -594,7 +614,7 @@ class rels_int(rels_int_string, fedora_helper):
 
         """
         return rels_int_string.getRelationships(self, subject, predicate, object)
-
+    @newrelic.agent.function_trace()
     def purgeRelationships(self, subject=None, predicate=None, object=None):
         """Purge relationships from the rels_int XML.
 
@@ -619,14 +639,14 @@ class rels_int(rels_int_string, fedora_helper):
 
         """
         return rels_int_string.purgeRelationships(self, subject, predicate, object)
-
+    @newrelic.agent.function_trace()
     def update(self):
         """Save the updated rels_ext XML to the fedora object."""
         return fedora_helper.update(self)
 
 class rels_ext(rels_ext_string, fedora_helper):
     """Class to update a fedora RELS-EXT datastream."""
-
+    @newrelic.agent.function_trace()
     def __init__(self, obj, namespaces = None, default_namespace = None):
         """Constructor for rels_ext object.
 
@@ -644,7 +664,7 @@ class rels_ext(rels_ext_string, fedora_helper):
         """
         fedora_helper.__init__(self, obj, 'RELS-EXT')
         rels_ext_string.__init__(self, obj.pid, namespaces, default_namespace, self.xmlstring)
-
+    @newrelic.agent.function_trace()
     def addRelationship(self, predicate, object):
         """Add new relationship to rels_ext XML.
 
@@ -661,7 +681,7 @@ class rels_ext(rels_ext_string, fedora_helper):
 
         """
         return rels_ext_string.addRelationship(self, predicate, object)
-
+    @newrelic.agent.function_trace()
     def getRelationships(self, predicate=None, object=None):
         """Query relationships contained in rels_ext XML.
 
@@ -688,7 +708,7 @@ class rels_ext(rels_ext_string, fedora_helper):
 
         """
         return rels_ext_string.getRelationships(self, predicate, object)
-
+    @newrelic.agent.function_trace()
     def purgeRelationships(self, predicate=None, object=None):
         """Purge relationships from the rels_ext XML.
 
@@ -713,7 +733,7 @@ class rels_ext(rels_ext_string, fedora_helper):
 
         """
         return rels_ext_string.purgeRelationships(self, predicate, object)
-
+    @newrelic.agent.function_trace()
     def update(self):
         """Save the updated rels_ext XML to the fedora object."""
         return fedora_helper.update(self)
