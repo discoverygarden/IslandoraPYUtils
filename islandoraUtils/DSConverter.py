@@ -28,6 +28,7 @@ from fcrepo.connection import FedoraConnectionException
 tn_postfix = '-tn.jpg'
 tn_size = (150, 200)
 
+@newrelic.agent.function_trace()
 def create_thumbnail(obj, dsid, tnid):
     '''
     @param string obj
@@ -77,6 +78,7 @@ def create_thumbnail(obj, dsid, tnid):
     rmtree(directory, ignore_errors=True)
     return r
 
+@newrelic.agent.function_trace()
 def create_jp2(obj, dsid, jp2id):
     '''
     @param string obj
@@ -103,6 +105,7 @@ def create_jp2(obj, dsid, jp2id):
     rmtree(directory, ignore_errors=True)
     return r
 
+@newrelic.agent.function_trace()
 def create_mp4(obj, dsid, mp4id):
     '''
     @param string obj
@@ -166,6 +169,7 @@ def create_mp4(obj, dsid, mp4id):
     rmtree(directory, ignore_errors=True)
     return r
 
+@newrelic.agent.function_trace()
 def create_mp3(obj, dsid, mp3id, args = None):
     '''
     @param string obj
@@ -207,6 +211,7 @@ def create_mp3(obj, dsid, mp3id, args = None):
     rmtree(directory, ignore_errors=True)
     return r
 
+@newrelic.agent.function_trace()
 def create_ogg(obj, dsid, oggid):
     '''
     @param string obj
@@ -225,6 +230,7 @@ def create_ogg(obj, dsid, oggid):
     rmtree(directory, ignore_errors=True)
     return r
 
+@newrelic.agent.function_trace()
 def create_swf(obj, dsid, swfid):
     '''
     This will work on PDFs
@@ -258,6 +264,7 @@ def create_swf(obj, dsid, swfid):
     rmtree(directory, ignore_errors=True)
     return r
 
+@newrelic.agent.function_trace()
 def create_pdf(obj, dsid, pdfid):
     '''
     This function uses open office headless to convert to a pdf from anything that open office input
@@ -297,6 +304,7 @@ def create_pdf(obj, dsid, pdfid):
     rmtree(directory, ignore_errors=True)
     return value
 
+@newrelic.agent.function_trace()
 def marcxml_to_mods(obj, dsid, dsidOut='MODS'):
     '''
     @param string obj
@@ -321,6 +329,7 @@ def marcxml_to_mods(obj, dsid, dsidOut='MODS'):
     rmtree(directory, ignore_errors=True)
     return r
 
+@newrelic.agent.function_trace()
 def create_pdf_and_swf(obj, dsid, pdfid, swfid):
     '''
     This function uses open office headless to convert to a pdf from anything that open office input
@@ -429,6 +438,7 @@ def create_pdf_and_swf(obj, dsid, pdfid, swfid):
         
     return final_return
 
+@newrelic.agent.function_trace()
 def create_text(obj, dsid, txtid, ocrid):
     '''
     This converter will create a text datasteam from imbeded text in a pdf
@@ -469,6 +479,7 @@ def create_text(obj, dsid, txtid, ocrid):
         rmtree(directory, ignore_errors=True)
         return 1
     
+@newrelic.agent.function_trace()
 def check_dates(obj, dsid, derivativeid):
     '''
     @param string obj
