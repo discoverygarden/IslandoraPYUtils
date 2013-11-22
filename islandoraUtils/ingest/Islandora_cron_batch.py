@@ -32,7 +32,8 @@ class Islandora_cron_batch(object):
                  Fedora_client,
                  Islandora_configuration_object = None,
                  when_last_ran = 0,
-                 time_math_margin = 0):
+                 time_math_margin = 0,
+                 multiprocess_id = None):
         '''
         Constructor!!!
         
@@ -42,6 +43,9 @@ class Islandora_cron_batch(object):
         @param when_last_ran: 
             This will override what the object can read from a configuration object
             assume all files must be modified if niether param is set (since the down of linux)
+        @param multiprocess_id
+            A string representing the ID of the current process.  None if this
+            is the main thread.
         '''
         if Islandora_configuration_object:
             self._Islandora_configuration_object = Islandora_configuration_object
@@ -59,7 +63,8 @@ class Islandora_cron_batch(object):
         self._when_last_ran = getattr(self, '_when_last_ran', when_last_ran)
         self._time_math_margin = getattr(self, '_time_math_margin', time_math_margin)
         
-        self._write_last_cron()
+        if multiprocess_id is None:
+            self._write_last_cron()
         
         self._Fedora_client = Fedora_client
         

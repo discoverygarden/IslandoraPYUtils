@@ -20,15 +20,25 @@ class Islandora_logger(object):
     def __init__(self,
                  Islandora_configuration_object,
                  log_level = None,
-                 logger_name = 'root'):
+                 logger_name = 'root',
+                 multiprocess_id = None):
         
         '''
         Constructor
         @param Islandora_configuration: The object needed to get the information necessary for logging
+        @param multiprocess_id
+            A string representing the ID of the current process.  None if this
+            is the main thread.
         '''
         
         configuration = Islandora_configuration_object.configuration_dictionary
-        self._log_file = os.path.join(configuration['logging']['directory'], configuration['miscellaneous']['ingest_name'] + '_' + time.strftime('%y_%m_%d') + '.log')
+        if multiprocess_id is not None:
+            self._log_file = os.path.join(configuration['logging']['directory'],
+                                          multiprocess_id,
+                                          configuration['miscellaneous']['ingest_name'] + '_' + time.strftime('%y_%m_%d') + '.log')
+        else:
+            self._log_file = os.path.join(configuration['logging']['directory'],
+                                          configuration['miscellaneous']['ingest_name'] + '_' + time.strftime('%y_%m_%d') + '.log')
         
         #create the log file if it does not exist
         if not os.path.exists(configuration['logging']['directory']):
