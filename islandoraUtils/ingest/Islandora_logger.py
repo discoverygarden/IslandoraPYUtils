@@ -20,7 +20,7 @@ class Islandora_logger(object):
     def __init__(self,
                  Islandora_configuration_object,
                  log_level = None,
-                 logger_name = 'root',
+                 logger_name = 'set_your_logger_or_ingester_name',
                  multiprocess_id = None):
         
         '''
@@ -59,19 +59,16 @@ class Islandora_logger(object):
             log_level = logging.INFO
         
         #set logger name
-        if logger_name:
+        if 'logger_name' in configuration['logging']:
+            self._logger_name = configuration['logging']['logger_name']
+        elif 'ingest_name' in configuration['miscellaneous']:
+            self._logger_name = configuration['miscellaneous']['ingest_name']
+        else:
             self._logger_name = logger_name
-        else:
-            if 'logger_name' in configuration['logging']:
-                self._logger_name = configuration['logging']['logger_name']
-            elif 'ingest_name' in configuration['miscellaneous']:
-                self._logger_name = configuration['miscellaneous']['ingest_name']
+        if multiprocess_id is not None:
+            self._logger_name = multiprocess_id + '.' + self._logger_name
         
-        #get logger
-        if self._logger_name == 'root':
-            self._logger = logging.getLogger()
-        else:
-            self._logger = logging.getLogger(self._logger_name)
+        self._logger = logging.getLogger(self._logger_name)
         
         #configure logger
         if log_level is not None:

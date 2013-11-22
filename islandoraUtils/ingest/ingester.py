@@ -81,7 +81,8 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
             my_Islandora_configuration = Islandora_configuration_object
         
         if not Islandora_logger_object:
-            my_Islandora_logger = Islandora_logger(my_Islandora_configuration, multiprocess_id = multiprocess_id)
+            my_Islandora_logger = Islandora_logger(my_Islandora_configuration,
+                                                   multiprocess_id = multiprocess_id)
         else:
             my_Islandora_logger = Islandora_logger_object
         
