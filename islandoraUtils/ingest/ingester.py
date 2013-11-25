@@ -61,12 +61,16 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                  Islandora_configuration_object = None,
                  Islandora_logger_object = None,
                  Islandora_alerter_object = None,
-                 Islandora_cron_batch_object = None):
+                 Islandora_cron_batch_object = None,
+                 multiprocess_id = None):
         '''
         Get all the objects that are likely to be used for an ingest
         
         @param configuration_file_path: where the configuration for the ingest can be found
         @param last_time_ran: the last time this ingest was ran (if this is set a cron_batch object is created with the information)
+        @param multiprocess_id
+            A string representing the ID of the current process.  None if this
+            is the main thread.
         
         '''
         
@@ -77,7 +81,8 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
             my_Islandora_configuration = Islandora_configuration_object
         
         if not Islandora_logger_object:
-            my_Islandora_logger = Islandora_logger(my_Islandora_configuration)
+            my_Islandora_logger = Islandora_logger(my_Islandora_configuration,
+                                                   multiprocess_id = multiprocess_id)
         else:
             my_Islandora_logger = Islandora_logger_object
         
@@ -104,7 +109,9 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
         if is_a_cron:
             self._is_a_cron = True
             if not Islandora_cron_batch_object:
-                self._cron_batch = Islandora_cron_batch(self._Fedora_client, my_Islandora_configuration)
+                self._cron_batch = Islandora_cron_batch(self._Fedora_client,
+                                                        my_Islandora_configuration,
+                                                        multiprocess_id = multiprocess_id)
             else:
                 self._cron_batch = Islandora_cron_batch_object
         else:
