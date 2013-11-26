@@ -131,7 +131,11 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
         self._Fedora_model_namespace = fedora_relationships.rels_namespace('fedora-model','info:fedora/fedora-system:def/model#')
         
         # Create temporary directory if it does not exist and one is in the configuration.
+        # todo: cleanup tmp dir use to use tempfile.NamedTemporaryFile
         if 'temporary_directory' in self._configuration['miscellaneous']:
+            if multiprocess_id is not None:
+                self._configuration['miscellaneous']['temporary_directory'] = os.path.join(self._configuration['miscellaneous']['temporary_directory'],
+                                                                                           multiprocess_id)
             if not os.path.exists(self._configuration['miscellaneous']['temporary_directory']):
                 os.makedirs(self._configuration['miscellaneous']['temporary_directory'])
         
