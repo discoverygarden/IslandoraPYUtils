@@ -761,6 +761,23 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                 
         return filtered_list_of_paths
 
+    def jon_generator_hack_recursivly_get_all_files_for_ingest(self, directory_to_walk):
+        '''
+        This function is a generator that will get all the files in a directory and 
+        all its non-symlinked directories that are suitable for ingest.
+        
+        @param string directory_to_walk:
+            The directory to grab files and filter from.
+        '''
+        for path, dirs, files in os.walk(unicode(directory_to_walk)):
+                                
+            for file_name in files:
+                file_path = os.path.join(path, file_name)
+                list_of_paths_to_ingest = self.filter_files_for_ingest([file_path])
+                if len(list_of_paths_to_ingest) == 1:
+                    yield list_of_paths_to_ingest[0]
+        
+ 
     def recursivly_get_all_files_for_ingest(self,
                                             directory_to_walk,
                                             filter_to_documents = False,
