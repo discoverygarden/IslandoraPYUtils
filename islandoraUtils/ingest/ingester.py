@@ -761,23 +761,6 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                 
         return filtered_list_of_paths
 
-    def jon_generator_hack_recursivly_get_all_files_for_ingest(self, directory_to_walk):
-        '''
-        This function is a generator that will get all the files in a directory and 
-        all its non-symlinked directories that are suitable for ingest.
-        
-        @param string directory_to_walk:
-            The directory to grab files and filter from.
-        '''
-        for path, dirs, files in os.walk(unicode(directory_to_walk)):
-                                
-            for file_name in files:
-                file_path = os.path.join(path, file_name)
-                list_of_paths_to_ingest = self.filter_files_for_ingest([file_path])
-                if len(list_of_paths_to_ingest) == 1:
-                    yield list_of_paths_to_ingest[0]
-        
- 
     def recursivly_get_all_files_for_ingest(self,
                                             directory_to_walk,
                                             filter_to_documents = False,
@@ -833,26 +816,62 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                     list_of_paths_to_ingest.remove(path_to_ingest)
                     list_of_paths_to_ingest.append(processed_path_to_ingest)
         else:
-            list_of_paths_to_ingest = list()
-            for path, dirs, files in os.walk(unicode(directory_to_walk)):
-                # Ignore a directory and sub dirs if specified in directories_to_ignore. 
-                if directories_to_ignore:
-                    for directory in dirs:
-                        if os.path.join(path, directory) in directories_to_ignore:
-                            dirs.remove(directory)
-                                
-                for file_name in files:
-                    file_path = os.path.join(path, file_name)
-                    list_of_paths_to_ingest.append(file_path)
-            
-            list_of_paths_to_ingest = self.filter_files_for_ingest(list_of_paths_to_ingest,
-                                                                   filter_to_documents,
-                                                                   filter_to_images,
-                                                                   extensions_to_filter_out,
-                                                                   extensions_to_filter_to,
-                                                                   filter_by_time)
+            list_of_paths_to_ingest = self._get_file_to_ingest_generator(directory_to_walk,
+                                                                         filter_to_documents = False,
+                                                                         filter_to_images = False,
+                                                                         extensions_to_filter_out = None,
+                                                                         extensions_to_filter_to = None,
+                                                                         filter_by_time = None,
+                                                                         directories_to_ignore = [])
         
         return list_of_paths_to_ingest
+    
+    def _get_file_to_ingest_generator(self,
+                                      directory_to_walk,
+                                      filter_to_documents = False,
+                                      filter_to_images = False,
+                                      extensions_to_filter_out = None,
+                                      extensions_to_filter_to = None,
+                                      filter_by_time = None,
+                                      directories_to_ignore = []):
+        """
+        This wraps up a generator for recursivly_get_all_files_for_ingest
+        because we can't have a gerator and a method be the same function.
+        
+        @param string directory_to_walk:
+            The directory to grab files and filter from.
+        @param bool filter_to_documents:
+            Passed on to filter function.
+        @param filter_to_images:
+            Passed on to filter function.
+        @param extensions_to_filter_out:
+            Passed on to filter function.
+        @param extensions_to_filter_to:
+            Passed on to filter function.
+        @param boolean filter_by_time:
+            Will default to true if this is a cron batch ingester.
+        
+        @return list list_of_paths_to_ingest:
+            The completed list of files to ingest, they will be unicode strings.
+        """
+        for path, dirs, files in os.walk(unicode(directory_to_walk)):
+            # Ignore a directory and sub dirs if specified in directories_to_ignore. 
+            if directories_to_ignore:
+                for directory in dirs:
+                    if os.path.join(path, directory) in directories_to_ignore:
+                        dirs.remove(directory)
+                            
+            for file_name in files:
+                file_path = os.path.join(path, file_name)
+                list_of_paths_to_ingest = self.filter_files_for_ingest([file_path],
+                                                                       filter_to_documents,
+                                                                       filter_to_images,
+                                                                       extensions_to_filter_out,
+                                                                       extensions_to_filter_to,
+                                                                       filter_by_time)
+                if len(list_of_paths_to_ingest) == 1:
+                    yield list_of_paths_to_ingest[0]
+        return
     
     def _retrieve_filesystem_report(self, parent_directory):
         '''
