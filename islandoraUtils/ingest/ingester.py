@@ -164,7 +164,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
 
         try:
             self._compiled_regexps = {}
-            regex_strings = self._configuration['filtering']['regex_strings']
+            regex_strings = json.loads(self._configuration['filtering']['regex_filters'])
             keys = regex_strings.keys()
             for key in keys:
                 try:
@@ -232,7 +232,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
         return self._default_Fedora_namespace
 
     @property
-    def compiled_regexps(self)
+    def compiled_regexps(self):
         '''
         returns pre-compiled regular expressions for use in ingest
         '''
@@ -781,11 +781,13 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
             if whitelist_regex:
                 if not whitelist_regex.match(file_name):
                     if file_path in filtered_list_of_paths:
+                        self.logger.debug("FILTERING OUT " + file_path)
                         filtered_list_of_paths.remove(file_path)
 
             if blacklist_regex:
                 if blacklist_regex.match(file_name):
                     if file_path in filtered_list_of_paths:
+                        self.logger.debug("FILTERING OUT " + file_path)
                         filtered_list_of_paths.remove(file_path)
 
         # Filter by timestamp. This is expensive so I want it last
