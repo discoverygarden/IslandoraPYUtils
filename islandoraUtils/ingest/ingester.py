@@ -4,9 +4,10 @@ Created on 2012-03-19
 @author: William Panting
 @TODO: accept overrides for all objects used in constructor
 '''
-import os, json, csv, shutil
+import os, json, csv, shutil, re
 from copy import copy
 from time import sleep
+from sre_constants import error
 
 from fcrepo.connection import Connection, FedoraConnectionException
 from fcrepo.client import FedoraClient
@@ -29,27 +30,27 @@ class ingester(object):
         also it will have a default TN
             both of wich could come from the config file)
                 def ingest_collection_object(ingester, parent_pid=None):
-    
+
                     This funciton will ingest a collection object
                     into the Fedora repository
-                    
+
                     @todo: incorporate this function into Utils? ingester.configuration['miscellaneous']['islandora_top_collection']
                         when it has been update this scripta(ten_million) and remove the function
-                    
+
                     @param parent_pid:
                         The collection that the new object should go into
                     @param ingester:
                         The IslandoraPYUtils ingester object to use.
-                        
-                    @return: 
+
+                    @return:
                         Fedora_PID the PID of the new object created in Fedora
-                    
+
                     Fedora_PID = ingester.ingest_object(archival_datastream = ingester.configuration['ten_million']['path_to_thumbnail'],
                                                         collections = [parent_pid],
                                                         content_models = ['islandora:collectionCModel'])
                     return Fedora_PID
-                    
-                    
+
+
 def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit = None):
     '''
 
@@ -65,38 +66,38 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                  multiprocess_id = None):
         '''
         Get all the objects that are likely to be used for an ingest
-        
+
         @param configuration_file_path: where the configuration for the ingest can be found
         @param last_time_ran: the last time this ingest was ran (if this is set a cron_batch object is created with the information)
         @param multiprocess_id
             A string representing the ID of the current process.  None if this
             is the main thread.
-        
+
         '''
-        
+
         #configuration and logger have intermediate objects
         if not Islandora_configuration_object:
             my_Islandora_configuration = Islandora_configuration(configuration_file_path)
         else:
             my_Islandora_configuration = Islandora_configuration_object
-        
+
         if not Islandora_logger_object:
             my_Islandora_logger = Islandora_logger(my_Islandora_configuration,
                                                    multiprocess_id = multiprocess_id)
         else:
             my_Islandora_logger = Islandora_logger_object
-        
+
         self._configuration = my_Islandora_configuration.configuration_dictionary
-        
+
         self._logger = my_Islandora_logger.logger
-        
+
         #set the class properties
         if not Islandora_alerter_object:
             self._alerter = Islandora_alerter(my_Islandora_configuration, self._logger)
         else:
             self._alerter = Islandora_alerter_object
-        
-            
+
+
         #Fedora connection through fcrepo, should not be done before custom logger because the first settings on root logger are immutable
         self._fcrepo_connection = Connection(self._configuration['Fedora']['url'],
                                              username = self._configuration['Fedora']['username'],
@@ -105,7 +106,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
             self._Fedora_client = FedoraClient(self._fcrepo_connection)
         except FedoraConnectionException:
             self._logger.error('Error connecting to Fedora')
-        
+
         if is_a_cron:
             self._is_a_cron = True
             if not Islandora_cron_batch_object:
@@ -116,20 +117,20 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                 self._cron_batch = Islandora_cron_batch_object
         else:
             self._is_a_cron = False
-            
+
         if not default_Fedora_namespace:
             # No caps in configParser.
             self._default_Fedora_namespace = unicode(self._configuration['miscellaneous']['default_fedora_pid_namespace'])
         else:
             self._default_Fedora_namespace = unicode(default_Fedora_namespace)
-            
-        
+
+
         # Store the configuration object for future use
         self._Islandora_configuration = my_Islandora_configuration
-        
-        #pyrelationships 
+
+        #pyrelationships
         self._Fedora_model_namespace = fedora_relationships.rels_namespace('fedora-model','info:fedora/fedora-system:def/model#')
-        
+
         # Create temporary directory if it does not exist and one is in the configuration.
         # todo: cleanup tmp dir use to use tempfile.NamedTemporaryFile
         if 'temporary_directory' in self._configuration['miscellaneous']:
@@ -138,35 +139,48 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                                                                                            multiprocess_id)
             if not os.path.exists(self._configuration['miscellaneous']['temporary_directory']):
                 os.makedirs(self._configuration['miscellaneous']['temporary_directory'])
-        
+
         # Set some variables to do with sync reports.
         try:
             self._sync_time_format = self._configuration['cron']['sync_report_time_format']
         except KeyError:
             self._sync_time_format = None
-        
+
         try:
             self._report_file_base_name = self._configuration['data_directories']['file_system_sync_report_file_name']
         except KeyError:
             self._report_file_base_name = None
-        
+
         try:
             self._path_prefixes_to_replace = self._configuration['data_directories']['path_prefixes_to_replace']
             self._path_prefixes_to_replace = sorted(json.loads(self._path_prefixes_to_replace), key = len)
         except KeyError:
             self._path_prefixes_to_replace = None
-            
+
         try:
             self._replacement_path_prefix = self._configuration['data_directories']['replacement_path_prefix']
         except KeyError:
             self._replacement_path_prefix = None
-            
+
+        try:
+            self._compiled_regexps = {}
+            regex_strings = json.loads(self._configuration['filtering']['regex_filters'])
+            keys = regex_strings.keys()
+            for key in keys:
+                try:
+                    self._compiled_regexps[key] = re.compile(regex_strings[key])
+                except error as e:
+                    self.logger.error("Error compiling regex: " + str(e))
+                    self._compiled_regexps[key] = None
+        except KeyError:
+            self._compiled_regexps = None
+
     @property
     def alerter(self):
         '''
         Returns the alerter that this object creates
         '''
-        return self._alerter           
+        return self._alerter
 
     @property
     def logger(self):
@@ -174,49 +188,56 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
         Returns the logger that this object creates
         '''
         return self._logger
-    
+
     @property
     def configuration(self):
         '''
         The dictionary version of the ingest's configuration.
         '''
         return self._configuration
-    
+
     @property
     def configuration_object(self):
         '''
         The Islandora_configuration object version of the ingest's configuration.
         '''
         return self._Islandora_configuration
-    
+
     @property
     def cron_batch(self):
         '''
         returns the batch job.
         '''
         return self._cron_batch
-    
+
     @property
     def Fedora_model_namespace(self):
         '''
         returns the namespace object for ('fedora-model','info:fedora/fedora-system:def/model#')
         '''
         return self._Fedora_model_namespace
-    
+
     @property
     def Fedora_client(self):
         '''
         returns the fcrepo client object
         '''
         return self._Fedora_client
-    
+
     @property
     def default_Fedora_namespace(self):
         '''
         returns the default namespace to ingest fedora objects into
         '''
         return self._default_Fedora_namespace
-    
+
+    @property
+    def compiled_regexps(self):
+        '''
+        returns pre-compiled regular expressions for use in ingest
+        '''
+        return self._compiled_regexps
+
     def ingest_object(self,
                       PID = None,
                       object_label = None,
@@ -235,28 +256,28 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
         this function can be extended later, the initial write is for an atomistic content model with 'sensible' defaults
         mimetypes are detected using islandoraUtils for compatibility with Islandora
         currently only control groups x and m are supported
-        
+
         @TODO: look at taking in a relationship object
-        
-        @param PID: 
+
+        @param PID:
             The PID of the object to create or update. If non is supplied then getNextPID is used
-        @param archival_datastream: 
+        @param archival_datastream:
             an image, audio, whatever file path will be a managed datastream
             [{'path':'./objectstuff'}]
-        @param metadata_file_path: 
+        @param metadata_file_path:
             will be inline xml
-        @param list collection: 
+        @param list collection:
             the PIDs of the collection so RELS-EXT can be created
         @param list content_model:
             The PIDs of the content_model so the RELS-EXT can be created
         @param list sources:
-            Only relevant if this is a cron ingest, will default to 
+            Only relevant if this is a cron ingest, will default to
             [archival_datastream's path].
-        
+
         @return:
             The PID of the object created or updated.
         '''
-        
+
         # Set as empty lists (not in default args because of python would store state from call to call).
         if not datastreams:
             datastreams = []
@@ -264,7 +285,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
             collections = []
         if not content_models:
             content_models = []
-            
+
         #if datastream label not supplied build it based on archival ds path
         if not object_label:
             if isinstance(archival_datastream, basestring):
@@ -275,7 +296,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                 object_label = ''
             #a utf8 unicode string may be necessary to pass through urlencode
             object_label = path_to_label(object_label)
-        
+
         #set the source
         if self._is_a_cron:
             if not sources:
@@ -285,8 +306,8 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                     sources = [archival_datastream['filepath']]
                 else:
                     sources = []
-                
-        
+
+
         #normalize parameters to a list of dictionaries of what datastreams to ingest
         if isinstance(archival_datastream, basestring):
             archival_datastream_dict = {'filepath':archival_datastream,
@@ -295,7 +316,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                                         'ID':path_to_datastream_ID(archival_datastream),
                                         'control_group':'M'}
             archival_datastream = archival_datastream_dict
-            
+
         if isinstance(metadata_datastream, basestring):
             metadata_datastream_dict = {'filepath':metadata_datastream,
                                         'label':path_to_label(metadata_datastream),
@@ -303,39 +324,39 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                                         'ID':path_to_datastream_ID(metadata_datastream),
                                         'control_group':'X'}
             metadata_datastream = metadata_datastream_dict
-        
+
         #add the metadata and archival datastreams to those to be ingested
         if metadata_datastream:
             datastreams.append(metadata_datastream)
         if archival_datastream:
             datastreams.append(archival_datastream)
-        
+
         #create the object
         Fedora_object = self.get_Fedora_object(PID, object_label)
         PID = Fedora_object.pid
-        
+
         # Write securty FIRST!!!!!!!!!!
         self.replace_security_on_object(Fedora_object,
                                         isViewableByRoles,
                                         isViewableByUsers)
-        
+
         # write datastreams to the object.
         for datastream in datastreams:
             self.ingest_datastream(Fedora_object, datastream)
-            
+
         #write relationships to the object
         if collections or content_models or self._is_a_cron:
-            
+
             # If it is a cron we need another namespace.
             if self._is_a_cron and sources:
                 source_relationship_namespace = self.configuration['relationships']['has_source_identifier_relationship_namespace']
                 source_relationship_namespace_alias = self.configuration['relationships']['has_source_identifier_relationship_namespace_alias']
                 source_name_space_object = fedora_relationships.rels_namespace(source_relationship_namespace_alias, source_relationship_namespace)
-                
+
                 objRelsExt = fedora_relationships.rels_ext(Fedora_object, [self._Fedora_model_namespace, source_name_space_object])
             else:
                 objRelsExt = fedora_relationships.rels_ext(Fedora_object, self._Fedora_model_namespace)
-            
+
             if self._is_a_cron:
                 # Collection relationships.
                 replace_relationships(objRelsExt,
@@ -345,7 +366,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                 replace_relationships(objRelsExt,
                                       fedora_relationships.rels_predicate('fedora-model','hasModel'),
                                       content_models)
-            
+
             # If it isn't a cron we need to only add the relationships
             else:
                 # Collection relationships.
@@ -367,30 +388,30 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                 for source in sources:
                     objectified_sources.append(fedora_relationships.rels_object(source,
                                                                                 fedora_relationships.rels_object.LITERAL))
-                    
+
                 replace_relationships(objRelsExt,
                                       source_predicate,
                                       objectified_sources)
-                
+
             objRelsExt.update()
         return(PID)
-    
+
     def ingest_default_thumbnail (self,
                                   Fedora_object):
         '''
         This function will ingest a default thumbnail into Fedora
-        
+
         @param Fedora_object:
             The fcrepo object to add the thumbnail to.
         '''
-        
+
         self.ingest_datastream (Fedora_object,
                                 datastream = os.path.join(os.path.dirname(__file__),
                                                           '../__resources/images/icons/Crystal_Clear_action_filenew.png'),
                                 datastream_ID = 'TN')
-        
+
         return
-    
+
     def ingest_datastream (self,
                            Fedora_object,
                            datastream,
@@ -398,16 +419,16 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
         '''
             This function will wrap creating/modifying a datastream in Fedora
             It's some dynamic kinda crazy:
-            
+
             @param mixed datstream:
                 string of source
                 dict defining datastream
             @param string datastream_ID:
                 ignored if datastream is a dict.
         '''
-        
+
         PID = Fedora_object.pid
-        
+
         if not isinstance(datastream, dict):
             if not datastream_ID:
                 datastream_ID = path_to_datastream_ID(datastream)
@@ -449,14 +470,14 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                                                                                      + PID + ' via IslandoraPYUtils'))
                             self._logger.info('Added ' + datastream['ID'] + ' datastream to: ' + PID +
                                               ' from: ' + datastream['filepath'])
-                            
+
                         except (FedoraConnectionException, IOError):
                             try:
                                 self._ingest_file(Fedora_object, datastream, datastream_file_handle)
                             except (FedoraConnectionException, IOError):
                                 self._logger.error('Error in adding ' + datastream['ID'] +
                                                    ' datastream to:' + PID + ' from: ' + datastream['filepath'])
-                    
+
                     # Set the datastream if it is not new.
                     else:
                         try:
@@ -481,7 +502,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                     self._logger.warning('IOError updating DS on' + PID + '/'
                                          + datastream['ID'] + ', Trying again')
                     sleep(600)
-    
+
     def _ingest_file(self,
                      Fedora_object,
                      datastream,
@@ -490,7 +511,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
         '''
             This method wraps ingesting a file into Fedora without reading it into a string.
             It will always create a managed data stream.
-            
+
             @param object Fedora_object:
                 Fedora object to add the file to.
             @param dict datastream:
@@ -510,7 +531,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                                         controlGroup = u'M',
                                         logMessage = unicode('Added ' + datastream['ID'] + ' datastream to:'
                                                              + Fedora_object.pid + ' via IslandoraPYUtils'))
-            
+
         Fedora_object_datastream = Fedora_object[datastream['ID']]
         try:
             Fedora_object_datastream.setContent(datastream_file_handle)
@@ -522,14 +543,14 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
             copied_datastream_file_path = os.path.abspath(os.path.join(self.configuration['miscellaneous']['temporary_directory'],
                                                           'copied_datastream_for_upload.',
                                                           os.path.splitext(datastream['filepath'])[1]))
-            
+
             shutil.copyfile(datastream['filepath'], copied_datastream_file_path)
             with open(copied_datastream_file_path, 'rb') as copied_datastream_file_handle:
                 Fedora_object_datastream.setContent(copied_datastream_file_handle)
             os.remove(copied_datastream_file_path)
-            
+
         return
-    
+
     def replace_security_on_object(self,
                                    Fedora_object,
                                    isViewableByRoles = None,
@@ -539,17 +560,17 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
         '''
         This function holds the boilerplate for adding xacml to objects and storing
         a representation of it in the RELSEXT datastream for security integration.
-        
+
         @param list isViewableByRoles:
             List of strings with the roles that the objects should be viewable by.
 
         @param list isViewableByUsers:
             List of strings with the users that the objects should be viewable by.
-        
+
         @todo: add more functionality, this function should encapsulate all the major
             configurations possible on objects through the xacml package.  Add as needed
             another function for datastreams should be added
-        
+
         '''
         # Make default args into lists
         if isViewableByRoles is None:
@@ -560,14 +581,14 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
             isManageableByRoles = []
         if isManageableByUsers is None:
             isManageableByUsers = []
-            
+
         # Add in necessary minimal access
         if not 'admin' in isManageableByUsers:
             isManageableByUsers.append('admin')
         if not 'admin' in isViewableByUsers:
             isViewableByUsers.append('admin')
-        
-        
+
+
         # Populate XACML string
         xacml = Xacml()
         if isManageableByRoles is not None:
@@ -578,38 +599,38 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
             xacml.viewingRule.addRole(isViewableByRoles)
         if isViewableByUsers is not None:
             xacml.viewingRule.addUser(isViewableByUsers)
-        
-        
+
+
         # Write string to temporary file
         XACML_file_name = os.path.join(self._configuration['miscellaneous']['temporary_directory'], 'xacml.xml')
         XACML_file_handle = open(XACML_file_name,'w')
         XACML_file_handle.write(xacml.getXmlString(False))
         XACML_file_handle.close()
-        
+
         # Populate the Fedora object's XACML datastream
         self.ingest_datastream(Fedora_object,
                                XACML_file_name,
                                'POLICY')
-        
+
         # Populate the Fedora object's RELS
         XACML_RDF_name_space_object = fedora_relationships.rels_namespace(self._configuration['relationships']['xacml_relationship_namespace_alias'],
                                                                           self._configuration['relationships']['xacml_relationship_namespace'])
-        
+
         Fedora_object_RELS = fedora_relationships.rels_ext(Fedora_object,
                                                            XACML_RDF_name_space_object)
         # Viwable RELS
         if isViewableByRoles is not None:
             XACML_viewable_role_RDF_object = fedora_relationships.rels_predicate(self._configuration['relationships']['xacml_relationship_namespace_alias'],
                                                                                  self._configuration['relationships']['xacml_viewable_role_relationship_name'])
-            
+
             replace_relationships(Fedora_object_RELS,
                                   XACML_viewable_role_RDF_object,
                                   strings_to_literal_rels_objects(isViewableByRoles))
-            
+
         if isViewableByUsers is not None:
             XACML_viewable_user_RDF_object = fedora_relationships.rels_predicate(self._configuration['relationships']['xacml_relationship_namespace_alias'],
                                                                                  self._configuration['relationships']['xacml_viewable_user_relationship_name'])
-            
+
             replace_relationships(Fedora_object_RELS,
                                   XACML_viewable_user_RDF_object,
                                   strings_to_literal_rels_objects(isViewableByUsers))
@@ -617,23 +638,23 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
         if isManageableByRoles is not None:
             XACML_manageable_role_RDF_object = fedora_relationships.rels_predicate(self._configuration['relationships']['xacml_relationship_namespace_alias'],
                                                                         self._configuration['relationships']['xacml_manageable_role_relationship_name'])
-            
+
             replace_relationships(Fedora_object_RELS,
                                   XACML_manageable_role_RDF_object,
                                   strings_to_literal_rels_objects(isManageableByRoles))
-            
+
         if isManageableByUsers is not None:
             XACML_manageable_user_RDF_object = fedora_relationships.rels_predicate(self._configuration['relationships']['xacml_relationship_namespace_alias'],
                                                                         self._configuration['relationships']['xacml_manageable_user_relationship_name'])
-            
+
             replace_relationships(Fedora_object_RELS,
                                   XACML_manageable_user_RDF_object,
                                   strings_to_literal_rels_objects(isManageableByUsers))
-            
+
         Fedora_object_RELS.update()
-        
+
         return
-    
+
     def get_Fedora_object(self, PID = None, object_label = None):
         '''
         This function will get/create a Fedora object
@@ -648,14 +669,14 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
         if object_label != None:
             #encode in unicode because that's what fcrepo needs
             object_label = unicode(object_label)
-            
-            
+
+
         #set up the Fedora object PID
         if not PID:
             #PID is a list
             PID = self._Fedora_client.getNextPID(self._default_Fedora_namespace)
             Fedora_object = self._Fedora_client.createObject(PID, label = object_label)
-            
+
         #creating vs updating
         #if not Fedora_object:
         else:
@@ -668,21 +689,23 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                 else:
                     self._logger.error(PID + ' was not created successfully.')
         return Fedora_object
-    
+
     def filter_files_for_ingest(self,
                                 list_of_paths,
                                 filter_to_documents = False,
                                 filter_to_images = False,
                                 extensions_to_filter_out = None,
                                 extensions_to_filter_to = None,
-                                filter_by_time = None):
+                                filter_by_time = None,
+                                whitelist_regex = None,
+                                blacklist_regex = None):
         '''
         This function will filter out undesirable files
-        from a list of files for ingest.  It relies on a 
-        list of illegal file names and file extensions in the 
+        from a list of files for ingest.  It relies on a
+        list of illegal file names and file extensions in the
         constants module.
         It does not alter the original list object.
-        
+
         @param list list_of_paths:
             The paths to remove illegal files from. Members are expected to be unicode
         @param bool filter_to_documents:
@@ -695,34 +718,34 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
             Will require all files to have one of the extensions passed in.
         @param boolean filter_by_time:
             Will default to true if this is a cron batch ingester.
-        
+
         @return list filtered_list_of_paths:
             The paths after illegal files have been removed.
         '''
-        
+
         # Set filter by time if this is a cron and not overridden in parameters.
         if filter_by_time is None:
             filter_by_time = self._is_a_cron
-            
+
         #to handle unicode file names we convert all input strings to unicode
         if extensions_to_filter_out:
             extensions_to_filter_out = convert_members_to_unicode(extensions_to_filter_out)
         if extensions_to_filter_to:
             extensions_to_filter_to = convert_members_to_unicode(extensions_to_filter_to)
-        
-        
+
+
         # Kill by Time
         if filter_by_time:
             filtered_list_of_paths = self._cron_batch.find_files_requiring_action(list_of_paths)
         else:
             filtered_list_of_paths = copy(list_of_paths)
-        
+
         # Kill by file name issues.
         for file_path in list_of_paths:
             file_name = os.path.basename(file_path)
             #lower case extension
             file_extension = os.path.splitext(file_path)[1].lower()
-            
+
             if extensions_to_filter_to:
                 if not file_extension in extensions_to_filter_to:
                     if file_path in filtered_list_of_paths:
@@ -749,16 +772,28 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                 if not file_extension in convert_members_to_unicode(json.loads(self._configuration['filtering']['allowed_document_extensions'])):
                     if file_path in filtered_list_of_paths:
                         filtered_list_of_paths.remove(file_path)
-                        
+
             if filter_to_images:
                 if not file_extension in convert_members_to_unicode(json.loads(self._configuration['filtering']['allowed_image_extensions'])):
                     if file_path in filtered_list_of_paths:
                         filtered_list_of_paths.remove(file_path)
-        
+
+            if whitelist_regex:
+                if not whitelist_regex.match(file_name):
+                    if file_path in filtered_list_of_paths:
+                        self.logger.debug("FILTERING OUT " + file_path)
+                        filtered_list_of_paths.remove(file_path)
+
+            if blacklist_regex:
+                if blacklist_regex.match(file_name):
+                    if file_path in filtered_list_of_paths:
+                        self.logger.debug("FILTERING OUT " + file_path)
+                        filtered_list_of_paths.remove(file_path)
+
         # Filter by timestamp. This is expensive so I want it last
         if filter_by_time:
             filtered_list_of_paths = self.cron_batch.find_files_requiring_action(filtered_list_of_paths)
-                
+
         return filtered_list_of_paths
 
     def recursivly_get_all_files_for_ingest(self,
@@ -768,11 +803,13 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                                             extensions_to_filter_out = None,
                                             extensions_to_filter_to = None,
                                             filter_by_time = None,
-                                            directories_to_ignore = []):
+                                            directories_to_ignore = [],
+                                            whitelist_regex = None,
+                                            blacklist_regex = None):
         '''
         This function will get all the files in a directory and all its'
         non-symlinked directories that are suitable for ingest.
-        
+
         @param string directory_to_walk:
             The directory to grab files and filter from.
         @param bool filter_to_documents:
@@ -785,14 +822,14 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
             Passed on to filter function.
         @param boolean filter_by_time:
             Will default to true if this is a cron batch ingester.
-        
+
         @return list list_of_paths_to_ingest:
             The completed list of files to ingest, they will be unicode strings.
-        
+
         @todo: have report based program path respect directory filtering
         '''
         report_dict = self._retrieve_filesystem_report(directory_to_walk)
-        
+
         # Using unicode to handle if the file system is unicode.
         if report_dict:
             list_of_paths_to_ingest = report_dict.keys()
@@ -802,13 +839,15 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                                                                    filter_to_images,
                                                                    extensions_to_filter_out,
                                                                    extensions_to_filter_to,
-                                                                   filter_by_time = False)
+                                                                   filter_by_time = False,
+                                                                   whitelist_regex = whitelist_regex,
+                                                                   blacklist_regex = blacklist_regex)
             # Filter by time.
             for path_to_ingest in copy(list_of_paths_to_ingest):
                 if not self._cron_batch.does_timestamp_require_action(convert_string_to_timestamp(report_dict[path_to_ingest],
                                                                                                   self._sync_time_format)):
                     list_of_paths_to_ingest.remove(path_to_ingest)
-            
+
             # Adapt paths
             for path_to_ingest in copy(list_of_paths_to_ingest):
                 processed_path_to_ingest = self._replace_start_of_sync_report_path(path_to_ingest)
@@ -822,10 +861,12 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                                                                          extensions_to_filter_out = None,
                                                                          extensions_to_filter_to = None,
                                                                          filter_by_time = None,
-                                                                         directories_to_ignore = [])
-        
+                                                                         directories_to_ignore = [],
+                                                                         whitelist_regex = whitelist_regex,
+                                                                         blacklist_regex = blacklist_regex)
+
         return list_of_paths_to_ingest
-    
+
     def _get_file_to_ingest_generator(self,
                                       directory_to_walk,
                                       filter_to_documents = False,
@@ -833,11 +874,13 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                                       extensions_to_filter_out = None,
                                       extensions_to_filter_to = None,
                                       filter_by_time = None,
-                                      directories_to_ignore = []):
+                                      directories_to_ignore = [],
+                                      whitelist_regex = None,
+                                      blacklist_regex = None):
         """
         This wraps up a generator for recursivly_get_all_files_for_ingest
         because we can't have a gerator and a method be the same function.
-        
+
         @param string directory_to_walk:
             The directory to grab files and filter from.
         @param bool filter_to_documents:
@@ -850,17 +893,17 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
             Passed on to filter function.
         @param boolean filter_by_time:
             Will default to true if this is a cron batch ingester.
-        
+
         @return list list_of_paths_to_ingest:
             The completed list of files to ingest, they will be unicode strings.
         """
         for path, dirs, files in os.walk(unicode(directory_to_walk)):
-            # Ignore a directory and sub dirs if specified in directories_to_ignore. 
+            # Ignore a directory and sub dirs if specified in directories_to_ignore.
             if directories_to_ignore:
                 for directory in dirs:
                     if os.path.join(path, directory) in directories_to_ignore:
                         dirs.remove(directory)
-                            
+
             for file_name in files:
                 file_path = os.path.join(path, file_name)
                 list_of_paths_to_ingest = self.filter_files_for_ingest([file_path],
@@ -868,41 +911,43 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                                                                        filter_to_images,
                                                                        extensions_to_filter_out,
                                                                        extensions_to_filter_to,
-                                                                       filter_by_time)
+                                                                       filter_by_time,
+                                                                       whitelist_regex = whitelist_regex,
+                                                                       blacklist_regex = blacklist_regex)
                 if len(list_of_paths_to_ingest) == 1:
                     yield list_of_paths_to_ingest[0]
         return
-    
+
     def _retrieve_filesystem_report(self, parent_directory):
         '''
         This function will retrieve the state of the file tree under
         a directory
-        
+
         @param parent_directory:
             The directory that the report is to be retrieved from.
-            
+
         @return dictionary:
             The report in dictionary format {'path':'last_modified_time'}
         '''
         filesystem_info = dict()
-        
+
         # If there is no name given for the report file.
         if self._report_file_base_name is None:
             return filesystem_info
-        
+
         # If this directory does not exist return an empty dict.
         if os.path.isdir(parent_directory):
-            
+
             report_file_abspath = os.path.join(parent_directory, self._report_file_base_name)
-            
+
             # Return an empty dict if the report is not present, @todo:refactor to exception.
             if not os.path.isfile(report_file_abspath):
                 return filesystem_info
-            
+
             with open(report_file_abspath, "rb") as report_file_handle:
-                
+
                 self._logger.info('Found filesystem sync report, reading CSV.')
-                
+
                 # We only need a timestamp if it is a cron.
                 if self._is_a_cron:
                     report = csv.DictReader(report_file_handle, ['file_path', 'timestamp'])
@@ -916,13 +961,13 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                     file_path = unicode(row['file_path'].decode('utf-8'))
                     filesystem_info[file_path] = timestamp
                     self._logger.debug('file_path: '+ file_path +'   timestamp: ' + timestamp)
-            
+
         return filesystem_info
-    
-    
+
+
     def _replace_start_of_sync_report_path(self, raw_path):
         '''
-        This function will modify a path by replacing the start of it based on 
+        This function will modify a path by replacing the start of it based on
         values set in the configuration.
         This is meant to let the paths returned by a report generator be adapted if necessary.
         A report generator may be ran in a context that does not match the ingester's.
@@ -944,17 +989,17 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
         # Just add the prefix.
         elif self._replacement_path_prefix is not None:
             processed_path = self._replacement_path_prefix + raw_path
-            
+
         return processed_path
-    
+
     def remove_temporary_directory(self):
         '''
         This function will remove the temporary directory.
         '''
-        
+
         # Remove temporary directory if it exists and one is in the configuration.
         if 'temporary_directory' in self._configuration['miscellaneous']:
             if os.path.exists(self._configuration['miscellaneous']['temporary_directory']):
                 os.remove(self._configuration['miscellaneous']['temporary_directory'])
-                
+
         return
