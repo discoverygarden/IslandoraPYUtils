@@ -395,6 +395,13 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                                       objectified_sources)
 
             objRelsExt.update()
+
+
+        if self.configuration['ingester']['source'] == 'sqlite':
+           arguments = (PID, object_label)
+           conn=sqlite.connect(self.configuration['sqlite_db']['path'])
+            c=conn.cursor()
+            c.execute('UPDATE the_table set PID = ? WHERE path= ?',arguments)
         return(PID)
 
     def ingest_default_thumbnail (self,
@@ -925,7 +932,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
         if crawl_type == 'sqlite':
             #PULL THE THINGS FROM THE DATABASE LAWL
             conn=sqlite.connect(self.configuration['sqlite_db']['path'])
-            #maybe replace this with a configuration variable?
+            #suss out the collection name based on path supplied
             collection_name = self.ingester_configuration['collection_map'][directory_to_walk]
             cursor = conn.cursor()
             for file in cursor.execute("SELECT path FROM table_name WHERE migration_id = ? AND pid IS NULL", collection_name)
