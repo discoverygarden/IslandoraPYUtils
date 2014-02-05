@@ -400,8 +400,9 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
         if self.configuration['ingester']['source'] == 'sqlite':
            arguments = (PID, object_label)
            conn=sqlite.connect(self.configuration['sqlite_db']['path'])
-            c=conn.cursor()
-            c.execute('UPDATE the_table set PID = ? WHERE path= ?',arguments)
+           conn.isolation_level = None
+           c=conn.cursor()
+           c.execute('UPDATE the_table set PID = ? WHERE path= ?',arguments)
         return(PID)
 
     def ingest_default_thumbnail (self,
