@@ -4,7 +4,7 @@ Created on 2012-03-19
 @author: William Panting
 @TODO: accept overrides for all objects used in constructor
 '''
-import sqlite3
+import sqlite3 as sqlite
 import os, json, csv, shutil, re
 from copy import copy
 from time import sleep
@@ -402,7 +402,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
            conn=sqlite.connect(self.configuration['sqlite_db']['path'])
            conn.isolation_level = None
            c=conn.cursor()
-           c.execute('UPDATE the_table set PID = ? WHERE path= ?',arguments)
+           c.execute('UPDATE migration_data_path set PID = ? WHERE path= ?',arguments)
         return(PID)
 
     def ingest_default_thumbnail (self,
@@ -934,10 +934,15 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
             #PULL THE THINGS FROM THE DATABASE LAWL
             conn=sqlite.connect(self.configuration['sqlite_db']['path'])
             #suss out the collection name based on path supplied
-            collection_name = self.ingester_configuration['collection_map'][directory_to_walk]
+	    if not isinstance(directory_to_walk, basestring):
+		directory_to_walk = directory_to_walk.pop()
+#	    print str(self.configuration['collection_map'])
+	    collection_name = self.configuration['collection_map'][str(directory_to_walk).lower()]
             cursor = conn.cursor()
-            for file in cursor.execute("SELECT path FROM table_name WHERE migration_id = ? AND pid IS NULL", collection_name)
-                yield file[0]
+            cursor.execute("SELECT path FROM migration_data_path WHERE migration_name = ? AND pid IS NULL", [collection_name])
+            for file in [cursor.fetchone()]:
+		print file[0]
+		yield file[0]
             return
     def _retrieve_filesystem_report(self, parent_directory):
         '''
