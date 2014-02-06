@@ -398,12 +398,12 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
 
 
         if self.configuration['ingester']['source'] == 'sqlite':
-           arguments = (PID, object_label)
+           arguments = (PID, archival_datastream['filepath'])
            conn=sqlite.connect(self.configuration['sqlite_db']['path'])
            conn.isolation_level = None
            c=conn.cursor()
-           c.execute('UPDATE migration_data_path set PID = ? WHERE path= ?',arguments)
-        return(PID)
+	   c.execute('UPDATE migration_data_path set PID = ? WHERE path= ?',arguments)
+	return(PID)
 
     def ingest_default_thumbnail (self,
                                   Fedora_object):
@@ -939,8 +939,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
 #	    print str(self.configuration['collection_map'])
 	    collection_name = self.configuration['collection_map'][str(directory_to_walk).lower()]
             cursor = conn.cursor()
-            cursor.execute("SELECT path FROM migration_data_path WHERE migration_name = ? AND pid IS NULL", [collection_name])
-            for file in [cursor.fetchone()]:
+            for file in cursor.execute("SELECT path FROM migration_data_path WHERE migration_name = ? AND pid IS NULL", [collection_name]):
 		print file[0]
 		yield file[0]
             return
