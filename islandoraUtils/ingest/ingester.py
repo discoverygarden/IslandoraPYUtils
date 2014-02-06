@@ -940,7 +940,6 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
 	    collection_name = self.configuration['collection_map'][str(directory_to_walk).lower()]
             cursor = conn.cursor()
             for file in cursor.execute("SELECT path FROM migration_data_path WHERE migration_name = ? AND pid IS NULL", [collection_name]):
-		print file[0]
 		yield file[0]
             return
     def _retrieve_filesystem_report(self, parent_directory):
