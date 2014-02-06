@@ -885,7 +885,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                                       filter_by_time = None,
                                       directories_to_ignore = [],
                                       whitelist_regex = None,
-                                      blacklist_regex = None,):
+                                      blacklist_regex = None):
         """
         This wraps up a generator for recursivly_get_all_files_for_ingest
         because we can't have a gerator and a method be the same function.
