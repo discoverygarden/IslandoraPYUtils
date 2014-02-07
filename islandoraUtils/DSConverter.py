@@ -40,7 +40,7 @@ def create_thumbnail(obj, dsid, tnid):
         directory, file = get_datastream_as_file(obj, dsid)
     except:
         return 1
-    
+
     # fine out what mimetype the input file is
     try:
         mime = obj[dsid].mimeType
@@ -52,7 +52,7 @@ def create_thumbnail(obj, dsid, tnid):
     tnfile = os.path.join(directory, tnid)
 
     # make the thumbnail based on the mimetype of the input
-    # right now we assume everything but video/mp4 can be handled 
+    # right now we assume everything but video/mp4 can be handled
     if mime == 'video/mp4':
         r = subprocess.call(['ffmpeg', '-itsoffset', '-4', '-i', infile, '-vcodec', 'mjpeg',\
              '-vframes', '1', '-an', '-f', 'rawvideo', tmpfile])
@@ -63,12 +63,12 @@ def create_thumbnail(obj, dsid, tnid):
         # Make a thumbnail with convert
         r = subprocess.call(['convert', '%s[0]' % infile, '-thumbnail', \
              '%sx%s' % tn_size, '-colorspace', 'rgb', 'jpg:%s'%tnfile])
-   
+
     if r == 0:
         update_datastream(obj, tnid, tnfile, label='thumbnail', mimeType='image/jpeg')
     else :
         logger.warning('PID:%s DSID:%s Thumbnail creation failed (return code:%d).' % (obj.pid, dsid, r))
-       
+
     logger.debug(directory)
     logger.debug(file)
     logger.debug(tnid)
@@ -84,7 +84,7 @@ def create_jp2(obj, dsid, jp2id):
     '''
     logger = logging.getLogger('islandoraUtils.DSConverter.create_jp2')
     # We receive a TIFF and create a Lossless JPEG 2000 file from it.
-    directory, file = get_datastream_as_file(obj, dsid, 'tiff') 
+    directory, file = get_datastream_as_file(obj, dsid, 'tiff')
     r = subprocess.call(["convert", directory+'/'+file, '+compress', '-colorspace', 'RGB', directory+'/uncompressed.tiff'])
     if r != 0:
         logger.warning('PID:%s DSID:%s JP2 creation failed (convert return code:%d).' % (obj.pid, dsid, r))
@@ -109,7 +109,7 @@ def create_mp4(obj, dsid, mp4id):
         an fcrepo object
     '''
     logger = logging.getLogger('islandoraUtils.DSConverter.create_mp4')
-    directory, file = get_datastream_as_file(obj, dsid, 'video') 
+    directory, file = get_datastream_as_file(obj, dsid, 'video')
 
     infile = os.path.join(directory, file)
     avifile = os.path.join(directory, 'output.avi')
@@ -118,7 +118,7 @@ def create_mp4(obj, dsid, mp4id):
     rawfile = os.path.join(directory, 'output_audio.raw')
     aacfile = os.path.join(directory, 'output_audio.aac')
 
-    # mp4box is stupid as a bag of hammers. if you do not check if there is a audio stream it will 
+    # mp4box is stupid as a bag of hammers. if you do not check if there is a audio stream it will
     # fill the filesystem by creating a file full of junk. It also will just assume the frame rate
     # is 25fps no matter what it is, so we need to get that
     p = subprocess.Popen(['mediainfo', infile], stdout=subprocess.PIPE)
@@ -141,7 +141,7 @@ def create_mp4(obj, dsid, mp4id):
     if r != 0:
         logger.error('PID:%s DSID:%s MP4 creation (mencoder) failed.' % (obj.pid, dsid))
         return r
-    
+
     if(audio):
         subprocess.call(['MP4Box', '-aviraw', 'audio', avifile])
         # again MP4Box contains vacuous space instead of logic, so we have to rename this file
@@ -173,7 +173,7 @@ def create_mp3(obj, dsid, mp3id, args = None):
     '''
 
     logger = logging.getLogger('islandoraUtils.DSConverter.create_mp3')
-    
+
     #mimetype throws keyerror if it doesn't exist
     try:
         mime = obj[dsid].mimeType
@@ -187,7 +187,7 @@ def create_mp3(obj, dsid, mp3id, args = None):
 
     # We recieve a WAV file. Create a MP3
     directory, file = get_datastream_as_file(obj, dsid, ext)
-    
+
     # I think we need more sensible defaults for web streaming
     if args == None:
         args = ['-mj', '-v', '-V6', '-B224', '--strictly-enforce-ISO']
@@ -215,7 +215,7 @@ def create_ogg(obj, dsid, oggid):
     logger = logging.getLogger('islandoraUtils.DSConverter.create_ogg')
     #recieve a wav file create a OGG
     directory, file = get_datastream_as_file(obj, dsid, "wav")
-    
+
     # Make OGG with ffmpeg
     r = subprocess.call(['ffmpeg', '-i', directory+'/'+file, '-acodec', 'libvorbis', '-ab', '96k', directory+'/'+oggid])
     if r == 0:
@@ -234,7 +234,7 @@ def create_swf(obj, dsid, swfid):
     logger = logging.getLogger('islandoraUtils.DSConverter.create_swf')
     #recieve PDF create a SWF for use with flexpaper
     directory, file = get_datastream_as_file(obj, dsid, "pdf")
-    
+
     pdf2swf = subprocess.Popen(['pdf2swf', directory+'/'+file, '-o', directory+'/'+swfid,\
          '-T 9', '-f', '-t', '-s', 'storeallcharacters', '-G'], stdout=subprocess.PIPE)
     out, err = pdf2swf.communicate()
@@ -244,7 +244,7 @@ def create_swf(obj, dsid, swfid):
              '-T 9', '-f', '-t', '-s', 'storeallcharacters', '-G', '-s', 'poly2bitmap'], stdout=subprocess.PIPE)
         out, err = pdf2swf.communicate()
 
-    # catch the case where PDF2SWF fails to create the file, but returns 
+    # catch the case where PDF2SWF fails to create the file, but returns
     if pdf2swf.returncode == 0 and os.path.isfile(directory + '/' + swfid):
         update_datastream(obj, swfid, directory+'/'+swfid, label='pdf to swf', mimeType='application/x-shockwave-flash')
         r = 0
@@ -272,7 +272,7 @@ def create_pdf(obj, dsid, pdfid):
     logger = logging.getLogger('islandoraUtils.DSConverter.create_pdf')
     #recieve document and create a PDF with libreoffice if possible
     directory, file = get_datastream_as_file(obj, dsid, "document")
-    
+
     subprocess.call(['soffice', '--headless', '-convert-to', 'pdf', '-outdir', directory, directory+'/'+file])
     newfile = file.split('.',1)[0]
     newfile += '.pdf'
@@ -292,7 +292,7 @@ def create_pdf(obj, dsid, pdfid):
             value = 0
         else:
             value = 1
-        
+
     logger.debug(os.listdir(directory))
     rmtree(directory, ignore_errors=True)
     return value
@@ -317,7 +317,7 @@ def marcxml_to_mods(obj, dsid, dsidOut='MODS'):
       logger.debug('Wrote transformed DS to disk')
 
     r = update_datastream(obj, dsidOut, temp.name, label='MODS (translated from MARCXML)', mimeType="text/xml")
-    
+
     rmtree(directory, ignore_errors=True)
     return r
 
@@ -332,17 +332,17 @@ def create_pdf_and_swf(obj, dsid, pdfid, swfid):
         a potential start-up script:
         http://www.openvpms.org/documentation/install-openoffice-headless-service-ubuntu
     If open office fails it will try to use ghostpdl which can handle xps format.
-    
+
     @todo:
         Remove the copy pasted code for uploading datastreams and converting swf to common functions
-            
+
     @param string obj
         an fcrepo object
     @param string dsid:
         The datastream ID to create derivatives from.
     @param string pdfid:
         The datastream ID to upload the new PDF to.
-    
+
     @return
         0 if successful 1 if not
     '''
@@ -352,7 +352,7 @@ def create_pdf_and_swf(obj, dsid, pdfid, swfid):
     directory, file = get_datastream_as_file(obj, dsid)
     document_file_path = os.path.join(directory, file)
     logger.info('DSConverter downloaded file to' + document_file_path)
-    
+
     #convert file to pdf
     try:
         # @todo: move this try/except block into a function for possible reuse
@@ -365,7 +365,7 @@ def create_pdf_and_swf(obj, dsid, pdfid, swfid):
         logger.warning('Had an exception trying to get DocumentConverter, trying restart of soffice.')
         restart_office_headless()
         document_converter = DocumentConverter()
-        
+
     path_to_PDF = os.path.join(os.path.splitext(document_file_path)[0] + '.pdf')
     #if open office fails to convert try ghostpdl
     try:
@@ -373,7 +373,7 @@ def create_pdf_and_swf(obj, dsid, pdfid, swfid):
     except Exception:
         logger.info('An issue occured with Document Converter, trying ghostpdl on ' + obj.pid + ' ' + dsid)
         xps_to_pdf(document_file_path, path_to_PDF)
-        
+
     #upload pdf
     if os.path.isfile(path_to_PDF):
         update_datastream(obj, pdfid, path_to_PDF, label='document to pdf', mimeType='application/pdf')
@@ -383,14 +383,14 @@ def create_pdf_and_swf(obj, dsid, pdfid, swfid):
         logger.warning('PID:%s DSID:%s PDF creation failed.' % (obj.pid, dsid))
 
     logger.debug(os.listdir(directory))
-    
+
     #convert PDF to SWF
     path_to_SWF = os.path.join(os.path.splitext(path_to_PDF)[0] + '.swf')
-    
+
     pdf2swf = subprocess.Popen(['pdf2swf', path_to_PDF, '-o', path_to_SWF,
         '-T 9', '-f', '-t', '-s', 'storeallcharacters', '-G'], stdout=subprocess.PIPE)
     out, err = pdf2swf.communicate()
-    
+
     if pdf2swf.returncode != 0:
         logger.warning('PID:%s DSID:%s SWF creation failed. Trying alternative.' % (obj.pid, dsid))
         pdf2swf = subprocess.Popen(['pdf2swf', path_to_PDF, '-o',  path_to_SWF,\
@@ -398,7 +398,7 @@ def create_pdf_and_swf(obj, dsid, pdfid, swfid):
         out, err = pdf2swf.communicate()
 
     #upload PDF
-    # catch the case where PDF2SWF fails to create the file, but returns 
+    # catch the case where PDF2SWF fails to create the file, but returns
     if pdf2swf.returncode == 0 and os.path.isfile(path_to_SWF):
         update_datastream(obj, swfid, path_to_SWF, label = 'pdf to swf', mimeType = 'application/x-shockwave-flash')
         r = 0
@@ -408,9 +408,9 @@ def create_pdf_and_swf(obj, dsid, pdfid, swfid):
     else:
         logger.warning('PID:%s DSID:%s SWF creation failed (pdf2swf return code:%d).' % (obj.pid, dsid, pdf2swf.returncode))
         r = pdf2swf.returncode
-    
+
     rmtree(directory, ignore_errors=True)
-    
+
     #return good only if both values are true
     if r and value:
         return 1
@@ -426,16 +426,16 @@ def create_pdf_and_swf(obj, dsid, pdfid, swfid):
     pdf_return = create_pdf(obj, dsid, pdfid)
     if pdf_return == 0:
         final_return = create_swf(obj, pdfid, swfid)
-        
+
     return final_return
 
 def create_text(obj, dsid, txtid, ocrid):
     '''
     This converter will create a text datasteam from imbeded text in a pdf
     or from an ocr of that pdf.
-    
+
     @author William Panting
-    
+
     @param string obj
         an fcrepo object
     @param string dsid:
@@ -450,12 +450,12 @@ def create_text(obj, dsid, txtid, ocrid):
         directory, file = get_datastream_as_file(obj, dsid, "pdf")
     except:
         return 1
-    
+
     path_to_source = os.path.join(directory, file)
     path_to_text = os.path.join(os.path.splitext(path_to_source)[0] + '.txt')
-    
+
     proceed, was_ocrd = pdf_to_text_or_ocr(path_to_source, path_to_text)
-    
+
     if proceed and not was_ocrd:
         update_datastream(obj, txtid, path_to_text, label = 'pdf to text', mimeType = 'text/plain')
         rmtree(directory, ignore_errors=True)
@@ -468,7 +468,7 @@ def create_text(obj, dsid, txtid, ocrid):
         logger.warning('PID:%s DSID:%s text creation or ocr failed.' % (obj.pid, dsid))
         rmtree(directory, ignore_errors=True)
         return 1
-    
+
 def check_dates(obj, dsid, derivativeid):
     '''
     @param string obj

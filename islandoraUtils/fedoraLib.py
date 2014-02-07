@@ -21,11 +21,11 @@ from islandoraUtils.misc import hash_file, get_extension_from_mimetype
 def replace_relationships(rels_object, predicate, objects):
     '''
     It may be necessary to replace existing triple store
-    relationships with updates.  This function will do that. It will not 
+    relationships with updates.  This function will do that. It will not
     run update on the rels_object.
-    
+
     @todo: Get performance gain by diffing before updating.
-    
+
     @param object rels_object:
         A fedora_relationships.rels_object to operate on.
     @param mixed predicate:
@@ -33,21 +33,21 @@ def replace_relationships(rels_object, predicate, objects):
     @param list objects:
         Something acceptable by a fedora_relationsips.rels_object as an object.
     '''
-    
+
     # Remove predicate relationship if they exists.
     if rels_object.getRelationships(predicate):
         rels_object.purgeRelationships(predicate)
-        
+
     # Populate predicate relationships.
     for RDF_object in objects:
-        
+
         if isinstance(RDF_object, str):
             unicode(RDF_object)
-            
+
         rels_object.addRelationship(predicate, RDF_object)
-    
+
     return
-    
+
 def purge_related_objects(Fedora_client,
                           relationship_namespace,
                           relationship_name,
@@ -56,12 +56,12 @@ def purge_related_objects(Fedora_client,
                           is_URI = False):
     '''
     Sometimes especialy in cron jobs that sync datastources
-    to Fedora it is necessary to delete objects that are 
+    to Fedora it is necessary to delete objects that are
     derived or related to an origional object. This function
-    provides for that.  It will purge any objects that are 
+    provides for that.  It will purge any objects that are
     related to the provided subject by a certain relationship.
     subject predicate object
-    
+
     @param Fedora_PID:
         The subject of the relationship.
     @param relationship_namespace:
@@ -84,7 +84,7 @@ def purge_related_objects(Fedora_client,
                                                   RDF_subject)
     for PID_to_purge in results:
         Fedora_client.deleteObject(PID_to_purge)
-        
+
     return
 
 def get_all_subjects_of_relationship(Fedora_client,
@@ -96,7 +96,7 @@ def get_all_subjects_of_relationship(Fedora_client,
     This function will run a simple query on the resource index while.
     It will return all results.
     subject predicate object
-    
+
     @param Fedora_client:
         The client object to use to query the resource index.
     @param relationship_namesapce:
@@ -107,7 +107,7 @@ def get_all_subjects_of_relationship(Fedora_client,
         The object of the relationship to query.
     @param is_URI:
         Tells if the RDF_object is a URI or a literal
-    
+
     @return list:
         Fedora_PID_results the pids that match the query. Not the URIs.
     '''
@@ -116,7 +116,7 @@ def get_all_subjects_of_relationship(Fedora_client,
         relationship_object = u'<{0}>'.format(relationship_object)
     else:
         relationship_object = u'"{0}"'.format(relationship_object)
-        
+
     query = u'PREFIX {0}: <{1}> \
                      SELECT $object \
                      FROM <#ri> \
@@ -146,7 +146,7 @@ def get_all_objects_of_relationship(Fedora_client,
     This function will run a simple query on the resource index.
     It will return all results.
     subject predicate object
-    
+
     @param Fedora_client:
         The client object to use to query the resource index.
     @param relationship_namesapce:
@@ -155,12 +155,12 @@ def get_all_objects_of_relationship(Fedora_client,
         The relationship to query sans namespace.
     @param relationship_object
         The subject of the relationship to query.
-    
+
     @return list:
         Fedora_PID_results the pids that match the query. Not the URIs.
     '''
-    
-        
+
+
     query = 'PREFIX {0}: <{1}> \
                      SELECT $object \
                      FROM <#ri> \
@@ -184,32 +184,32 @@ def get_all_objects_of_relationship(Fedora_client,
 def get_collection_members(Fedora_client,
                            collection_PID):
     '''
-    This function will run a query against Fedora asking for all members of the 
+    This function will run a query against Fedora asking for all members of the
     specified collection.
-    
+
     @author William Panting
-    
+
     @param Fedora_client:
         A connection to Fedora
     @param $collection_PID:
         A Fedora PID for the collection to query against.
-        
+
     @return:
         A list of the members of the collection.
     '''
     collection_URI = 'info:fedora/' + collection_PID
     base_query = open(os.path.join(os.path.dirname(__file__), '__resources/SPARQL/member_query.sparql'), 'r').read()
     full_query = re.sub('\$collection_object', '<' + collection_URI + '>', base_query)
-    
+
     results = Fedora_client.searchTriples(full_query, limit = None)
     results = list(results)
-    
+
     #put them in a usable list
     collection_members = list()
     for result in results:
         collection_members.append(result['member_object']['value'])
     return collection_members
-    
+
 def mangle_dsid(dsid):
     '''
     A very aptly named function that will take any string and make it conform [via hack and slash]
@@ -250,13 +250,14 @@ def get_datastream_as_file(obj, dsid, extension = ''):
     @author Alexander O'Neil
 
     '''
+
     d = tempfile.mkdtemp()
     success = False
     tries = 10
     # If extension is not set use the mimetype of the dsid to find one.
     if not extension:
         extension = get_extension_from_mimetype(obj[dsid].mimeType)[0]
-                
+
     filename = '%(dir)s/content.%(ext)s' % {'dir': d, 'ext': extension}
     while not success and tries > 0:
         with open(filename, 'w') as f:
@@ -396,15 +397,15 @@ def get_fedora_client(configuration):
     '''
         This function will get a connection to Fedora.
         Most useful with misc.get_configuration.
-        
+
         @param dict configuration
             A dict containing Fedora=> url, username, password
-            
+
         @return FedoraClient
             A client for accessing Fedora.
     '''
     from fcrepo.connection import FedoraConnectionException
-    
+
     fcrepo_connection = Connection(configuration['Fedora']['url'],
                                    username = configuration['Fedora']['username'],
                                    password = configuration['Fedora']['password'])
@@ -416,12 +417,12 @@ def get_fedora_client(configuration):
 def strings_to_literal_rels_objects(object_strings):
     '''
         This function will take a list of relationship object strings and
-        return a list of relationship literal object objects compatible with 
+        return a list of relationship literal object objects compatible with
         the fedora_relationships module.
-        
+
         @param object_strings
             A list of strings of literal objects.
-            
+
         @return list
             A list of objects of literal objects.
     '''
