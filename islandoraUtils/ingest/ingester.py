@@ -4,6 +4,7 @@ Created on 2012-03-19
 @author: William Panting
 @TODO: accept overrides for all objects used in constructor
 '''
+import sqlite3 as sqlite
 import os, json, csv, shutil, re
 from copy import copy
 from time import sleep
@@ -394,6 +395,14 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                                       objectified_sources)
 
             objRelsExt.update()
+
+        if self.configuration['ingester']['source'] == 'sqlite':
+            arguments = (PID, archival_datastream['filepath'])
+            conn = sqlite.connect(self.configuration['sqlite_db']['path'])
+            conn.isolation_level = None
+            c = conn.cursor()
+            c.execute('UPDATE migration_data_path set PID = ? WHERE path= ?', arguments)
+
         return(PID)
 
     def ingest_default_thumbnail (self,
@@ -897,26 +906,46 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
         @return list list_of_paths_to_ingest:
             The completed list of files to ingest, they will be unicode strings.
         """
-        for path, dirs, files in os.walk(unicode(directory_to_walk)):
-            # Ignore a directory and sub dirs if specified in directories_to_ignore.
-            if directories_to_ignore:
-                for directory in dirs:
-                    if os.path.join(path, directory) in directories_to_ignore:
-                        dirs.remove(directory)
+        crawl_type = self.configuration['ingester']['source']
 
-            for file_name in files:
-                file_path = os.path.join(path, file_name)
-                list_of_paths_to_ingest = self.filter_files_for_ingest([file_path],
-                                                                       filter_to_documents,
-                                                                       filter_to_images,
-                                                                       extensions_to_filter_out,
-                                                                       extensions_to_filter_to,
-                                                                       filter_by_time,
-                                                                       whitelist_regex = whitelist_regex,
-                                                                       blacklist_regex = blacklist_regex)
-                if len(list_of_paths_to_ingest) == 1:
-                    yield list_of_paths_to_ingest[0]
-        return
+        if crawl_type == 'files':
+            for path, dirs, files in os.walk(unicode(directory_to_walk)):
+                # Ignore a directory and sub dirs if specified in directories_to_ignore.
+                if directories_to_ignore:
+                    for directory in dirs:
+                        if os.path.join(path, directory) in directories_to_ignore:
+                            dirs.remove(directory)
+
+                for file_name in files:
+                    file_path = os.path.join(path, file_name)
+                    list_of_paths_to_ingest = self.filter_files_for_ingest([file_path],
+                                                                        filter_to_documents,
+                                                                        filter_to_images,
+                                                                        extensions_to_filter_out,
+                                                                        extensions_to_filter_to,
+                                                                        filter_by_time,
+                                                                        whitelist_regex = whitelist_regex,
+                                                                        blacklist_regex = blacklist_regex)
+                    if len(list_of_paths_to_ingest) == 1:
+                        yield list_of_paths_to_ingest[0]
+            return
+
+        if crawl_type == 'sqlite':
+
+            # PULL THE THINGS FROM THE DATABASE LAWL
+            conn = sqlite.connect(self.configuration['sqlite_db']['path'])
+
+            # suss out the collection name based on path supplied
+            if not isinstance(directory_to_walk, basestring):
+                directory_to_walk = directory_to_walk.pop()
+
+            collection_name = self.configuration['collection_map'][str(directory_to_walk).lower()]
+            cursor = conn.cursor()
+
+            for file in cursor.execute("SELECT path FROM migration_data_path WHERE migration_name = ? AND pid IS NULL", [collection_name]):
+                yield file[0]
+
+            return
 
     def _retrieve_filesystem_report(self, parent_directory):
         '''
