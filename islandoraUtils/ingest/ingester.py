@@ -396,14 +396,14 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
 
             objRelsExt.update()
 
-
         if self.configuration['ingester']['source'] == 'sqlite':
-           arguments = (PID, archival_datastream['filepath'])
-           conn=sqlite.connect(self.configuration['sqlite_db']['path'])
-           conn.isolation_level = None
-           c=conn.cursor()
-	   c.execute('UPDATE migration_data_path set PID = ? WHERE path= ?',arguments)
-	return(PID)
+            arguments = (PID, archival_datastream['filepath'])
+            conn = sqlite.connect(self.configuration['sqlite_db']['path'])
+            conn.isolation_level = None
+            c = conn.cursor()
+            c.execute('UPDATE migration_data_path set PID = ? WHERE path= ?', arguments)
+
+        return(PID)
 
     def ingest_default_thumbnail (self,
                                   Fedora_object):
@@ -929,18 +929,24 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                     if len(list_of_paths_to_ingest) == 1:
                         yield list_of_paths_to_ingest[0]
             return
+
         if crawl_type == 'sqlite':
-            #PULL THE THINGS FROM THE DATABASE LAWL
-            conn=sqlite.connect(self.configuration['sqlite_db']['path'])
-            #suss out the collection name based on path supplied
-	    if not isinstance(directory_to_walk, basestring):
-		directory_to_walk = directory_to_walk.pop()
-#	    print str(self.configuration['collection_map'])
-	    collection_name = self.configuration['collection_map'][str(directory_to_walk).lower()]
+
+            # PULL THE THINGS FROM THE DATABASE LAWL
+            conn = sqlite.connect(self.configuration['sqlite_db']['path'])
+
+            # suss out the collection name based on path supplied
+            if not isinstance(directory_to_walk, basestring):
+                directory_to_walk = directory_to_walk.pop()
+
+            collection_name = self.configuration['collection_map'][str(directory_to_walk).lower()]
             cursor = conn.cursor()
+
             for file in cursor.execute("SELECT path FROM migration_data_path WHERE migration_name = ? AND pid IS NULL", [collection_name]):
-		yield file[0]
+                yield file[0]
+
             return
+
     def _retrieve_filesystem_report(self, parent_directory):
         '''
         This function will retrieve the state of the file tree under
