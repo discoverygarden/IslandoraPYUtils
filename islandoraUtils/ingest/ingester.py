@@ -934,15 +934,17 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
 
             # PULL THE THINGS FROM THE DATABASE LAWL
             conn = sqlite.connect(self.configuration['sqlite_db']['path'])
-
+            conn.isolation_level = None
             # suss out the collection name based on path supplied
             if not isinstance(directory_to_walk, basestring):
                 directory_to_walk = directory_to_walk.pop()
 
             collection_name = self.configuration['collection_map'][str(directory_to_walk).lower()]
             cursor = conn.cursor()
-
-            for file in cursor.execute("SELECT path FROM migration_data_path WHERE migration_name = ? AND pid IS NULL", [collection_name]):
+	
+	    cursor.execute("SELECT path FROM migration_data_path WHERE migration_name = ? AND pid IS NULL", [collection_name])
+	    rows = cursor.fetchall()
+	    for file in rows: 
                 yield file[0]
 
             return
