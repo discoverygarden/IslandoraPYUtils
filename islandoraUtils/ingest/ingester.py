@@ -967,8 +967,13 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
 
             collection_name = self.configuration['collection_map'][str(directory_to_walk).lower()]
 
-            for file in cursor.execute("SELECT path FROM migration_data_path WHERE migration_name = ? AND pid IS NULL", [collection_name]):
-                yield file[0]
+            cursor.execute("SELECT path FROM migration_data_path WHERE migration_name = ? AND pid IS NULL", [collection_name])
+
+            while True:
+                row = cursor.fetchone()
+                if row is None:
+                    break
+                yield row[0]
 
             if cursor is not None:
                 cursor.close()

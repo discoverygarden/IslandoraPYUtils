@@ -235,12 +235,12 @@ def create_swf(obj, dsid, swfid):
     #recieve PDF create a SWF for use with flexpaper
     directory, file = get_datastream_as_file(obj, dsid, "pdf")
 
-    pdf2swf = subprocess.Popen(['pdf2swf', directory+'/'+file, '-o', directory+'/'+swfid,\
+    pdf2swf = subprocess.Popen(['transienttmp', 'pdf2swf', directory+'/'+file, '-o', directory+'/'+swfid,\
          '-T 9', '-f', '-t', '-s', 'storeallcharacters', '-G'], stdout=subprocess.PIPE)
     out, err = pdf2swf.communicate()
     if pdf2swf.returncode != 0:
         logger.warning('PID:%s DSID:%s SWF creation failed. Trying alternative.' % (obj.pid, dsid))
-        pdf2swf = subprocess.Popen(['pdf2swf', directory+'/'+file, '-o', directory+'/'+swfid,\
+        pdf2swf = subprocess.Popen(['transienttmp', 'pdf2swf' , directory+'/'+file, '-o', directory+'/'+swfid,\
              '-T 9', '-f', '-t', '-s', 'storeallcharacters', '-G', '-s', 'poly2bitmap'], stdout=subprocess.PIPE)
         out, err = pdf2swf.communicate()
 

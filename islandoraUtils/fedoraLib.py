@@ -251,6 +251,7 @@ def get_datastream_as_file(obj, dsid, extension = ''):
 
     '''
 
+    tempfile.tempdir = '/var/tmp'
     d = tempfile.mkdtemp()
     success = False
     tries = 10
