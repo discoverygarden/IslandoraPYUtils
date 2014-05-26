@@ -4,7 +4,6 @@ Created on 2012-03-19
 @author: William Panting
 @TODO: accept overrides for all objects used in constructor
 '''
-import sqlite3 as sqlite
 import os, json, csv, shutil, re
 from copy import copy
 from time import sleep
@@ -22,6 +21,11 @@ from islandoraUtils.misc import get_mime_type_from_path, path_to_datastream_ID, 
                                 convert_members_to_unicode, convert_string_to_timestamp, file_is_text
 from islandoraUtils.xacml.tools import Xacml
 from islandoraUtils.fedoraLib import replace_relationships, strings_to_literal_rels_objects
+
+# DB Imports
+import MySQLdb
+import MySQLdb.cursors
+import sqlite3
 
 class ingester(object):
     '''
@@ -278,132 +282,154 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
         @return:
             The PID of the object created or updated.
         '''
+        try:
 
-        # Set as empty lists (not in default args because of python would store state from call to call).
-        if not datastreams:
-            datastreams = []
-        if not collections:
-            collections = []
-        if not content_models:
-            content_models = []
+            # Set as empty lists (not in default args because of python would store state from call to call).
+            if not datastreams:
+                datastreams = []
+            if not collections:
+                collections = []
+            if not content_models:
+                content_models = []
 
-        #if datastream label not supplied build it based on archival ds path
-        if not object_label:
-            if isinstance(archival_datastream, basestring):
-                object_label = archival_datastream
-            elif isinstance(archival_datastream, dict):
-                object_label = archival_datastream['filepath']
-            else:
-                object_label = ''
-            #a utf8 unicode string may be necessary to pass through urlencode
-            object_label = path_to_label(object_label)
-
-        #set the source
-        if self._is_a_cron:
-            if not sources:
+            #if datastream label not supplied build it based on archival ds path
+            if not object_label:
                 if isinstance(archival_datastream, basestring):
-                    sources = [archival_datastream]
+                    object_label = archival_datastream
                 elif isinstance(archival_datastream, dict):
-                    sources = [archival_datastream['filepath']]
+                    object_label = archival_datastream['filepath']
                 else:
-                    sources = []
+                    object_label = ''
+                #a utf8 unicode string may be necessary to pass through urlencode
+                object_label = path_to_label(object_label)
 
-
-        #normalize parameters to a list of dictionaries of what datastreams to ingest
-        if isinstance(archival_datastream, basestring):
-            archival_datastream_dict = {'filepath':archival_datastream,
-                                        'label':path_to_label(archival_datastream),
-                                        'mimetype':get_mime_type_from_path(archival_datastream),
-                                        'ID':path_to_datastream_ID(archival_datastream),
-                                        'control_group':'M'}
-            archival_datastream = archival_datastream_dict
-
-        if isinstance(metadata_datastream, basestring):
-            metadata_datastream_dict = {'filepath':metadata_datastream,
-                                        'label':path_to_label(metadata_datastream),
-                                        'mimetype':get_mime_type_from_path(metadata_datastream),
-                                        'ID':path_to_datastream_ID(metadata_datastream),
-                                        'control_group':'X'}
-            metadata_datastream = metadata_datastream_dict
-
-        #add the metadata and archival datastreams to those to be ingested
-        if metadata_datastream:
-            datastreams.append(metadata_datastream)
-        if archival_datastream:
-            datastreams.append(archival_datastream)
-
-        #create the object
-        Fedora_object = self.get_Fedora_object(PID, object_label)
-        PID = Fedora_object.pid
-
-        # Write securty FIRST!!!!!!!!!!
-        self.replace_security_on_object(Fedora_object,
-                                        isViewableByRoles,
-                                        isViewableByUsers)
-
-        # write datastreams to the object.
-        for datastream in datastreams:
-            self.ingest_datastream(Fedora_object, datastream)
-
-        #write relationships to the object
-        if collections or content_models or self._is_a_cron:
-
-            # If it is a cron we need another namespace.
-            if self._is_a_cron and sources:
-                source_relationship_namespace = self.configuration['relationships']['has_source_identifier_relationship_namespace']
-                source_relationship_namespace_alias = self.configuration['relationships']['has_source_identifier_relationship_namespace_alias']
-                source_name_space_object = fedora_relationships.rels_namespace(source_relationship_namespace_alias, source_relationship_namespace)
-
-                objRelsExt = fedora_relationships.rels_ext(Fedora_object, [self._Fedora_model_namespace, source_name_space_object])
-            else:
-                objRelsExt = fedora_relationships.rels_ext(Fedora_object, self._Fedora_model_namespace)
-
+            #set the source
             if self._is_a_cron:
-                # Collection relationships.
-                replace_relationships(objRelsExt,
-                                      'isMemberOfCollection',
-                                      collections)
-                # Content model relationships.
-                replace_relationships(objRelsExt,
-                                      fedora_relationships.rels_predicate('fedora-model','hasModel'),
-                                      content_models)
+                if not sources:
+                    if isinstance(archival_datastream, basestring):
+                        sources = [archival_datastream]
+                    elif isinstance(archival_datastream, dict):
+                        sources = [archival_datastream['filepath']]
+                    else:
+                        sources = []
 
-            # If it isn't a cron we need to only add the relationships
+
+            #normalize parameters to a list of dictionaries of what datastreams to ingest
+            if isinstance(archival_datastream, basestring):
+                archival_datastream_dict = {'filepath':archival_datastream,
+                                            'label':path_to_label(archival_datastream),
+                                            'mimetype':get_mime_type_from_path(archival_datastream),
+                                            'ID':path_to_datastream_ID(archival_datastream),
+                                            'control_group':'M'}
+                archival_datastream = archival_datastream_dict
+
+            if isinstance(metadata_datastream, basestring):
+                metadata_datastream_dict = {'filepath':metadata_datastream,
+                                            'label':path_to_label(metadata_datastream),
+                                            'mimetype':get_mime_type_from_path(metadata_datastream),
+                                            'ID':path_to_datastream_ID(metadata_datastream),
+                                            'control_group':'X'}
+                metadata_datastream = metadata_datastream_dict
+
+            #add the metadata and archival datastreams to those to be ingested
+            if metadata_datastream:
+                datastreams.append(metadata_datastream)
+            if archival_datastream:
+                datastreams.append(archival_datastream)
+
+            #create the object
+            Fedora_object = self.get_Fedora_object(PID, object_label)
+            PID = Fedora_object.pid
+
+            # Write securty FIRST!!!!!!!!!!
+            self.replace_security_on_object(Fedora_object,
+                                            isViewableByRoles,
+                                            isViewableByUsers)
+
+            # write datastreams to the object.
+            for datastream in datastreams:
+                self.ingest_datastream(Fedora_object, datastream)
+
+            #write relationships to the object
+            if collections or content_models or self._is_a_cron:
+
+                # If it is a cron we need another namespace.
+                if self._is_a_cron and sources:
+                    source_relationship_namespace = self.configuration['relationships']['has_source_identifier_relationship_namespace']
+                    source_relationship_namespace_alias = self.configuration['relationships']['has_source_identifier_relationship_namespace_alias']
+                    source_name_space_object = fedora_relationships.rels_namespace(source_relationship_namespace_alias, source_relationship_namespace)
+
+                    objRelsExt = fedora_relationships.rels_ext(Fedora_object, [self._Fedora_model_namespace, source_name_space_object])
+                else:
+                    objRelsExt = fedora_relationships.rels_ext(Fedora_object, self._Fedora_model_namespace)
+
+                if self._is_a_cron:
+                    # Collection relationships.
+                    replace_relationships(objRelsExt,
+                                        'isMemberOfCollection',
+                                        collections)
+                    # Content model relationships.
+                    replace_relationships(objRelsExt,
+                                        fedora_relationships.rels_predicate('fedora-model','hasModel'),
+                                        content_models)
+
+                # If it isn't a cron we need to only add the relationships
+                else:
+                    # Collection relationships.
+                    for collection in collections:
+                        if isinstance(collection, str):
+                            unicode(collection)
+                        objRelsExt.addRelationship('isMemberOfCollection', collection)
+                    # Content model relationships.
+                    for content_model in content_models:
+                        if isinstance(content_model, str):
+                            unicode(content_model)
+                        objRelsExt.addRelationship(fedora_relationships.rels_predicate('fedora-model','hasModel'),
+                                                content_model)
+                # Source relationships.
+                if self._is_a_cron and sources:
+                    source_relationship_name = self.configuration['relationships']['has_source_identifier_relationship_name']
+                    source_predicate = fedora_relationships.rels_predicate(source_relationship_namespace_alias, source_relationship_name)
+                    objectified_sources = []
+                    for source in sources:
+                        objectified_sources.append(fedora_relationships.rels_object(source,
+                                                                                    fedora_relationships.rels_object.LITERAL))
+
+                    replace_relationships(objRelsExt,
+                                        source_predicate,
+                                        objectified_sources)
+
+                objRelsExt.update()
+
+            if self.configuration['ingester']['source'] == 'sqlite':
+                try:
+                    conn, c = self.bootstrap_sqlite_db(True)
+                    arguments = (PID, archival_datastream['filepath'])
+                    c.execute('UPDATE migration_data_path set PID = ? WHERE path= ?', arguments)
+                    c.close()
+                except sqlite3.Error as e:
+                    self.logger.error("ERROR UPDATING PID FOR " + archival_datastream['filepath'] + " in sqlite ")
+                    self.logger.error(e.args[0])
+                    if c is not None:
+                        c.close()
+                    raise
+
+            return(PID)
+        except IOError as e:
+            if self.configuration['ingester']['source'] == 'sqlite':
+                try:
+                    conn, c = self.bootstrap_sqlite_db(True)
+                    arguments = ('bad path', archival_datastream['filepath'])
+                    c.execute('UPDATE migration_data_path set PID = ? WHERE path= ?', arguments)
+                    c.close()
+                except sqlite3.Error as e:
+                    self.logger.error("ERROR UPDATING PID TO SAY 'bad path' FOR " + archival_datastream['filepath'] + " in sqlite ")
+                    self.logger.error(e.args[0])
+                    if c is not None:
+                        c.close()
+                    raise
             else:
-                # Collection relationships.
-                for collection in collections:
-                    if isinstance(collection, str):
-                        unicode(collection)
-                    objRelsExt.addRelationship('isMemberOfCollection', collection)
-                # Content model relationships.
-                for content_model in content_models:
-                    if isinstance(content_model, str):
-                        unicode(content_model)
-                    objRelsExt.addRelationship(fedora_relationships.rels_predicate('fedora-model','hasModel'),
-                                               content_model)
-            # Source relationships.
-            if self._is_a_cron and sources:
-                source_relationship_name = self.configuration['relationships']['has_source_identifier_relationship_name']
-                source_predicate = fedora_relationships.rels_predicate(source_relationship_namespace_alias, source_relationship_name)
-                objectified_sources = []
-                for source in sources:
-                    objectified_sources.append(fedora_relationships.rels_object(source,
-                                                                                fedora_relationships.rels_object.LITERAL))
-
-                replace_relationships(objRelsExt,
-                                      source_predicate,
-                                      objectified_sources)
-
-            objRelsExt.update()
-
-        if self.configuration['ingester']['source'] == 'sqlite':
-            arguments = (PID, archival_datastream['filepath'])
-            conn = sqlite.connect(self.configuration['sqlite_db']['path'])
-            conn.isolation_level = None
-            c = conn.cursor()
-            c.execute('UPDATE migration_data_path set PID = ? WHERE path= ?', arguments)
-
-        return(PID)
+                raise
 
     def ingest_default_thumbnail (self,
                                   Fedora_object):
@@ -510,7 +536,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                 else:
                     self._logger.warning('IOError updating DS on' + PID + '/'
                                          + datastream['ID'] + ', Trying again')
-                    sleep(600)
+                    sleep(60)
 
     def _ingest_file(self,
                      Fedora_object,
@@ -933,17 +959,19 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
         if crawl_type == 'sqlite':
 
             # PULL THE THINGS FROM THE DATABASE LAWL
-            conn = sqlite.connect(self.configuration['sqlite_db']['path'])
+            conn, cursor = self.bootstrap_sqlite_db()
 
             # suss out the collection name based on path supplied
             if not isinstance(directory_to_walk, basestring):
                 directory_to_walk = directory_to_walk.pop()
 
             collection_name = self.configuration['collection_map'][str(directory_to_walk).lower()]
-            cursor = conn.cursor()
 
             for file in cursor.execute("SELECT path FROM migration_data_path WHERE migration_name = ? AND pid IS NULL", [collection_name]):
                 yield file[0]
+
+            if cursor is not None:
+                cursor.close()
 
             return
 
@@ -1032,3 +1060,34 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                 os.remove(self._configuration['miscellaneous']['temporary_directory'])
 
         return
+
+    def bootstrap_drupal_db(self):
+        """
+        Gets a connection and a cursor for the drupal database.  Url and creds
+        are contained in configuration.
+        """
+        try:
+            db_config = self.configuration['drupal_db']
+            db = MySQLdb.connect(host=db_config['host'],
+                                 user=db_config['user'],
+                                 passwd=db_config['passwd'],
+                                 db=db_config['db'],
+                                 cursorclass=MySQLdb.cursors.DictCursor)
+            cursor = db.cursor()
+            return db, cursor
+        except MySQLdb.Error as e:
+            self.logger.error("Error connecting to database: ")
+            self.logger.error(e.args[0])
+            raise
+
+    def bootstrap_sqlite_db(self, autocommit=False):
+        try:
+            db = sqlite3.connect(self.configuration['sqlite_db']['path'])
+            if autocommit:
+                db.isolation_level = None
+            cursor = db.cursor()
+            return db, cursor
+        except sqlite3.Error as e:
+            self.logger.error("Error connecting to sqlite db: ")
+            self.logger.error(e.args[0])
+            raise
