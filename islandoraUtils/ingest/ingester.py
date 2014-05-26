@@ -403,9 +403,10 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
 
             if self.configuration['ingester']['source'] == 'sqlite':
                 try:
-                    conn, c = self.bootstrap_sqlite_db(True)
+                    conn, c = self.bootstrap_sqlite_db()
                     arguments = (PID, archival_datastream['filepath'])
                     c.execute('UPDATE migration_data_path set PID = ? WHERE path= ?', arguments)
+                    conn.commit()
                     c.close()
                 except sqlite3.Error as e:
                     self.logger.error("ERROR UPDATING PID FOR " + archival_datastream['filepath'] + " in sqlite ")
@@ -428,6 +429,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                     conn, c = self.bootstrap_sqlite_db(True)
                     arguments = ('bad path', archival_datastream['filepath'])
                     c.execute('UPDATE migration_data_path set PID = ? WHERE path= ?', arguments)
+                    conn.commit()
                     c.close()
                 except sqlite3.Error as e:
                     self.logger.error("ERROR UPDATING PID TO SAY 'bad path' FOR " + archival_datastream['filepath'] + " in sqlite ")
@@ -543,7 +545,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                 else:
                     self._logger.warning('IOError updating DS on' + PID + '/'
                                          + datastream['ID'] + ', Trying again')
-                    sleep(60)
+                    sleep(10)
 
     def _ingest_file(self,
                      Fedora_object,
@@ -1092,11 +1094,9 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
             self.logger.error(e.args[0])
             raise
 
-    def bootstrap_sqlite_db(self, autocommit=False):
+    def bootstrap_sqlite_db(self):
         try:
             db = sqlite3.connect(self.configuration['sqlite_db']['path'])
-            if autocommit:
-                db.isolation_level = None
             cursor = db.cursor()
             return db, cursor
         except sqlite3.Error as e:
