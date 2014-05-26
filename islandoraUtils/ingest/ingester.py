@@ -416,6 +416,13 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
 
             return(PID)
         except IOError as e:
+            # Try to kill the half-baked object that got ingested
+            try:
+                self.Fedora_client.deleteObject(PID)
+            except FedoraConnectionException as e:
+                self.logger.error("ERROR PURGING HALF BAKED OBJECT " + PID)
+                self.logger.error(e.args[0])
+
             if self.configuration['ingester']['source'] == 'sqlite':
                 try:
                     conn, c = self.bootstrap_sqlite_db(True)
