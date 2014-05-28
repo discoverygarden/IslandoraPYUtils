@@ -4,7 +4,7 @@ Created on 2012-03-19
 @author: William Panting
 @TODO: accept overrides for all objects used in constructor
 '''
-import os, json, csv, shutil, re
+import os, json, csv, shutil, re, subprocess
 from copy import copy
 from time import sleep
 from sre_constants import error
@@ -280,7 +280,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
             [archival_datastream's path].
 
         @return:
-            The PID of the object created or updated.
+            The PID of the object created or updated.  'None' if there was an error.
         '''
         try:
 
@@ -417,16 +417,17 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
 
             return(PID)
         except IOError as e:
-            # Try to kill the half-baked object that got ingested
+            # Attempt to purge the half baked object.
             try:
-                self.Fedora_client.deleteObject(PID)
-            except FedoraConnectionException as e:
-                self.logger.error("ERROR PURGING HALF BAKED OBJECT " + PID)
+                Fedora_object.delete()
+            except Exception as e:
+                self.logger.error("ERROR DELETING " + PID)
                 self.logger.error(e.args[0])
 
+            # Set the record in the db to let us know this failed.
             if self.configuration['ingester']['source'] == 'sqlite':
                 try:
-                    conn, c = self.bootstrap_sqlite_db(True)
+                    conn, c = self.bootstrap_sqlite_db()
                     arguments = ('bad path', archival_datastream['filepath'])
                     c.execute('UPDATE migration_data_path set PID = ? WHERE path= ?', arguments)
                     conn.commit()
@@ -978,14 +979,11 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
 
             cursor.execute("SELECT path FROM migration_data_path WHERE migration_name = ? AND pid IS NULL", [collection_name])
 
-            while True:
-                row = cursor.fetchone()
-                if row is None:
-                    break
-                yield row[0]
+	    rows = cursor.fetchall()
+            cursor.close()
 
-            if cursor is not None:
-                cursor.close()
+	    for row in rows:
+                yield row[0]
 
             return
 
