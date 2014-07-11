@@ -826,13 +826,11 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
             if whitelist_regex:
                 if not whitelist_regex.match(file_name):
                     if file_path in filtered_list_of_paths:
-                        self.logger.debug("FILTERING OUT " + file_path)
                         filtered_list_of_paths.remove(file_path)
 
             if blacklist_regex:
                 if blacklist_regex.match(file_name):
                     if file_path in filtered_list_of_paths:
-                        self.logger.debug("FILTERING OUT " + file_path)
                         filtered_list_of_paths.remove(file_path)
 
         # Filter by timestamp. This is expensive so I want it last
