@@ -401,45 +401,20 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
 
                 objRelsExt.update()
 
-            if self.configuration['ingester']['source'] == 'sqlite':
-                try:
-                    conn, c = self.bootstrap_sqlite_db()
-                    arguments = (PID, archival_datastream['filepath'])
-                    c.execute('UPDATE migration_data_path set PID = ? WHERE path= ?', arguments)
-                    conn.commit()
-                    c.close()
-                except sqlite3.Error as e:
-                    self.logger.error("ERROR UPDATING PID FOR " + archival_datastream['filepath'] + " in sqlite ")
-                    self.logger.error(e.args[0])
-                    if c is not None:
-                        c.close()
-                    raise
-
             return(PID)
         except IOError as e:
             # Attempt to purge the half baked object.
             try:
                 Fedora_object.delete()
             except Exception as e:
-                self.logger.error("ERROR DELETING " + PID)
+                if PID is None:
+                    self.logger.error("ERROR DELETING HALF-BAKED OBJECT:  PID IS NULL")
+                else:
+                    self.logger.error("ERROR DELETING HALF-BAKED OBJECT: " + PID)
                 self.logger.error(e.args[0])
 
-            # Set the record in the db to let us know this failed.
-            if self.configuration['ingester']['source'] == 'sqlite':
-                try:
-                    conn, c = self.bootstrap_sqlite_db()
-                    arguments = ('bad path', archival_datastream['filepath'])
-                    c.execute('UPDATE migration_data_path set PID = ? WHERE path= ?', arguments)
-                    conn.commit()
-                    c.close()
-                except sqlite3.Error as e:
-                    self.logger.error("ERROR UPDATING PID TO SAY 'bad path' FOR " + archival_datastream['filepath'] + " in sqlite ")
-                    self.logger.error(e.args[0])
-                    if c is not None:
-                        c.close()
-                    raise
-            else:
-                raise
+            return None
+
 
     def ingest_default_thumbnail (self,
                                   Fedora_object):
@@ -940,50 +915,26 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
         @return list list_of_paths_to_ingest:
             The completed list of files to ingest, they will be unicode strings.
         """
-        crawl_type = self.configuration['ingester']['source']
+        for path, dirs, files in os.walk(unicode(directory_to_walk)):
+            # Ignore a directory and sub dirs if specified in directories_to_ignore.
+            if directories_to_ignore:
+                for directory in dirs:
+                    if os.path.join(path, directory) in directories_to_ignore:
+                        dirs.remove(directory)
 
-        if crawl_type == 'files':
-            for path, dirs, files in os.walk(unicode(directory_to_walk)):
-                # Ignore a directory and sub dirs if specified in directories_to_ignore.
-                if directories_to_ignore:
-                    for directory in dirs:
-                        if os.path.join(path, directory) in directories_to_ignore:
-                            dirs.remove(directory)
-
-                for file_name in files:
-                    file_path = os.path.join(path, file_name)
-                    list_of_paths_to_ingest = self.filter_files_for_ingest([file_path],
-                                                                        filter_to_documents,
-                                                                        filter_to_images,
-                                                                        extensions_to_filter_out,
-                                                                        extensions_to_filter_to,
-                                                                        filter_by_time,
-                                                                        whitelist_regex = whitelist_regex,
-                                                                        blacklist_regex = blacklist_regex)
-                    if len(list_of_paths_to_ingest) == 1:
-                        yield list_of_paths_to_ingest[0]
-            return
-
-        if crawl_type == 'sqlite':
-
-            # PULL THE THINGS FROM THE DATABASE LAWL
-            conn, cursor = self.bootstrap_sqlite_db()
-
-            # suss out the collection name based on path supplied
-            if not isinstance(directory_to_walk, basestring):
-                directory_to_walk = directory_to_walk.pop()
-
-            collection_name = self.configuration['collection_map'][str(directory_to_walk).lower()]
-
-            cursor.execute("SELECT path FROM migration_data_path WHERE migration_name = ? AND pid IS NULL", [collection_name])
-
-	    rows = cursor.fetchall()
-            cursor.close()
-
-	    for row in rows:
-                yield row[0]
-
-            return
+            for file_name in files:
+                file_path = os.path.join(path, file_name)
+                list_of_paths_to_ingest = self.filter_files_for_ingest([file_path],
+                                                                    filter_to_documents,
+                                                                    filter_to_images,
+                                                                    extensions_to_filter_out,
+                                                                    extensions_to_filter_to,
+                                                                    filter_by_time,
+                                                                    whitelist_regex = whitelist_regex,
+                                                                    blacklist_regex = blacklist_regex)
+                if len(list_of_paths_to_ingest) == 1:
+                    yield list_of_paths_to_ingest[0]
+        return
 
     def _retrieve_filesystem_report(self, parent_directory):
         '''
@@ -1087,15 +1038,5 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
             return db, cursor
         except MySQLdb.Error as e:
             self.logger.error("Error connecting to database: ")
-            self.logger.error(e.args[0])
-            raise
-
-    def bootstrap_sqlite_db(self):
-        try:
-            db = sqlite3.connect(self.configuration['sqlite_db']['path'])
-            cursor = db.cursor()
-            return db, cursor
-        except sqlite3.Error as e:
-            self.logger.error("Error connecting to sqlite db: ")
             self.logger.error(e.args[0])
             raise
