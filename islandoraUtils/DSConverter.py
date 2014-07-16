@@ -273,7 +273,7 @@ def create_pdf(obj, dsid, pdfid):
     #recieve document and create a PDF with libreoffice if possible
     directory, file = get_datastream_as_file(obj, dsid, "document")
 
-    subprocess.call(['soffice', '--headless', '-convert-to', 'pdf', '-outdir', directory, directory+'/'+file])
+    subprocess.call(['soffice', '--headless', '--convert-to', 'pdf', '--outdir', directory, directory+'/'+file])
     newfile = file.split('.',1)[0]
     newfile += '.pdf'
 
