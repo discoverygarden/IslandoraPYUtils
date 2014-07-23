@@ -22,6 +22,8 @@ from islandoraUtils.misc import get_mime_type_from_path, path_to_datastream_ID, 
 from islandoraUtils.xacml.tools import Xacml
 from islandoraUtils.fedoraLib import replace_relationships, strings_to_literal_rels_objects
 
+import PySQLPool
+
 class ingester(object):
     '''
     TODO: STOP BEING A TERRIBLE ANTI-PATTERN.
@@ -1029,7 +1031,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
         Gets a cursor for the drupal db using a connection pool.
         """
         try:
-            return PySQLPool.getNewConnection(self._connection_pool, True)
+            return PySQLPool.getNewQuery(self._connection_pool, True)
         except Exception as e:
             self.logger.error("Error getting cursor for drupal db: ")
             self.logger.error(e.args[0])
