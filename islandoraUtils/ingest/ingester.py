@@ -22,13 +22,10 @@ from islandoraUtils.misc import get_mime_type_from_path, path_to_datastream_ID, 
 from islandoraUtils.xacml.tools import Xacml
 from islandoraUtils.fedoraLib import replace_relationships, strings_to_literal_rels_objects
 
-# DB Imports
-import MySQLdb
-import MySQLdb.cursors
-import sqlite3
-
 class ingester(object):
     '''
+    TODO: STOP BEING A TERRIBLE ANTI-PATTERN.
+
     This is the kingpin.  This object should handle creating all the other basic ingest helpers.
     @TODO: add a function for taking in multiple objects as a list of dictionaries
     @todo: implement (this will mean a user will not need to know the content_model for a collection, or the pid of top,
@@ -62,6 +59,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
 
     def __init__(self,
                  configuration_file_path,
+                 connection_pool,
                  is_a_cron = False,
                  default_Fedora_namespace = None,
                  Islandora_configuration_object = None,
@@ -73,6 +71,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
         Get all the objects that are likely to be used for an ingest
 
         @param configuration_file_path: where the configuration for the ingest can be found
+        @param connection_pool: pool of connections to mysql db
         @param last_time_ran: the last time this ingest was ran (if this is set a cron_batch object is created with the information)
         @param multiprocess_id
             A string representing the ID of the current process.  None if this
@@ -95,6 +94,9 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
         self._configuration = my_Islandora_configuration.configuration_dictionary
 
         self._logger = my_Islandora_logger.logger
+
+        #Connection pool
+        self._connection_pool = connection_pool
 
         #set the class properties
         if not Islandora_alerter_object:
@@ -1022,21 +1024,13 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
 
         return
 
-    def bootstrap_drupal_db(self):
+    def get_drupal_db_cursor(self):
         """
-        Gets a connection and a cursor for the drupal database.  Url and creds
-        are contained in configuration.
+        Gets a cursor for the drupal db using a connection pool.
         """
         try:
-            db_config = self.configuration['drupal_db']
-            db = MySQLdb.connect(host=db_config['host'],
-                                 user=db_config['user'],
-                                 passwd=db_config['passwd'],
-                                 db=db_config['db'],
-                                 cursorclass=MySQLdb.cursors.DictCursor)
-            cursor = db.cursor()
-            return db, cursor
-        except MySQLdb.Error as e:
-            self.logger.error("Error connecting to database: ")
+            return PySQLPool.getNewConnection(self._connection_pool, True)
+        except Exception as e:
+            self.logger.error("Error getting cursor for drupal db: ")
             self.logger.error(e.args[0])
             raise
