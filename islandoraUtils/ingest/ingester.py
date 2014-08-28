@@ -22,11 +22,14 @@ from islandoraUtils.misc import get_mime_type_from_path, path_to_datastream_ID, 
 from islandoraUtils.xacml.tools import Xacml
 from islandoraUtils.fedoraLib import replace_relationships, strings_to_literal_rels_objects
 
+# DB Imports
+import MySQLdb
+import MySQLdb.cursors
 import PySQLPool
 
 class ingester(object):
     '''
-    TODO: STOP BEING A TERRIBLE ANTI-PATTERN.
+    TODO: STOP BEING A TERRIBLE ANTI-PATTERN >< http://en.wikipedia.org/wiki/God_object
 
     This is the kingpin.  This object should handle creating all the other basic ingest helpers.
     @TODO: add a function for taking in multiple objects as a list of dictionaries
@@ -61,7 +64,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
 
     def __init__(self,
                  configuration_file_path,
-                 connection_pool,
+                 connection_pool = None,
                  is_a_cron = False,
                  default_Fedora_namespace = None,
                  Islandora_configuration_object = None,
@@ -1026,7 +1029,26 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
 
         return
 
-    def get_drupal_db_cursor(self):
+    def bootstrap_drupal_db(self):
+        """
+        Gets a connection and a cursor for the drupal database. Url and creds
+        are contained in configuration.
+        """
+        try:
+            db_config = self.configuration['drupal_db']
+            db = MySQLdb.connect(host=db_config['host'],
+                                 user=db_config['user'],
+                                 passwd=db_config['passwd'],
+                                 db=db_config['db'],
+                                 cursorclass=MySQLdb.cursors.DictCursor)
+            cursor = db.cursor()
+            return db, cursor
+        except MySQLdb.Error as e:
+            self.logger.error("Error connecting to database: ")
+            self.logger.error(e.args[0])
+            raise
+
+    def get_pooled_drupal_db_cursor(self):
         """
         Gets a cursor for the drupal db using a connection pool.
         """
