@@ -749,7 +749,6 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
         @return list filtered_list_of_paths:
             The paths after illegal files have been removed.
         '''
-
         # Set filter by time if this is a cron and not overridden in parameters.
         if filter_by_time is None:
             filter_by_time = self._is_a_cron
@@ -880,13 +879,16 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                     list_of_paths_to_ingest.remove(path_to_ingest)
                     list_of_paths_to_ingest.append(processed_path_to_ingest)
         else:
+            # +DHL
+            # I dunno what all that system report jazz is about, but i'm passing along all the filtering params here no matter what.
+            # I need that filtering and I don't know why we would want to ignore it here.
             list_of_paths_to_ingest = self._get_file_to_ingest_generator(directory_to_walk,
-                                                                         filter_to_documents = False,
-                                                                         filter_to_images = False,
-                                                                         extensions_to_filter_out = None,
-                                                                         extensions_to_filter_to = None,
-                                                                         filter_by_time = None,
-                                                                         directories_to_ignore = [],
+                                                                         filter_to_documents = filter_to_documents,
+                                                                         filter_to_images = filter_to_images,
+                                                                         extensions_to_filter_out = extensions_to_filter_out,
+                                                                         extensions_to_filter_to = extensions_to_filter_to,
+                                                                         filter_by_time = filter_by_time,
+                                                                         directories_to_ignore = directories_to_ignore,
                                                                          whitelist_regex = whitelist_regex,
                                                                          blacklist_regex = blacklist_regex)
 
