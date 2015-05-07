@@ -9,9 +9,6 @@ It contains document manipulations, conversions, OCR using ABBYY, Fedora helper 
 @todo:
 Create an iconography class: 
 http://commons.wikimedia.org/wiki/Crystal_Clear (LGPL)
-look at  DocumentConverter.py it has been moved to github by the maintainer: 
-    https://github.com/mirkonasato/pyodconverter
-    perhaps we can contribute any changes back and remove it from this repo.
 
 Office Conversions:
 sudo apt-get install openoffice.org openoffice.org-headless openoffice.org-writer openoffice.org-draw openoffice.org-calc python-uno
