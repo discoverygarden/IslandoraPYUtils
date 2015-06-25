@@ -237,6 +237,8 @@ def pdf_to_text_or_ocr(inPath, outPath):
         first: 0 if failed 1 if successful
         second: was_ocrd: True if the file was ocr'd false if it was not
     '''
+    print "IN PATH: " + inPath
+    print "OUT PATH: " + outPath
     was_ocrd = False
     outPath = os.path.splitext(outPath)[0] + '.txt'
     
@@ -261,6 +263,9 @@ def pdf_to_text_or_ocr(inPath, outPath):
     if not pdftotext_result:
         was_ocrd = True
         TIFF_file_path = os.path.splitext(inPath)[0] + '.tif'
+        subprocess.call(['whoami'])
+        subprocess.call(['groups'])
+        print "TIFF PATH: " + TIFF_file_path
         #convert PDF to TIFF for OCR by tesseract
         #apha needs to be off because tesseracct chokes on it
         #tesseract can only handle some color depths
@@ -268,6 +273,7 @@ def pdf_to_text_or_ocr(inPath, outPath):
         subprocess.call(convert_call)
         #run tesseract OCR
         #tesseract will autmaticaly add a .txt file extension
+        print "NO IDEA: " + os.path.splitext(outPath)[0]
         tesseract_call = ['tesseract', TIFF_file_path, os.path.splitext(outPath)[0], '-l', 'eng']
         tesseract_result = subprocess.call(tesseract_call)
         

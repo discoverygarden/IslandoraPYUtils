@@ -238,11 +238,13 @@ def create_swf(obj, dsid, swfid):
     pdf2swf = subprocess.Popen(['transienttmp', 'pdf2swf', directory+'/'+file, '-o', directory+'/'+swfid,\
          '-T 9', '-f', '-t', '-s', 'storeallcharacters', '-G'], stdout=subprocess.PIPE)
     out, err = pdf2swf.communicate()
-    if pdf2swf.returncode != 0:
-        logger.warning('PID:%s DSID:%s SWF creation failed. Trying alternative.' % (obj.pid, dsid))
-        pdf2swf = subprocess.Popen(['transienttmp', 'pdf2swf' , directory+'/'+file, '-o', directory+'/'+swfid,\
-             '-T 9', '-f', '-t', '-s', 'storeallcharacters', '-G', '-s', 'poly2bitmap'], stdout=subprocess.PIPE)
-        out, err = pdf2swf.communicate()
+    ## The alternative approach here either errors out again or sucks up all available memory.
+    ## Disabling for now.
+    #if pdf2swf.returncode != 0:
+    #    logger.warning('PID:%s DSID:%s SWF creation failed. Trying alternative.' % (obj.pid, dsid))
+    #    pdf2swf = subprocess.Popen(['transienttmp', 'pdf2swf' , directory+'/'+file, '-o', directory+'/'+swfid,\
+    #         '-T 9', '-f', '-t', '-s', 'storeallcharacters', '-G', '-s', 'poly2bitmap'], stdout=subprocess.PIPE)
+    #    out, err = pdf2swf.communicate()
 
     # catch the case where PDF2SWF fails to create the file, but returns
     if pdf2swf.returncode == 0 and os.path.isfile(directory + '/' + swfid):
@@ -273,7 +275,7 @@ def create_pdf(obj, dsid, pdfid):
     #recieve document and create a PDF with libreoffice if possible
     directory, file = get_datastream_as_file(obj, dsid, "document")
 
-    subprocess.call(['soffice', '--headless', '--convert-to', 'pdf', '--outdir', directory, directory+'/'+file])
+    subprocess.call(['transienttmp', 'soffice', '--headless', '--convert-to', 'pdf', '--outdir', directory, directory+'/'+file])
     newfile = file.split('.',1)[0]
     newfile += '.pdf'
 
