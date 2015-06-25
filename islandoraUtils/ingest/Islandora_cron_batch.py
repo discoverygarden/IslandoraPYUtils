@@ -51,10 +51,10 @@ class Islandora_cron_batch(object):
             self._Islandora_configuration_object = Islandora_configuration_object
             configuration = Islandora_configuration_object.configuration_dictionary
             if 'cron' in configuration:
-                if 'when_last_ran' in configuration['cron']:
+                if 'utc_when_last_ran' in configuration['cron']:
                     # If when_last_ran is None it has never been ran before.
-                    if not configuration['cron']['when_last_ran'] == 'None':
-                        self._when_last_ran = float(configuration['cron']['when_last_ran'])
+                    if not configuration['cron']['utc_when_last_ran'] == 'None':
+                        self._when_last_ran = float(configuration['cron']['utc_when_last_ran'])
                 if 'time_math_margin' in configuration['cron']:
                     # If time_math_margin is None don't set it.
                     if not configuration['cron']['time_math_margin'] == 'None':
@@ -138,7 +138,6 @@ class Islandora_cron_batch(object):
         
         @return boolean: timestamp >= self._when_last_ran
         '''
-        
         return timestamp >= self._when_last_ran - self._time_math_margin
     
     def get_PIDs_for_sources(self,

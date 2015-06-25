@@ -759,7 +759,6 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
         if extensions_to_filter_to:
             extensions_to_filter_to = convert_members_to_unicode(extensions_to_filter_to)
 
-
         # Kill by Time
         if filter_by_time:
             filtered_list_of_paths = self._cron_batch.find_files_requiring_action(list_of_paths)
@@ -813,10 +812,6 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
                 if blacklist_regex.match(file_name):
                     if file_path in filtered_list_of_paths:
                         filtered_list_of_paths.remove(file_path)
-
-        # Filter by timestamp. This is expensive so I want it last
-        if filter_by_time:
-            filtered_list_of_paths = self.cron_batch.find_files_requiring_action(filtered_list_of_paths)
 
         return filtered_list_of_paths
 
