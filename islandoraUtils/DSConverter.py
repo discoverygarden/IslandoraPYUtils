@@ -59,17 +59,13 @@ def create_thumbnail(obj, dsid, tnid):
         if r == 0:
             r = subprocess.call(['convert', '%s[0]' % tmpfile, '-thumbnail', '%sx%s' % tn_size,\
                  '-colorspace', 'rgb', 'jpg:%s'%tnfile])
-    # special case for pdfs
     # flatten the layers to avoid issues with transparencies and resizing,
     # which can result in black thumbnails
-    elif mime == 'application/pdf':
-        r = subprocess.call(['convert', '%s[0]' % infile, '-thumbnail', \
-             '%sx%s' % tn_size, '-colorspace', 'rgb', '-flatten', 'jpg:%s'%tnfile])
     # everything else gets a basic convert command
     else:
         # Make a thumbnail with convert
         r = subprocess.call(['convert', '%s[0]' % infile, '-thumbnail', \
-             '%sx%s' % tn_size, '-colorspace', 'rgb', 'jpg:%s'%tnfile])
+             '%sx%s' % tn_size, '-colorspace', 'rgb', '-flatten', 'jpg:%s'%tnfile])
 
     if r == 0:
         update_datastream(obj, tnid, tnfile, label='thumbnail', mimeType='image/jpeg')
