@@ -5,6 +5,10 @@ Created on 2012-03-19
 @TODO: accept overrides for all objects used in constructor
 '''
 import os, json, csv, shutil, re, subprocess
+try:
+    from scandir import walk
+except ImportError:
+    from os import walk
 from copy import copy
 from time import sleep
 from sre_constants import error
@@ -919,7 +923,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
         @return list list_of_paths_to_ingest:
             The completed list of files to ingest, they will be unicode strings.
         """
-        for path, dirs, files in os.walk(unicode(directory_to_walk)):
+        for path, dirs, files in walk(unicode(directory_to_walk)):
             # Ignore a directory and sub dirs if specified in directories_to_ignore.
             if directories_to_ignore:
                 for directory in dirs:

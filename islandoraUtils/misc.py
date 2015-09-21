@@ -10,6 +10,10 @@ import os, hashlib, re, fnmatch, subprocess, signal, datetime, time
 from time import sleep
 from copy import copy
 from lxml import etree
+try:
+    from scandir import walk
+except ImportError:
+    from os import walk
 
 def convert_string_to_timestamp(time_string, time_format = "%Y-%m-%dT%H:%M:%S"):
     '''
@@ -448,7 +452,7 @@ def locate(pattern, root = os.curdir):
                     return os.path.join(root, filename)
             raise 'File not found'
     '''
-    for path, dirs, files in os.walk(os.path.abspath(root)):
+    for path, dirs, files in walk(os.path.abspath(root)):
         for filename in fnmatch.filter(files, pattern):
             yield os.path.join(path, filename)
 

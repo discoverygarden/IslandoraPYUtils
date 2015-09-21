@@ -10,6 +10,10 @@
 '''
 
 import os, csv
+try:
+    from scandir import walk
+except ImportError:
+    from os import walk
 
 def summarize_directory(directory, file_name_to_write = None):
     '''
@@ -24,7 +28,7 @@ def summarize_directory(directory, file_name_to_write = None):
     
     # Gather data for report.
     paths_and_times = dict()
-    for path, dirs, files in os.walk(unicode(directory)):
+    for path, dirs, files in walk(unicode(directory)):
         for file_name in files:
             file_path = os.path.join(path, file_name)
             try:
