@@ -634,9 +634,8 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
 
         # Write string to temporary file
         XACML_file_name = os.path.join(self._configuration['miscellaneous']['temporary_directory'], 'xacml.xml')
-        XACML_file_handle = open(XACML_file_name,'w')
-        XACML_file_handle.write(xacml.getXmlString(False))
-        XACML_file_handle.close()
+        with open(XACML_file_name, 'w') as XACML_file_handle:
+            XACML_file_handle.write(xacml.getXmlString(False))
 
         # Populate the Fedora object's XACML datastream
         self.ingest_datastream(Fedora_object,
