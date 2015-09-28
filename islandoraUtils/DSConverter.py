@@ -9,12 +9,9 @@ this should be treated as the cannonical copy. I have been updating these
 conversion scripts with input from JWA and Colorado. Will says maybe this should wait
 for a new version of IslandoraPYUtils to keep backwards compatibility for now.
 
-@todo: Aparently DocumentConverter has not been made to work on Cent 'cause of python-uno
-    come up with a way to make it work on Cent or remove its use from this file.
 '''
 
 from islandoraUtils.fedoraLib import get_datastream_as_file, update_datastream
-from islandoraUtils.DocumentConverter import DocumentConverter, DocumentConversionException
 from islandoraUtils.fileConverter import pdf_to_text_or_ocr, xps_to_pdf
 from islandoraUtils.misc import start_office_headless, restart_office_headless
 from shutil import rmtree, move
@@ -331,15 +328,6 @@ def create_pdf_and_swf(obj, dsid, pdfid, swfid):
     This function uses open office headless to convert to a pdf from anything that open office input
     filters can handle. It then creates and uploads andf swf based on the pdf.  This will be considerably
     faster than callsing create_pdf and create_swf.
-    Currently this function expects the default settings for DocumentConverter to work
-    but this limitation can be removed when needed.
-        soffice -headless -nofirststartwizard -accept="socket,host=localhost,port=8100;urp;"
-        a potential start-up script:
-        http://www.openvpms.org/documentation/install-openoffice-headless-service-ubuntu
-    If open office fails it will try to use ghostpdl which can handle xps format.
-
-    @todo:
-        Remove the copy pasted code for uploading datastreams and converting swf to common functions
 
     @param string obj
         an fcrepo object
@@ -350,77 +338,6 @@ def create_pdf_and_swf(obj, dsid, pdfid, swfid):
 
     @return
         0 if successful 1 if not
-    '''
-    '''
-    logger = logging.getLogger('islandoraUtils.DSConverter.create_pdf_and_swf')
-    #recieve document and create a PDF with libre/open office if possible
-    directory, file = get_datastream_as_file(obj, dsid)
-    document_file_path = os.path.join(directory, file)
-    logger.info('DSConverter downloaded file to' + document_file_path)
-
-    #convert file to pdf
-    try:
-        # @todo: move this try/except block into a function for possible reuse
-        document_converter = DocumentConverter()
-    except DocumentConversionException:
-        logger.warning('Trying to start open/libre office headless.')
-        start_office_headless()
-        document_converter = DocumentConverter()
-    except:
-        logger.warning('Had an exception trying to get DocumentConverter, trying restart of soffice.')
-        restart_office_headless()
-        document_converter = DocumentConverter()
-
-    path_to_PDF = os.path.join(os.path.splitext(document_file_path)[0] + '.pdf')
-    #if open office fails to convert try ghostpdl
-    try:
-        document_converter.convert(document_file_path, path_to_PDF)
-    except Exception:
-        logger.info('An issue occured with Document Converter, trying ghostpdl on ' + obj.pid + ' ' + dsid)
-        xps_to_pdf(document_file_path, path_to_PDF)
-
-    #upload pdf
-    if os.path.isfile(path_to_PDF):
-        update_datastream(obj, pdfid, path_to_PDF, label='document to pdf', mimeType='application/pdf')
-        value = 0
-    else:
-        value = 1
-        logger.warning('PID:%s DSID:%s PDF creation failed.' % (obj.pid, dsid))
-
-    logger.debug(os.listdir(directory))
-
-    #convert PDF to SWF
-    path_to_SWF = os.path.join(os.path.splitext(path_to_PDF)[0] + '.swf')
-
-    pdf2swf = subprocess.Popen(['pdf2swf', path_to_PDF, '-o', path_to_SWF,
-        '-T 9', '-f', '-t', '-s', 'storeallcharacters', '-G'], stdout=subprocess.PIPE)
-    out, err = pdf2swf.communicate()
-
-    if pdf2swf.returncode != 0:
-        logger.warning('PID:%s DSID:%s SWF creation failed. Trying alternative.' % (obj.pid, dsid))
-        pdf2swf = subprocess.Popen(['pdf2swf', path_to_PDF, '-o',  path_to_SWF,\
-             '-T 9', '-f', '-t', '-s', 'storeallcharacters', '-G', '-s', 'poly2bitmap'], stdout=subprocess.PIPE)
-        out, err = pdf2swf.communicate()
-
-    #upload PDF
-    # catch the case where PDF2SWF fails to create the file, but returns
-    if pdf2swf.returncode == 0 and os.path.isfile(path_to_SWF):
-        update_datastream(obj, swfid, path_to_SWF, label = 'pdf to swf', mimeType = 'application/x-shockwave-flash')
-        r = 0
-    elif not os.path.isfile(path_to_SWF):
-        logger.warning('PID:%s DSID:%s SWF creation failed (pdf2swf returned: "%s").' % (obj.pid, dsid, out))
-        r = 1
-    else:
-        logger.warning('PID:%s DSID:%s SWF creation failed (pdf2swf return code:%d).' % (obj.pid, dsid, pdf2swf.returncode))
-        r = pdf2swf.returncode
-
-    rmtree(directory, ignore_errors=True)
-
-    #return good only if both values are true
-    if r and value:
-        return 1
-    else:
-        return 0
     '''
     '''
         This is a hack to get this working again with current versions of Libre
