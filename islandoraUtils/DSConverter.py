@@ -273,7 +273,11 @@ def create_pdf(obj, dsid, pdfid):
     '''
     logger = logging.getLogger('islandoraUtils.DSConverter.create_pdf')
     #recieve document and create a PDF with libreoffice if possible
-    directory, file = get_datastream_as_file(obj, dsid, "document")
+    try:
+        # Attempt using MIME-type lookup functionality.
+        directory, file = get_datastream_as_file(obj, dsid)
+    except IndexError:
+        directory, file = get_datastream_as_file(obj, dsid, "document")
 
     subprocess.call(['transienttmp', 'soffice', '--headless', '--convert-to', 'pdf', '--outdir', directory, directory+'/'+file])
     newfile = file.split('.',1)[0]
