@@ -6,7 +6,7 @@ that doesn't have a place anywhere else in the package
         
 '''
 
-import os, hashlib, re, fnmatch, subprocess, signal, datetime, time
+import os, hashlib, re, fnmatch, subprocess, signal, datetime, time, base64
 from time import sleep
 from copy import copy
 from lxml import etree
@@ -597,6 +597,18 @@ def get_logger(log_dir, log_file_name):
     logger.info('Starting logging session.')
     
     return logger
+
+def drupal_hash_base64(string):
+    """
+    This is the pythonic equivalent of drupal_hash_base64.  We need to
+    hash these large paths that are stored as text for fast retrieval.
+
+    @param string
+        String you want to hash.
+    """
+    hsh = hashlib.sha256(string.encode('utf-8')).digest()
+    encoded_hash = base64.urlsafe_b64encode(hsh)
+    return encoded_hash.replace('=', '')
 
 if __name__ == '__main__':
     '''

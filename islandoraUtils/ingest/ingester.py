@@ -764,7 +764,8 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
 
         # Kill by Time
         if filter_by_time:
-            filtered_list_of_paths = self._cron_batch.find_files_requiring_action(list_of_paths)
+            db, cursor = self.bootstrap_drupal_db()
+            filtered_list_of_paths = self._cron_batch.find_files_requiring_action(list_of_paths, cursor)
         else:
             filtered_list_of_paths = copy(list_of_paths)
 
