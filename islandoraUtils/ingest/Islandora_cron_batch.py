@@ -19,6 +19,7 @@ Created on 2012-03-16
 import time, os, datetime
 
 from islandoraUtils.fedoraLib import get_all_subjects_of_relationship
+from islandoraUtils.misc import drupal_hash_base64
 
 class Islandora_cron_batch(object):
     '''
@@ -93,7 +94,8 @@ class Islandora_cron_batch(object):
         self._Islandora_configuration_object.save_configuration_variable('cron', 'when_last_ran', str(time.time()))
 
     def does_file_require_action(self,
-                                 file_path):
+                                 file_path,
+                                 cursor):
         '''
         This method will figure out if the file needs to be operated on.
         
@@ -104,7 +106,12 @@ class Islandora_cron_batch(object):
             Returns true if the file has been modified since the last cron,
             Returns false if the file no longer exists
         '''
-        #get timestamp
+        # Return true and exit early if the file is not in the system yet.
+        # We always want new files.
+        if self.is_file_new(file_path, cursor):
+            return True 
+
+        #Otherwise check the timestamp
         try: 
             timestamp = os.path.getmtime(file_path)
         except OSError:
@@ -113,7 +120,8 @@ class Islandora_cron_batch(object):
         return self.does_timestamp_require_action(timestamp)
     
     def find_files_requiring_action(self,
-                                    list_of_file_paths):
+                                    list_of_file_paths,
+                                    cursor):
         '''
         This method returns the files that have been changed since the last time a cron was ran.
         
@@ -125,7 +133,7 @@ class Islandora_cron_batch(object):
         '''
         files_requiring_action = []
         for file_path in list_of_file_paths:
-            if self.does_file_require_action(file_path):
+            if self.does_file_require_action(file_path, cursor):
                 files_requiring_action.append(file_path)
         return files_requiring_action
     
@@ -139,7 +147,25 @@ class Islandora_cron_batch(object):
         @return boolean: timestamp >= self._when_last_ran
         '''
         return timestamp >= self._when_last_ran - self._time_math_margin
-    
+
+    def is_file_new(self, file_path, cursor):
+        """
+        Returns false if the path is in the pid/path mapping table.
+
+        @param path
+            The path you want to know is in the system.
+        """
+        try:
+            query = """
+                SELECT pid FROM packers_solution_pack_pid_path_map WHERE path_hash = %s
+            """
+            path_hash = drupal_hash_base64(file_path)
+            cursor.execute(query, (path_hash,))
+            return False if cursor.fetchone() else True
+        except:
+            print "GOT AN ERROR CHECKING IF " + file_path + " IS IN THE SYSTEM"
+            return False 
+
     def get_PIDs_for_sources(self,
                              list_of_sources):
         '''
