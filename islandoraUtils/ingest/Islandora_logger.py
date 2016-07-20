@@ -32,18 +32,15 @@ class Islandora_logger(object):
         '''
         
         configuration = Islandora_configuration_object.configuration_dictionary
-        if multiprocess_id is not None:
-            self._log_file = os.path.join(configuration['logging']['directory'],
-                                          multiprocess_id,
-                                          configuration['miscellaneous']['ingest_name'] + '_' + time.strftime('%y_%m_%d') + '.log')
-        else:
-            self._log_file = os.path.join(configuration['logging']['directory'],
-                                          configuration['miscellaneous']['ingest_name'] + '_' + time.strftime('%y_%m_%d') + '.log')
+        self._config = configuration
+        self._multiprocess_id = multiprocess_id
+        self._log_file = os.path.join(self._log_dir,
+                                      configuration['miscellaneous']['ingest_name'] + '_' + time.strftime('%y_%m_%d') + '.log')
         
         #create the log file if it does not exist
-        if not os.path.exists(configuration['logging']['directory']):
-            os.mkdir(configuration['logging']['directory'])
-        if not os.path.exists(self._log_file):
+        if not os.path.isdir(self._log_dir):
+            os.makedirs(self._log_dir)
+        if not os.path.isfile(self._log_file):
             log_file_handle = open(self._log_file, 'w')
             log_file_handle.close()
         
@@ -95,3 +92,10 @@ class Islandora_logger(object):
         Returns the name of the logger that this object creates
         '''
         return self._logger_name
+
+    @property
+    def _log_dir(self):
+        if self._multiprocess_id is not None:
+            return os.path.join(self._config['logging']['directory'], self._multiprocess_id)
+        else:
+            return self._config['logging']['directory']

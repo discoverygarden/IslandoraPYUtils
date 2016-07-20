@@ -153,7 +153,7 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
             if multiprocess_id is not None:
                 self._configuration['miscellaneous']['temporary_directory'] = os.path.join(self._configuration['miscellaneous']['temporary_directory'],
                                                                                            multiprocess_id)
-            if not os.path.exists(self._configuration['miscellaneous']['temporary_directory']):
+            if not os.path.isdir(self._configuration['miscellaneous']['temporary_directory']):
                 os.makedirs(self._configuration['miscellaneous']['temporary_directory'])
 
         # Set some variables to do with sync reports.
@@ -1025,8 +1025,8 @@ def recursivly_ingest_mime_type_in_directory (self, directory, mime_type, limit 
 
         # Remove temporary directory if it exists and one is in the configuration.
         if 'temporary_directory' in self._configuration['miscellaneous']:
-            if os.path.exists(self._configuration['miscellaneous']['temporary_directory']):
-                os.remove(self._configuration['miscellaneous']['temporary_directory'])
+            if os.path.isdir(self._configuration['miscellaneous']['temporary_directory']):
+                os.removedirs(self._configuration['miscellaneous']['temporary_directory'])
 
         return
 
